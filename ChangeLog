@@ -1,0 +1,28 @@
+
+=== version history of XML::Compile::SOAP
+
+version 0.55: Wed Oct  3 22:57:24 CEST 2007
+
+	- first attempt on a full implementation.  Quite some
+	  interface changes were made; old docs are useless.
+
+	- fork from XML::Compile
+
+	- renamed XML::Compile::WSDL         into XML::Compile::WSDL11
+	- renamed XML::Compile::SOAP::SOAP11 into XML::Compile::SOAP11
+	- renamed XML::Compile::SOAP::SOAP12 into XML::Compile::SOAP12
+
+	- install xsd's automatically, grouped in directories
+	  XML/Compile/{SOAP11,SOAP12,WSDL11}/xsd/
+
+	- added wsdl11soap12.xsd
+
+	- Log::Report (translation) namespace xml-compile-soap
+
+	- depend on LWP
+
+	- renamed XML::Compile::SOAP::Operation into
+	  XML::Compile::WSDL11::Operation.
+
+	- Added XML::Compile::SOAP::Client and ::Server
+	- Added XML::Compile::SOAP::HTTPClient and ::Server
