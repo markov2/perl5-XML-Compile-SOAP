@@ -19,17 +19,19 @@ XML::Compile->knownNamespace
  );
 
 =chapter NAME
-XML::Compile::SOAP11 - implementation of SOAP1.1
+XML::Compile::SOAP11 - base class for SOAP1.1 implementation
 
 =chapter SYNOPSIS
 
 =chapter DESCRIPTION
-**WARNING** Implementation not finished: not usable!!
-
 This module handles the SOAP protocol version 1.1.
 See F<http://www.w3.org/TR/2000/NOTE-SOAP-20000508/>).
 The implementation tries to behave like described in
 F<http://www.ws-i.org/Profiles/BasicProfile-1.0.html>
+
+Two extensions are made: the SOAP11 client
+M<XML::Compile::SOAP11::Client>.
+and server in M<XML::Compile::SOAP11::Server>.
 
 =chapter METHODS
 
@@ -40,17 +42,22 @@ To simplify the URIs of the actors, as specified with the C<destination>
 option, you may use the STRING C<NEXT>.  It will be replaced by the
 right URI.
 
+=default version     'SOAP11'
 =default envelope_ns C<http://schemas.xmlsoap.org/soap/envelope/>
 =default encoding_ns C<http://schemas.xmlsoap.org/soap/encoding/>
 =cut
 
 sub new($@)
 {   my $class = shift;
+    $class ne __PACKAGE__
+        or error __x"only instantiate a SOAP11::Client or ::Server";
     (bless {}, $class)->init( {@_} );
 }
 
 sub init($)
 {   my ($self, $args) = @_;
+
+    $args->{version}               ||= 'SOAP11';
     my $env = $args->{envelope_ns} ||= "$base/envelope/";
     my $enc = $args->{encoding_ns} ||= "$base/encoding/";
     $self->SUPER::init($args);
@@ -117,7 +124,7 @@ sub writerHeaderEnv($$$$)
     $ucode;
 }
 
-sub writer($)
+sub sender($)
 {   my ($self, $args) = @_;
     $args->{prefix_table}
      = [ ''         => 'do not use'
@@ -127,7 +134,7 @@ sub writer($)
        , xsi        => 'http://www.w3.org/2001/XMLSchema-instance'
        ];
 
-    $self->SUPER::writer($args);
+    $self->SUPER::sender($args);
 }
 
 sub writerConvertFault($$)
@@ -176,21 +183,11 @@ sub convertCodeToFaultcode($$)
     pack_type $soap11_env, $faultcode;
 }
 
-
 =method roleAbbreviation STRING
 Translates actor abbreviations into URIs.  The only one defined for
 SOAP1.1 is C<NEXT>.  Returns the unmodified STRING in all other cases.
 =cut
 
 sub roleAbbreviation($) { $_[1] eq 'NEXT' ? $actor_next : $_[1] }
-
-=method prepareServer SERVER
-The SERVER is a M<XML::Compile::SOAP::HTTPServer> object, which will
-need some messages prepared for general purpose.
-=cut
-
-sub prepareServer($)
-{   my ($self, $server) = @_;
-}
 
 1;

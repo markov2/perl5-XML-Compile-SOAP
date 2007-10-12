@@ -1,6 +1,21 @@
 
 === version history of XML::Compile::SOAP
 
+version 0.56: Fri Oct 12 14:54:25 CEST 2007
+	Massive changes and extensions, but still not functioning.
+
+	- split-off XML::Compile::SOAP::Daemon and all its needs into
+	  a seperate distribution.
+
+	- implements XML::Compile::SOAP::Tester
+	- implements XML::Compile::SOAP11::Server
+	- implements XML::Compile::SOAP12::Server
+
+	- moved parts of XML::Compile::SOAP1[12]
+	  into XML::Compile::SOAP1[12]::Client, and reworked examples.
+
+	- translated some die's and warn's into Log::Report
+
 version 0.55: Wed Oct  3 22:57:24 CEST 2007
 
 	- first attempt on a full implementation.  Quite some

@@ -41,12 +41,13 @@ The OPTIONS are all collected from the WSDL description by
 M<XML::Compile::WSDL::operation()>.  End-users should not attempt to
 initiate this object directly.
 
+=requires name     STRING
 =requires service  HASH
 =requires port     HASH
 =requires binding  HASH
 =requires portType HASH
-=requires wsdl     M<XML::Compile::WSDL11> object
-=requires portOperation HASH
+=requires wsdl     XML::Compile::WSDL11 object
+=requires port_op  HASH
 
 =option   bind_op  HASH
 =default  bind_op  C<undef>
@@ -72,12 +73,15 @@ sub new(@)
 
 sub init()
 {   my $self = shift;
+    my $name = $self->name;
 
     # autodetect namespaces used
-    my $soapns  = $self->{soap_ns}
-      = exists $self->port->{ pack_type $soap11, 'address' } ? $soap11
-      : error __x"soap namespace {namespace} not (yet) supported"
-            , namespace => $soap11;
+    my $port = $self->port;
+    my ($soapns, $version) = ($self->{soap_ns}, $self->{version})
+      = exists $port->{ pack_type $soap11,'address' } ? ($soap11, 'SOAP11')
+      : exists $port->{ pack_type $soap12,'address' } ? ($soap12, 'SOAP12')
+      : error __x"no supported namespace found for {operation}"
+           , operation => $name;
 
     $self->schemas->importDefinitions($soapns);
 
@@ -103,6 +107,7 @@ sub init()
 }
 
 =section Accessors
+=method name
 =method service
 =method port
 =method bindings
@@ -113,6 +118,7 @@ sub init()
 =method schemas
 =cut
 
+sub name()     {shift->{name}}
 sub service()  {shift->{service}}
 sub port()     {shift->{port}}
 sub binding()  {shift->{binding}}
@@ -126,9 +132,11 @@ sub bindOperation() {shift->{bind_op}}
 =section Use
 
 =method soapNameSpace
+=method soapVersion
 =cut
 
 sub soapNameSpace() {shift->{soap_ns}}
+sub soapVersion()   {shift->{version}}
 
 =method endPointAddresses
 Returns the list of alternative URLs for the end-point, which should
@@ -198,10 +206,10 @@ operation with return C<undef> in case of failure, and a true value
 when successfull.
 
 =option  style    'document'|'rpc'
-=default style    M<new(style)>|'document'
+=default style    new(style)|'document'
 
 =option  protocol URI|'HTTP'
-=default protocol M<new(protocol)>|<from soapAction>
+=default protocol new(protocol)|<from soapAction>
 Only the HTTP protocol is supported on the moment.  The URI is
 the WSDL URI representation of the HTTP protocol.
 
@@ -223,13 +231,13 @@ sub prepareClient(@)
     my $soapns = $self->soapNameSpace;
     my ($soap, $version);
     if($soapns eq $soap11)
-    {   require XML::Compile::SOAP11;
-        $soap    = XML::Compile::SOAP11->new(schemas => $self->schemas);
+    {   require XML::Compile::SOAP11::Client;
+        $soap    = XML::Compile::SOAP11::Client->new(schemas => $self->schemas);
         $version = 'SOAP11';
     }
     elsif($soapns eq $soap12)
-    {   require XML::Compile::SOAP12;
-        $soap    = XML::Compile::SOAP12->new(schemas => $self->schemas);
+    {   require XML::Compile::SOAP12::Client;
+        $soap    = XML::Compile::SOAP12::Client->new(schemas => $self->schemas);
         $version = 'SOAP12';
     }
     else { panic "NameSpace $soapns not supported for WSDL11 operation" }
@@ -265,7 +273,7 @@ sub prepareClient(@)
     require XML::Compile::SOAP::HTTPClient;
     my $call = XML::Compile::SOAP::HTTPClient->new
       ( soap_version   => $version
-      , soap_action    => $self->soapAction
+      , action         => $self->soapAction
       , address        => [ $self->endPointAddresses ]
       , transport_hook => $args{transport_hook}
       );
@@ -287,11 +295,16 @@ connect these.
 
 Returned is a LIST of three: the soapAction string, the request decoder
 CODE reference, and the answer encoder CODE reference.
+
+=requires soap XML::Compile::SOAP object
 =cut
 
 sub prepareServer(@)
 {   my ($self, %args) = @_;
     my ($input, $output);
+
+    my $soap = $args{soap} or panic "no soap to prepare server";
+
     ($self->soapAction, $input, $output);
 }
 

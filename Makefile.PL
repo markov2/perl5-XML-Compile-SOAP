@@ -1,15 +1,16 @@
 use ExtUtils::MakeMaker;
 
-use 5.8.0;
+use 5.008;
 
 WriteMakefile
  ( NAME	 	=> 'XML::Compile::SOAP'
- , VERSION	=> 0.55
+ , VERSION	=> 0.56
  , PREREQ_PM    =>
    { XML::Compile    => 0.55
    , Log::Report     => 0.09
    , LWP             => 5.803
    , Time::HiRes     => 0
+   , Net::Server     => 0.97
 
    , Test::More      => 0.54
    , Test::Deep      => 0.095
@@ -22,6 +23,8 @@ WriteMakefile
 
 ### used by oodist during production of distribution
 sub MY::postamble { <<'__POSTAMBLE' }
+
+EXTENDS		= ../XMLCompile:../XMLDaemon
 
 # for DIST
 RAWDIR          = ../public_html/xml-compile-soap/raw

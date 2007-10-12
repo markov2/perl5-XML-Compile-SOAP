@@ -4,12 +4,13 @@ Makefile.PL
 lib/XML/Compile/SOAP.pm
 lib/XML/Compile/SOAP/Client.pm
 lib/XML/Compile/SOAP/HTTPClient.pm
-lib/XML/Compile/SOAP/HTTPServer.pm
-lib/XML/Compile/SOAP/Server.pm
+lib/XML/Compile/SOAP/Tester.pm
 lib/XML/Compile/SOAP11.pm
+lib/XML/Compile/SOAP11/Server.pm
 lib/XML/Compile/SOAP11/xsd/soap-encoding.xsd
 lib/XML/Compile/SOAP11/xsd/soap-envelope.xsd
 lib/XML/Compile/SOAP12.pm
+lib/XML/Compile/SOAP12/Server.pm
 lib/XML/Compile/SOAP12/xsd/2003-soap-encoding.xsd
 lib/XML/Compile/SOAP12/xsd/2003-soap-envelope.xsd
 lib/XML/Compile/SOAP12/xsd/2003-soap-rpc.xsd
@@ -20,3 +21,8 @@ lib/XML/Compile/WSDL11/xsd/wsdl-mime.xsd
 lib/XML/Compile/WSDL11/xsd/wsdl-soap.xsd
 lib/XML/Compile/WSDL11/xsd/wsdl-soap12.xsd
 lib/XML/Compile/WSDL11/xsd/wsdl.xsd
+t/01use.t
+t/10soap11.t
+t/50wsdl11.t
+t/TestTools.pm
+t/pod.t

@@ -39,7 +39,7 @@ In SCALAR context, an XML::LibXML parsed tree of the answer message
 is returned.  In LIST context, that answer is followed by a HASH which
 contains trace information.
 
-=option  user_agent M<LWP::UserAgent>
+=option  user_agent LWP::UserAgent object
 =default user_agent <singleton created>
 If you pass your own user agent, you will be able to configure
 it. Otherwise, one will be created with all the defaults by
@@ -58,22 +58,21 @@ With method C<M-POST>, the header extension fields require (any) number
 to be grouped.
 
 =option  address URI|ARRAY-of-URI
-=default address <derived from soap_action>
+=default address <derived from action>
 One or more URI which represents the servers. One is chosen at random.
 
 =option  mime_type STRING
-=default mime_type <depends on protocol>
+=default mime_type <depends on soap version>
 
 =option  charset STRING
 =default charset 'utf-8'
 
-=option  soap_action URI
-=default soap_action C<undef>
+=requires action URI
 
 =option  soap_version 'SOAP11'|'SOAP12'
 =default soap_version 'SOAP11'
 
-=option  header  M<HTTP::Headers> object
+=option  header  HTTP::Headers object
 =default header  <created>
 Versions of M<XML::Compile>, M<XML::Compile::SOAP>, and M<LWP> will be
 added to simplify bug reports.
@@ -82,16 +81,19 @@ added to simplify bug reports.
 =default transport_hook <undef>
 Transport is handled by M<LWP::UserAgent::request()>, however... you
 may need to modify the request or answer messages outside the reach of
-M<XML::Compile::SOAP>.  This may also be used for debugging.  The CODE
-reference provided will be called with the request message (M<HTTP::Request>)
-as first parameter, and the user agent (M<LWP::UserAgent>) as second.  You
-must return an answer (M<HTTP::Response>) or C<undef>.
+M<XML::Compile::SOAP>.
 
+The CODE reference provided will be called with the request
+message (M<HTTP::Request>) as first parameter, and the user
+agent (M<LWP::UserAgent>) as second.  You must return an answer
+(M<HTTP::Response>) or C<undef>.
 See section L<DETAILS/Use of transport_hook>.
 
 =example create a client
- my $call = XML::Compile::SOAP::HTTP->client
-  ( address => 'http://www.stockquoteserver.com/StockQuote' );
+ my $call = XML::Compile::SOAP::HTTPClient->new
+   ( address => 'http://www.stockquoteserver.com/StockQuote'
+   , action  => 'http://example.com/GetLastTradePrice'
+   );
 
  # $request and $answer are XML::LibXML trees
  my ($answer, $trace) = $call->($request);
@@ -109,14 +111,15 @@ sub new(@)
     my $version  = $args{soap_version} || 'SOAP11';
     my $header   = $args{header}       || HTTP::Headers->new;
     my $charset  = $args{charset}      || 'utf-8';
-    my $action   = $args{soap_action};
     my $mpost_id = $args{mpost_id}     || 42;
     my $mime     = $args{mime};
-    my $address  = $args{address};
 
+    my $action   = $args{action}
+        or error __x"soap action not specified";
+
+    my $address  = $args{address};
     unless($address)
-    {   $address = $action
-            or error "no address nor soap_action specified";
+    {   $address = $action;
         $address =~ s/\#.*//;
     }
     my @addrs    = ref $address eq 'ARRAY' ? @$address : $address;
@@ -146,7 +149,7 @@ sub new(@)
     }
     else
     {   error "SOAP method must be POST or M-POST, not {method}"
-           , method => $method;
+          , method => $method;
     }
 
     # pick random server.  Ideally, we should change server when one
@@ -154,21 +157,34 @@ sub new(@)
     my $server  = @addrs[rand @addrs];
 
     my $request = HTTP::Request->new($method => $server, $header);
-    $parser   ||= XML::LibXML->new;
 
+    if(my $fake_server = $class->fakeServer)
+    {   return sub
+          { my ($answer, $trace) = $fake_server->
+              ( action => $action, message => $_[0], http_header => $request
+              , user_agent => $ua, server => $server, soap_version => $version
+              , soap => $class->soapClientImplementation($version)
+              );
+            wantarray ? ($answer, $trace) : $answer;
+          }
+    }
+
+    $parser   ||= XML::LibXML->new;
     sub
     {   $request->content(ref $_[0] ? $_[0]->toString : $_[0]);
-        my $start        = time;
-        my %trace        = (start => scalar localtime, request => $request);
+        my $start    = time;
+        my $response = $ua->request($request);
 
-        my $response     = $ua->request($request);
-
-        $trace{elapse}   = time - $start;
-        $trace{response} = $response;
+        my %trace =
+          ( start    => scalar(localtime $start)
+          , request  => $request
+          , response => $response
+          , elapse   => (time - $start)
+          );
 
         my $answer;
         if($response->content_type =~ m![/+]xml$!i)
-        {   $answer = eval {$parser->parser_string($response->content_decoded)};
+        {   $answer = eval {$parser->parser_string($response->decoded_content)};
             $trace{error} = $@ if $@;
         }
         else
@@ -258,33 +274,6 @@ Of course, you can get a trace hash with timing info back from the call
     $answer;
  }
  
-=subsection Regression tests with transport_hook
-
-In test-scripts, we may not have access to internet, and we may not know
-how to create a daemon on all kinds of platforms.  Therefore, the
-M<new(transport_hook)> can be used to connect the request directly
-to an answer.
-
- my $operation = $wsdl->operation('my-port');
- my ($soapAction, $decode_request, $encode_answer)
-    = $operation->prepareServer(...);
-
- # Simulate server daemon
- my $hook = sub               # closure!
- {   my ($request, $user_agent) = @_;
-     my $received = $decode_request->($request);
-     # .... server-side tests on $received data...
-     my $send     = { ... };  # fake an answer
-     $encode_answer->($send);
- }
-
- my $client = $operation->prepareClient
-   ( ....
-   , transport_hook => \&hook
-   );
-
-In this case, there is no actual message transmission, because the
-C<user_agent> is not used.
 =cut
 
 1;

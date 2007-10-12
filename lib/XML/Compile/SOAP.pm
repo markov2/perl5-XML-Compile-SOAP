@@ -4,7 +4,7 @@ use strict;
 package XML::Compile::SOAP;
 
 use Log::Report 'xml-compile-soap', syntax => 'SHORT';
-use XML::Compile        qw//;
+use XML::Compile        ();
 use XML::Compile::Util  qw/pack_type/;
 
 =chapter NAME
@@ -14,20 +14,22 @@ XML::Compile::SOAP - base-class for SOAP implementations
  **WARNING** Implementation not finished (but making
  ** progress): see STATUS statement below.
 
- use XML::Compile::SOAP11;
+ use XML::Compile::SOAP11::Client;
  use XML::Compile::Util qw/pack_type/;
 
  # There are quite some differences between SOAP1.1 and 1.2
- my $soap   = XML::Compile::SOAP11->new;
+ my $client = XML::Compile::SOAP11::Client->new;
 
  # load extra schemas always explicitly
- $soap->schemas->importDefinitions(...);
+ $client->schemas->importDefinitions(...);
+
+ # !!! THE NEXT STEPS ARE ONLY REQUIRED WHEN YOU DO NOT HAVE A WSDL
+ # !!! SEE XML::Compile::WSDL11 IF YOU HAVE A WSDL FILE
 
  my $h1el = pack_type $myns, $some_element;
  my $b1el = "{$myns}$other_element";  # same, less clean
 
- # Request, answer, and call usually created via WSDL
- my $encode_query = $soap->compileMessage
+ my $encode_query = $client->compileMessage
    ( 'SENDER'
    , header   => [ h1 => $h1el ]
    , body     => [ b1 => $b1el ]
@@ -36,7 +38,7 @@ XML::Compile::SOAP - base-class for SOAP implementations
    , encodings => { b1 => { use => 'literal' }}
    );
 
- my $decode_response = $soap->compileMessage
+ my $decode_response = $client->compileMessage
    ( 'RECEIVER'
    , header    => [ h2 => $h2el ]
    , body      => [ b2 => $b2el ]
@@ -45,7 +47,10 @@ XML::Compile::SOAP - base-class for SOAP implementations
    , encodings => { h2 => { use => 'literal' }}
    );
 
- my $http = XML::Compile::SOAP::HTTPClient->new(address => $server);
+ my $http = XML::Compile::SOAP::HTTPClient->new
+   ( action  => 'http://...'
+   , address => $server
+   );
 
  # In nice, small steps:
 
@@ -58,7 +63,7 @@ XML::Compile::SOAP - base-class for SOAP implementations
 
  # Simplify your life
 
- my $call   = $soap->compileCall($encode_query, $decode_query, $http);
+ my $call   = $client->compileRequest($encode_query, $decode_response, $http);
  my $result = $call->(h1 => ..., b1 => ...);
  print $result->{h2}->{...};
  print $result->{b2}->{...};
@@ -117,10 +122,14 @@ can be hidden for you)
 =default  schemas    created internally
 Use this when you have already processed some schema definitions.  Otherwise,
 you can add schemas later with C<< $soap->schames->importDefinitions() >>
+
+=requires version    STRING
+The simple string representation of the protocol.
 =cut
 
 sub new($@)
 {   my $class = shift;
+
     error __x"you can only instantiate sub-classes of {class}"
         if $class eq __PACKAGE__;
 
@@ -133,14 +142,17 @@ sub init($)
     $self->{enc}     = $args->{encoding_ns} || panic "no encoding namespace";
     $self->{mime}    = $args->{media_type}  || 'application/soap+xml';
     $self->{schemas} = $args->{schemas}     || XML::Compile::Schema->new;
+    $self->{version} = $args->{version}     || panic "no version string";
     $self;
 }
 
 =section Accessors
+=method version
 =method envelopeNS
 =method encodingNS
 =cut
 
+sub version()    {shift->{version}}
 sub envelopeNS() {shift->{env}}
 sub encodingNS() {shift->{enc}}
 
@@ -239,36 +251,29 @@ Message components can be encoded, as defined in WSDL.   Typically, some
 message part has a binding C<< use="encoded" >> and C<encodingStyle>
 and C<namespace> parameters.  The encodings are organized per label.
 
-=error an input message does not have faults
-=error headerfault does only exist in SOAP1.1
-
-=error option 'role' only for readers
-=error option 'roles' only for readers
-=error option 'destination' only for writers
-=error option 'mustUnderstand' only for writers
 =cut
 
 sub compileMessage($@)
 {   my ($self, $direction, %args) = @_;
 
-      $direction eq 'SENDER'   ? $self->writer(\%args)
-    : $direction eq 'RECEIVER' ? $self->reader(\%args)
+      $direction eq 'SENDER'   ? $self->sender(\%args)
+    : $direction eq 'RECEIVER' ? $self->receiver(\%args)
     : error __x"message direction is 'SENDER' or 'RECEIVER', not {dir}"
          , dir => $direction;
 }
 
 #------------------------------------------------
 
-=section Writer (internals)
+=section Sender (internals)
 
-=method writer ARGS
+=method sender ARGS
 =cut
 
-sub writer($)
+sub sender($)
 {   my ($self, $args) = @_;
 
-    die "ERROR: option 'role' only for readers"  if $args->{role};
-    die "ERROR: option 'roles' only for readers" if $args->{roles};
+    error __"option 'role' only for readers"  if $args->{role};
+    error __"option 'roles' only for readers" if $args->{roles};
 
     my $envns  = $self->envelopeNS;
     my $allns  = $self->prefixPreferences($args->{prefix_table} || []);
@@ -306,7 +311,7 @@ sub writer($)
      );
 
     sub { my ($values, $charset) = @_;
-          my $doc = XML::LibXML::Document->new('1.0', $charset);
+          my $doc = XML::LibXML::Document->new('1.0', $charset || 'UTF-8');
           my %data = %$values;  # do not destroy the calling hash
 
           $data{Header}{$_} = delete $data{$_} for @$hlabels;
@@ -334,7 +339,7 @@ sub writerHook($$@)
                         push @childs, $g if $g;
                    }
                }
-               warn "ERROR: unused values @{[ keys %data ]}\n"
+               warning __x"unused values {names}", names => [keys %data]
                    if keys %data;
 
                @childs or return ();
@@ -487,23 +492,24 @@ protocol level.  See L<DETAILS/Faults>.
 
 #------------------------------------------------
 
-=section Reader (internals)
+=section Receiver (internals)
 
-=method reader ARGS
+=method receiver ARGS
 =cut
 
-sub reader($)
+sub receiver($)
 {   my ($self, $args) = @_;
 
-    die "ERROR: option 'destination' only for writers"
+    error __"option 'destination' only for writers"
         if $args->{destination};
 
-    die "ERROR: option 'mustUnderstand' only for writers"
+    error __"option 'mustUnderstand' only for writers"
         if $args->{understand};
 
     my $schema = $self->schemas;
     my $envns  = $self->envelopeNS;
 
+# roles are not checked (yet)
 #   my $roles  = $args->{roles} || $args->{role} || 'ULTIMATE';
 #   my @roles  = ref $roles eq 'ARRAY' ? @$roles : $roles;
 
@@ -624,16 +630,21 @@ sub readerEncstyleHook()
    { before => $before, after => $after };
 }
 
+#------------------------------------------------
+
+=section Helpers
+
 =method roleAbbreviation STRING
 Translates actor/role/destination abbreviations into URIs. Various
 SOAP protocol versions have different pre-defined URIs, which can
 be abbreviated for readibility.  Returns the unmodified STRING in
 all other cases.
+
+SOAP11 only defines C<NEXT>.  SOAP12 defines C<NEXT>, C<NONE>, and
+C<ULTIMATE>.
 =cut
 
 sub roleAbbreviation($) { panic "not implemented" }
-
-#------------------------------------------------
 
 =chapter DETAILS
 

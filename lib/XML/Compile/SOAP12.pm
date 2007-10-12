@@ -23,7 +23,7 @@ XML::Compile->knownNamespace
  );
 
 =chapter NAME
-XML::Compile::SOAP12 - implementation of SOAP1.2
+XML::Compile::SOAP12 - base class for SOAP1.2 implementation
 
 =chapter SYNOPSIS
 
@@ -32,6 +32,9 @@ XML::Compile::SOAP12 - implementation of SOAP1.2
 
 This module handles the SOAP protocol version 1.2.
 See F<http://www.w3.org/TR/soap12/>).
+
+The client specifics are implemented in M<XML::Compile::SOAP12::Client>,
+and the server needs can be found in M<XML::Compile::SOAP12::Server>.
 
 =chapter METHODS
 
@@ -44,6 +47,7 @@ See F<http://www.w3.org/TR/soap12/>).
 SOAP1.1 defines a header fault type, which not present in SOAP 1.2,
 where it is replaced by a C<notUnderstood> structure.
 
+=default version     'SOAP12'
 =default envelope_ns C<http://www.w3.org/2003/05/soap-envelope>
 =default encoding_ns C<http://www.w3.org/2003/05/soap-encoding>
 
@@ -58,6 +62,7 @@ sub new($@)
 
 sub init($)
 {   my ($self, $args) = @_;
+    $args->{version}               ||= 'SOAP12';
     my $env = $args->{envelope_ns} ||= "$base/soap-envelope";
     my $enc = $args->{encoding_ns} ||= "$base/soap-encoding";
     $self->SUPER::init($args);
@@ -78,12 +83,13 @@ sub init($)
 
 sub rpcNS() {shift->{rpc}}
 
-sub writer($)
+sub sender($)
 {   my ($self, $args) = @_;
 
     error __x"headerfault does only exist in SOAP1.1"
         if $args->{header_fault};
 
+    $self->SUPER::sender($args);
 }
 
 =method roleAbbreviation STRING
@@ -92,14 +98,5 @@ C<NONE>, and C<ULTIMATE>.  Returns the unmodified STRING in all other cases.
 =cut
 
 sub roleAbbreviation($) { $roles{$_[1]} || $_[1] }
-
-=method prepareServer SERVER
-The SERVER is a M<XML::Compile::SOAP::HTTPServer> object, which will
-need some messages prepared for general purpose.
-=cut
-
-sub prepareServer($)
-{   my ($self, $server) = @_;
-}
 
 1;
