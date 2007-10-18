@@ -253,8 +253,8 @@ sub test_rw($$$$;$$)
     compare_xml($tree2, $tree->toString);
 }
 
-sub compare_xml($$)
-{   my ($tree, $expect) = @_;
+sub compare_xml($$;$)
+{   my ($tree, $expect, $msg) = @_;
     my $dump = ref $tree ? $tree->toString : $tree;
 
     if(!defined $dump) { ; }
@@ -272,7 +272,7 @@ sub compare_xml($$)
             s/\s+\z//gs;
         }
     }
-    is($dump, $expect);
+    is($dump, $expect, $msg);
 }
 
 sub templ_xml($$$@)

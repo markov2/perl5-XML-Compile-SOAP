@@ -14,6 +14,7 @@ my %roles =
  , NONE     => "$role/none"
  , ULTIMATE => "$role/ultimateReceiver"
  );
+my %rroles = reverse %roles;
 
 XML::Compile->addSchemaDirs(__FILE__);
 XML::Compile->knownNamespace
@@ -92,11 +93,8 @@ sub sender($)
     $self->SUPER::sender($args);
 }
 
-=method roleAbbreviation STRING
-Translates actor abbreviations into URIs.  For SOAP1.2, defined are C<NEXT>,
-C<NONE>, and C<ULTIMATE>.  Returns the unmodified STRING in all other cases.
-=cut
+sub roleURI($) { $roles{$_[1]} || $_[1] }
 
-sub roleAbbreviation($) { $roles{$_[1]} || $_[1] }
+sub roleAbbreviation($) { $rroles{$_[1]} || $_[1] }
 
 1;

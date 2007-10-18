@@ -4,20 +4,19 @@ use 5.008;
 
 WriteMakefile
  ( NAME	 	=> 'XML::Compile::SOAP'
- , VERSION	=> 0.56
+ , VERSION	=> 0.57
  , PREREQ_PM    =>
-   { XML::Compile    => 0.55
-   , Log::Report     => 0.09
+   { XML::Compile    => 0.56
+   , Log::Report     => 0.11
    , LWP             => 5.803
    , Time::HiRes     => 0
-   , Net::Server     => 0.97
 
    , Test::More      => 0.54
    , Test::Deep      => 0.095
    , Test::Pod       => 1.00
    }
  , AUTHOR       => 'Mark Overmeer'
- , ABSTRACT     => 'XML over SOAP'
+ , ABSTRACT     => 'XML over SOAP, client side'
  , LICENSE      => 'perl'
  );
 

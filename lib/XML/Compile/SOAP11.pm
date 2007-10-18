@@ -68,6 +68,8 @@ sub init($)
     $self;
 }
 
+=section Single messages
+
 =method compileMessage ('SENDER'|'RECEIVER'), OPTIONS
 
 =option  headerfault ENTRIES
@@ -104,7 +106,7 @@ sub writerHeaderEnv($$$$)
     else {$ucode = $code}
 
     if($actors)
-    {   $actors =~ s/\b(\S+)\b/$self->roleAbbreviation($1)/ge;
+    {   $actors =~ s/\b(\S+)\b/$self->roleURI($1)/ge;
 
         my $a_w = $self->{soap11_a_w} ||=
           $schema->compile
@@ -126,68 +128,163 @@ sub writerHeaderEnv($$$$)
 
 sub sender($)
 {   my ($self, $args) = @_;
+    my $envns = $self->envelopeNS;
     $args->{prefix_table}
      = [ ''         => 'do not use'
-       , 'SOAP-ENV' => $self->envelopeNS
+       , 'SOAP-ENV' => $envns
        , 'SOAP-ENC' => $self->encodingNS
        , xsd        => 'http://www.w3.org/2001/XMLSchema'
        , xsi        => 'http://www.w3.org/2001/XMLSchema-instance'
        ];
+    push @{$args->{body}}, Fault => pack_type($envns, 'Fault');
 
     $self->SUPER::sender($args);
 }
 
-sub writerConvertFault($$)
-{   my ($self, $faultname, $data) = @_;
-    my %copy = %$data;
+sub receiver($)
+{   my ($self, $args) = @_;
+    my $envns = $self->envelopeNS;
 
-    my $code = delete $copy{Code};
-    $copy{faultcode} ||= $self->convertCodeToFaultcode($faultname, $code);
+    push @{$args->{body}}, Fault => pack_type($envns, 'Fault');
 
-    my $reasons = delete $copy{Reason};
-    $copy{faultstring} = $reasons->[0]
-        if ! $copy{faultstring} && ref $reasons eq 'ARRAY';
-
-    delete $copy{Node};
-    my $role  = delete $copy{Role};
-    my $actor = delete $copy{faultactor} || $role;
-    $copy{faultactor} = $self->roleAbbreviation($actor) if $actor;
+    $self->SUPER::receiver($args);
 }
 
-sub convertCodeToFaultcode($$)
-{   my ($self, $faultname, $code) = @_;
+=section Receiver (internals)
 
-    my $value = $code->{Value}
-        or error __x"SOAP1.2 Fault {name} Code requires Value"
-              , name => $faultname;
-
-    my ($ns, $class) = unpack_type $value;
-    $ns eq $soap12_env
-        or error __x"SOAP1.2 Fault {name} Code Value {value} not in {ns}"
-              , name => $faultname, value => $value, ns => $soap12_env;
-
-    my $faultcode
-      = $class eq 'Sender'   ? 'Client'
-      : $class eq 'Receiver' ? 'Server'
-      :                        $class;  # unchanged
-      # DataEncodingUnknown MustUnderstand VersionMismatch
-
-    for(my $sub = $code->{Subcode}; defined $sub; $sub = $sub->{Subcode})
-    {   my $subval = $sub->{Value}
-           or error __x"SOAP1.2 Fault {name} subcode requires Value"
-              , name => $faultname;
-        my ($subns, $sublocal) = unpack_type $subval;
-        $faultcode .= '.' . $sublocal;
-    }
-
-    pack_type $soap11_env, $faultcode;
-}
-
-=method roleAbbreviation STRING
-Translates actor abbreviations into URIs.  The only one defined for
-SOAP1.1 is C<NEXT>.  Returns the unmodified STRING in all other cases.
+=method readerParseFaults FAULTSDEF
+The decoders for the possible "faults" are compiled.  Returned is a code
+reference which can handle it.  See fault handler specifics in the
+C<DETAILS> chapter below.
 =cut
 
-sub roleAbbreviation($) { $_[1] eq 'NEXT' ? $actor_next : $_[1] }
+sub readerParseFaults($)
+{   my ($self, $faults) = @_;
+    my %rules;
+
+    my $schema = $self->schemas;
+    my @f      = @$faults;
+
+    while(@f)
+    {   my ($label, $element) = splice @f, 0, 2;
+        $rules{$element} =  [$label, $schema->compile(READER => $element)];
+    }
+
+    sub
+    {   my $data   = shift;
+        my $faults = $data->{Fault} or return;
+
+        my $reports = $faults->{detail} ||= {};
+        my ($label, $details) = (header => undef);
+        foreach my $type (sort keys %$reports)
+        {   my $report  = $reports->{$type} || [];
+            if($rules{$type})
+            {   ($label, my $do) = @{$rules{$type}};
+                $details = [ map { ($do->($_))[1] } @$report ];
+            }
+            else
+            {   ($label, $details) = (unknown => $report);
+            }
+        }
+
+        my ($code_ns, $code_err) = unpack_type $faults->{faultcode};
+        my ($err, @sub_err) = split /\./, $code_err;
+        $err = 'Receiver' if $err eq 'Server';
+        $err = 'Sender'   if $err eq 'Client';
+
+        my %nice =
+          ( code   => $faults->{faultcode}
+          , class  => [ $code_ns, $err, @sub_err ]
+          , reason => $faults->{faultstring}
+          );
+
+        $nice{role}   = $self->roleAbbreviation($faults->{faultactor})
+            if $faults->{faultactor};
+
+        $nice{detail} = (@$details==1 ? $details->[0] : $details)
+            if $details;
+
+        $data->{$label}  = \%nice;
+        $faults->{_NAME} = $label;
+    };
+}
+
+sub replyMustUnderstandFault($)
+{   my ($self, $type) = @_;
+
+    { Fault =>
+        { faultcode   => pack_type($self->envelopeNS, 'MustUnderstand')
+        , faultstring => "SOAP mustUnderstand $type"
+        }
+    };
+}
+
+sub roleURI($) { $_[1] && $_[1] eq 'NEXT' ? $actor_next : $_[1] }
+
+sub roleAbbreviation($) { $_[1] && $_[1] eq $actor_next ? 'NEXT' : $_[1] }
+
+
+=chapter DETAILS
+
+=section Receiving faults in SOAP1.1
+
+When faults are received, they will be returned with the C<Faults> key
+in the data structure.  So:
+
+  my $answer = $call->($question);
+  if($answer->{Faults}) { ... }
+
+As extra service, for each of the fault types, as defined with
+M<compileMessage(faults)>, a decoded structure is included.  The name
+of that structure can be found like this:
+
+  if(my $faults = $answer->{Faults})
+  {   my $name    = $faults->{_NAME};
+      my $decoded = $answer->{$name};
+      ...
+  }
+
+The untranslated C<$faults> HASH looks like this:
+
+ Fault =>
+   { faultcode => '{http://schemas.xmlsoap.org/soap/envelope/}Server.first'
+   , faultstring => 'my mistake'
+   , faultactor => 'http://schemas.xmlsoap.org/soap/actor/next'
+   , detail => { '{http://test-types}fault_one' => [ XMLNODES ] }
+   , _NAME => 'fault1'
+   }
+
+The C<_NAME> originates from the M<compileMessage(faults)> option:
+
+   $soap->compileMessage('RECEIVER', ...
+     , faults => [ fault1 => '{http://test-types}fault_one' ] );
+
+Now, automatically the answer will contain the decoded fault
+structure as well:
+
+  fault1 =>
+    { code => '{http://schemas.xmlsoap.org/soap/envelope/}Server.first'
+    , class  => [ 'http://schemas.xmlsoap.org/soap/envelope/'
+         , 'Receiver', 'first' ]
+    , reason => 'my mistake',
+    , role   => 'NEXT'
+    , detail => { help => 'please ignore' }
+    }
+
+The C<detail> is the decoding of the XMLNODES, which are defined to
+be of type C<< {http://test-types}fault_one >>.
+
+The C<class> is an unpacked version of the code.  SOAP1.2 is using the
+(better) terms C<Sender> and C<Receiver>.
+
+C<role> is constructed by decoding the C<faultactor> using
+M<roleAbbreviation()>.  The names are closer to the SOAP1.2 specification.
+
+If the received fault is of an unpredicted type, then key C<unknown>
+is used, and the C<detail> will list the unparsed XMLNODEs.  When there
+are no details, (according to the specs) the error must be caused by
+a header problem, so the C<header> key is used.
+
+=cut
 
 1;

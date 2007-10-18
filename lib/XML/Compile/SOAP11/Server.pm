@@ -19,8 +19,6 @@ by M<XML::Compile::SOAP::Daemon>
 =chapter METHODS
 
 =method prepareServer SERVER
-The SERVER is a M<XML::Compile::SOAP::HTTPServer> object, which will
-need some messages prepared for general purpose.
 =cut
 
 sub prepareServer($)

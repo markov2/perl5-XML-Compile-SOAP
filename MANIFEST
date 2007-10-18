@@ -1,15 +1,18 @@
 ChangeLog
 MANIFEST
 Makefile.PL
+README.todo
 lib/XML/Compile/SOAP.pm
 lib/XML/Compile/SOAP/Client.pm
 lib/XML/Compile/SOAP/HTTPClient.pm
 lib/XML/Compile/SOAP/Tester.pm
 lib/XML/Compile/SOAP11.pm
+lib/XML/Compile/SOAP11/Client.pm
 lib/XML/Compile/SOAP11/Server.pm
 lib/XML/Compile/SOAP11/xsd/soap-encoding.xsd
 lib/XML/Compile/SOAP11/xsd/soap-envelope.xsd
 lib/XML/Compile/SOAP12.pm
+lib/XML/Compile/SOAP12/Client.pm
 lib/XML/Compile/SOAP12/Server.pm
 lib/XML/Compile/SOAP12/xsd/2003-soap-encoding.xsd
 lib/XML/Compile/SOAP12/xsd/2003-soap-envelope.xsd
@@ -23,6 +26,8 @@ lib/XML/Compile/WSDL11/xsd/wsdl-soap12.xsd
 lib/XML/Compile/WSDL11/xsd/wsdl.xsd
 t/01use.t
 t/10soap11.t
+t/11fault11.t
+t/12must11.t
 t/50wsdl11.t
 t/TestTools.pm
 t/pod.t

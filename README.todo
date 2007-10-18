@@ -1,0 +1,23 @@
+On the moment, the following limitations exist:
+
+=over 4
+=item .
+Only document/literal use is supported, not XML-RPC.
+
+=item .
+Faults and headerfaults not correctly processed.
+
+=item .
+No real-life tests yet.
+
+=item .
+No encoding.
+
+=item .
+Only SOAP1.1 sufficiently implemented (probably)
+
+=item .
+and so on...
+
+=back
+

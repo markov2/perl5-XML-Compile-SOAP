@@ -14,6 +14,8 @@ use HTTP::Headers  ();
 use Time::HiRes   qw/time/;
 use XML::LibXML   ();
 
+my $parser = XML::LibXML->new;
+
 # (Microsofts HTTP Extension Framework)
 my $http_ext_id = 'http://schemas.xmlsoap.org/soap/envelope/';
 
@@ -90,20 +92,20 @@ agent (M<LWP::UserAgent>) as second.  You must return an answer
 See section L<DETAILS/Use of transport_hook>.
 
 =example create a client
- my $call = XML::Compile::SOAP::HTTPClient->new
+ my $exchange = XML::Compile::SOAP::HTTPClient->new
    ( address => 'http://www.stockquoteserver.com/StockQuote'
    , action  => 'http://example.com/GetLastTradePrice'
    );
 
- # $request and $answer are XML::LibXML trees
- my ($answer, $trace) = $call->($request);
+ # $request and $answer are XML::LibXML trees!
+ # see M<XML::Compile::SOAP::Client::compileClient()> for wrapper
+ my ($answer, $trace) = $exchange->($request);
 
  # drop $trace info immediately
  my $answer = $call->($request);
 
 =cut
 
-my $parser;
 sub new(@)
 {   my ($class, %args) = @_;
     my $ua       = $args{user_agent}   || $class->defaultUserAgent;
@@ -169,7 +171,6 @@ sub new(@)
           }
     }
 
-    $parser   ||= XML::LibXML->new;
     sub
     {   $request->content(ref $_[0] ? $_[0]->toString : $_[0]);
         my $start    = time;

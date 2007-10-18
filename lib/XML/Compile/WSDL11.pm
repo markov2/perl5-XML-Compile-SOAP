@@ -35,38 +35,34 @@ XML::Compile::WSDL11 - create SOAP messages defined by WSDL 1.1
 
  # preparation
  my $wsdl    = XML::Compile::WSDL11->new($xml);
- my $schemas = $wsdl->schemas;
+ $wsdl->addWSDL(...additional WSDL file...);
+ $wsdl->importDefinitions(...more schemas...);
+
+ my $call    = $wsdl->prepareClient('GetStockPrice');
+
  my $op      = $wsdl->operation('GetStockPrice');
+ my $call    = $op->prepareClient;
+
+ my $anwer   = $call->(%request);
+ my ($anwer, $trace) = $call->(%request);
 
  my @op_defs = $wsdl->operations;
 
- my $client  = $wsdl->prepareClient('GetStockPrice');
-
- my $server  = XML::Compile::SOAP::HTTPServer->new;
+ # Install XML::Compile::SOAP::Daemon
+ my $server  = XML::Compile::SOAP::HTTPDaemon->new;
  $server->actionsFromWSDL($wsdl);
  
 =chapter DESCRIPTION
 
-### This module is UNDER CONSTRUCTION.  It will only evolve with your
-help.  Please contact the author when you have something to contribute.
-On the moment, the development is primarily targeted to support the
-CPAN6 development.  You can change that with money or time.
-
-Missing: pure HTTP GET/POST bindings; multipart-mime; XML-RPC
-###
+B<< This module is UNDER CONSTRUCTION.
+Missing: pure HTTP GET/POST bindings, multipart-mime; XML-RPC >>
 
 An WSDL file defines a set of schemas and how to use the defined
 types using SOAP connections.  The parsing is based on the WSDL
-schema.  The WSDL definition can get constructed from multiple
-XML trees, each added with M<addWSDL()>.
+schema.
 
-WSDL defines object with QNAMES: name-space qualified names.  When you
-specify such a name, you have to explicitly mention the name-space IRI,
-not the prefix as used in the WSDL file.  This is because prefixes may
-change without notice.
-
-The defined QNAMES are only unique within their CLASS.  Defined
-CLASS types are: service, message, bindings, and portType.
+The WSDL definition can get constructed from multiple XML trees, each
+added with M<addWSDL()> (wsdl), or M<importDefinitions()> (schema).
 
 =chapter METHODS
 
@@ -83,7 +79,6 @@ M<XML::Compile::Schema::new()>
 Force to accept only WSDL descriptions which are in this namespace.  If
 not specified, the name-space is enforced which is found in the first WSDL
 document.
-
 =cut
 
 sub init($)
@@ -227,15 +222,17 @@ choice explicitly.  There is a very good reason to be not too flexible
 in this area: developers need to be aware when there are choices, where
 some flexibility is required.
 
-=requires service QNAME
-Optional when exactly one service is defined.
+=option  service QNAME
+=default service <only when just one>
+Required when more than one service is defined.
 
-=requires port NAME
-Optional when the selected service has only one port.
+=option  port NAME
+=default port <only when just one>
+Required when more than one port is defined.
 
 =requires operation NAME
-Optional when the parameter list starts with a NAME (which is an
-alternative for this option).  Also optional when there is only
+Ignored when the parameter list starts with a NAME (which is an
+alternative for this option).  Optional when there is only
 one operation defined within the portType.
 
 =cut
@@ -455,5 +452,33 @@ sub operations(@)
 
     @ops;
 }
+
+=chapter DETAILS
+
+=section Initializing SOAP operations via WSDL
+
+When you have a WSDL file, then SOAP is simple.  If there is no such file
+at hand, then it is still possible to use SOAP.  See the DETAILS chapter
+in M<XML::Compile::SOAP>.
+
+The WSDL file contains operations, which can be addressed by name.
+In this WSDL file, you need to find the name of the port to be used.
+In most cases, the WSDL has only one service, one port, one binding,
+and one portType and those names can therefore be omitted.  If there is
+a choice, then you are required to select one explicitly.
+
+ use XML::Compile::WSDL11 ();
+
+ # once in your program
+ my $wsdl   = XML::Compile::WSDL11->new('def.wsdl');
+
+ # once for each of the defined operations
+ my $call   = $wsdl->prepareClient('GetStockPrice');
+
+ # see XML::Compile::SOAP chapter DETAILS about call params
+ my $answer = $call->(%request);
+
+=cut
+
 
 1;

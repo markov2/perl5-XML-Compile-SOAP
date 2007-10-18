@@ -82,7 +82,8 @@ my $msg1_soap = <<__MESSAGE1;
 </SOAP-ENV:Envelope>
 __MESSAGE1
 
-# Create
+# Sender
+# produce message
 
 my $client1 = $soap->compileMessage
  ( SENDER => @msg1_struct
@@ -97,6 +98,7 @@ my $xml1 = $client1->($msg1_data);
 isa_ok($xml1, 'XML::LibXML::Node', 'produced XML');
 compare_xml($xml1, $msg1_soap);
 
+# Receiver
 # Interpret incoming message
 
 my $server1 = $soap->compileMessage(RECEIVER => @msg1_struct);
@@ -106,5 +108,4 @@ is(ref $server1, 'CODE', 'compiled a server');
 my $hash1 = $server1->($msg1_soap);
 is(ref $hash1, 'HASH', 'produced HASH');
 
-#warn Dumper $hash1;
 cmp_deeply($hash1, $msg1_data, "server parsed input");
