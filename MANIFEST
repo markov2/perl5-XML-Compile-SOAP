@@ -5,6 +5,7 @@ README.todo
 lib/XML/Compile/SOAP.pm
 lib/XML/Compile/SOAP/Client.pm
 lib/XML/Compile/SOAP/HTTPClient.pm
+lib/XML/Compile/SOAP/Server.pm
 lib/XML/Compile/SOAP/Tester.pm
 lib/XML/Compile/SOAP11.pm
 lib/XML/Compile/SOAP11/Client.pm

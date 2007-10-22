@@ -1,6 +1,13 @@
 
 === version history of XML::Compile::SOAP
 
+version 0.58: Mon Oct 22 10:53:30 CEST 2007
+
+	Fixes:
+
+	- XML::Compile::SOAP::Server was missing from the MANIFEST.
+	  Cpan-testers, [Slaven Rezic]
+
 version 0.57: Thu Oct 18 09:33:10 CEST 2007
 
 	SOAP11 might be working, partially.  No tests with real HTTP
