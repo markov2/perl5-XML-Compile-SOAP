@@ -9,22 +9,20 @@ use Log::Report 'xml-compile-soap', syntax => 'SHORT';
 use XML::Compile::Schema  ();
 use XML::Compile::SOAP    ();
 use XML::Compile::Util    qw/pack_type/;
+use XML::Compile::SOAP::Util qw/:wsdl11/;
 
 use XML::Compile::WSDL11::Operation ();
 
 use List::Util  qw/first/;
 use Data::Dumper;  # needs to go away
 
-my $base  = 'http://schemas.xmlsoap.org/wsdl';
-my $wsdl1 = "$base/";
-
 XML::Compile->addSchemaDirs(__FILE__);
 XML::Compile->knownNamespace
- (  $wsdl1         => 'wsdl.xsd'
- , "$base/soap/"   => 'wsdl-soap.xsd'
- , "$base/http/"   => 'wsdl-http.xsd'
- , "$base/mime/"   => 'wsdl-mime.xsd'
- , "$base/soap12/" => 'wsdl-soap12.xsd'
+ ( &WSDL11       => 'wsdl.xsd'
+ , &WSDL11SOAP   => 'wsdl-soap.xsd'
+ , &WSDL11HTTP   => 'wsdl-http.xsd'
+ , &WSDL11MIME   => 'wsdl-mime.xsd'
+ , &WSDL11SOAP12 => 'wsdl-soap12.xsd'
  );
 
 =chapter NAME
@@ -144,7 +142,7 @@ sub addWSDL($)
     my $schemas = $self->schemas;
     $schemas->importDefinitions($wsdlns);  # to understand WSDL
 
-    $wsdlns eq $wsdl1
+    $wsdlns eq WSDL11
         or error __x"don't known how to handle {wsdlns} WSDL files"
                , wsdlns => $wsdlns;
 
@@ -308,6 +306,7 @@ sub operation(@)
      , wsdl     => $self
      , port_op  => $port_op
      , bind_op  => $bind_op
+     , name     => $name
      );
 #warn Dumper $operation;
 

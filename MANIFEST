@@ -4,9 +4,11 @@ Makefile.PL
 README.todo
 lib/XML/Compile/SOAP.pm
 lib/XML/Compile/SOAP/Client.pm
+lib/XML/Compile/SOAP/Encoding.pm
 lib/XML/Compile/SOAP/HTTPClient.pm
 lib/XML/Compile/SOAP/Server.pm
 lib/XML/Compile/SOAP/Tester.pm
+lib/XML/Compile/SOAP/Util.pm
 lib/XML/Compile/SOAP11.pm
 lib/XML/Compile/SOAP11/Client.pm
 lib/XML/Compile/SOAP11/Server.pm
@@ -29,6 +31,8 @@ t/01use.t
 t/10soap11.t
 t/11fault11.t
 t/12must11.t
+t/13enc11.t
+t/14dec11.t
 t/50wsdl11.t
 t/TestTools.pm
 t/pod.t

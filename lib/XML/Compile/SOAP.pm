@@ -99,6 +99,9 @@ can be hidden for you)
 
 =requires envelope_ns URI
 =requires encoding_ns URI
+=requires schema_ns URI
+=option  schema_instance_ns URI
+=default schema_instance_ns C<<$schema_ns . '-instance'>>
 
 =option   media_type MIMETYPE
 =default  media_type C<application/soap+xml>
@@ -123,11 +126,16 @@ sub new($@)
 
 sub init($)
 {   my ($self, $args) = @_;
-    $self->{env}     = $args->{envelope_ns} || panic "no envelope namespace";
-    $self->{enc}     = $args->{encoding_ns} || panic "no encoding namespace";
-    $self->{mime}    = $args->{media_type}  || 'application/soap+xml';
+    $self->{envns}   = $args->{envelope_ns} || panic "no envelope namespace";
+    $self->{encns}   = $args->{encoding_ns} || panic "no encoding namespace";
+    $self->{schemans}= $args->{schema_ns}   || panic "no schema namespace";
+    $self->{mimens}  = $args->{media_type}  || 'application/soap+xml';
     $self->{schemas} = $args->{schemas}     || XML::Compile::Schema->new;
     $self->{version} = $args->{version}     || panic "no version string";
+
+    $self->{schemains} = $args->{schema_instance_ns}
+      || $self->{schemans}.'-instance';
+
     $self;
 }
 
@@ -135,11 +143,15 @@ sub init($)
 =method version
 =method envelopeNS
 =method encodingNS
+=method schemaNS
+=method schemaInstanceNS() {shift->{schemains}}
 =cut
 
 sub version()    {shift->{version}}
-sub envelopeNS() {shift->{env}}
-sub encodingNS() {shift->{enc}}
+sub envelopeNS() {shift->{envns}}
+sub encodingNS() {shift->{encns}}
+sub schemaNS()   {shift->{schemans}}
+sub schemaInstanceNS() {shift->{schemains}}
 
 =method schemas
 Returns the M<XML::Compile::Schema> object which contains the
@@ -148,18 +160,24 @@ knowledge about the types.
 
 sub schemas()    {shift->{schemas}}
 
-=method prefixPreferences TABLE
+=method prefixPreferences TABLE, NEW, [USED]
+NEW is a HASH or ARRAY-of-PAIRS which define prefix-to-uri relations,
+which are added to the list defined in the TABLE (a HASH-of-HASHes).
+When USED is set, then it will show-up in the output message.  At
+compile-time, the value of USED is auto-detect.
+
+This method is called for the soap specification preferred namespaces,
+and for your M<compileMessage(prefixes)>.
 =cut
 
-sub prefixPreferences($)
-{   my ($self, $table) = @_;
-    my %allns;
-    my @allns  = @$table;
+sub prefixPreferences($$;$)
+{   my ($self, $table, $new, $used) = @_;
+    my @allns  = ref $new eq 'ARRAY' ? @$new : %$new;
     while(@allns)
     {   my ($prefix, $uri) = splice @allns, 0, 2;
-        $allns{$uri} = {uri => $uri, prefix => $prefix};
+        $table->{$uri} = {uri => $uri, prefix => $prefix, used => $used};
     }
-    \%allns;
+    $table;
 }
 
 =section Single messages
@@ -237,10 +255,18 @@ Message components can be encoded, as defined in WSDL.   Typically, some
 message part has a binding C<< use="encoded" >> and C<encodingStyle>
 and C<namespace> parameters.  The encodings are organized per label.
 
+=option  style 'document'|'rpc'
+=default style 'document'
+
+=option  prefixes HASH
+=default prefixes {}
+For the sender only: add additional prefix definitions.  All provided
+names will be used always.
 =cut
 
 sub compileMessage($@)
 {   my ($self, $direction, %args) = @_;
+    $args{style} ||= 'document';
 
       $direction eq 'SENDER'   ? $self->sender(\%args)
     : $direction eq 'RECEIVER' ? $self->receiver(\%args)
@@ -262,7 +288,12 @@ sub sender($)
     error __"option 'roles' only for readers" if $args->{roles};
 
     my $envns  = $self->envelopeNS;
-    my $allns  = $self->prefixPreferences($args->{prefix_table} || []);
+    my $allns  = $self->prefixPreferences({}, $args->{prefix_table}, 0);
+    $self->prefixPreferences($allns, $args->{prefixes}, 1)
+        if $args->{prefixes};
+
+    $allns->{$self->schemaInstanceNS}{used}++
+        if $args->{style} eq 'rpc';
 
     # Translate message parts
 
@@ -645,6 +676,25 @@ sub readerEncstyleHook()
    { before => $before, after => $after };
 }
 
+
+#------------------------------------------------
+
+=section Transcoding
+SOAP defines encodings, especially for XML-RPC.
+=cut
+
+sub startEncoding(@)
+{   my ($self, %args) = @_;
+    require XML::Compile::SOAP::Encoding;
+    $self->_init_encoding(\%args);
+}
+
+sub startDecoding(@)
+{   my ($self, %args) = @_;
+    require XML::Compile::SOAP::Encoding;
+    $self->_init_decoding(\%args);
+}
+
 #------------------------------------------------
 
 =section Helpers
@@ -807,7 +857,8 @@ taken from the SOAP11 specs section 1.3 example 1.
 
  # for simplification
  my $TestNS   = 'http://test-types';
- my $SchemaNS = 'http://www.w3.org/2001/XMLSchema';
+ use XML::Compile::Util qw/SCHEMA2001/;
+ my $SchemaNS = SCHEMA2001;
 
 First, the schema (hopefully someone else created for you, because they
 can be quite hard to create correctly) is in file C<myschema.xsd>

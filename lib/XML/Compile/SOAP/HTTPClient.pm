@@ -5,6 +5,7 @@ package XML::Compile::SOAP::HTTPClient;
 use base 'XML::Compile::SOAP::Client';
 
 use Log::Report 'xml-compile-soap', syntax => 'SHORT';
+use XML::Compile::SOAP::Util qw/SOAP11ENV/;
 
 use LWP            ();
 use LWP::UserAgent ();
@@ -17,7 +18,7 @@ use XML::LibXML   ();
 my $parser = XML::LibXML->new;
 
 # (Microsofts HTTP Extension Framework)
-my $http_ext_id = 'http://schemas.xmlsoap.org/soap/envelope/';
+my $http_ext_id = SOAP11ENV;
 
 =chapter NAME
 XML::Compile::SOAP::HTTPClient - exchange SOAP via HTTP

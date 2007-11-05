@@ -91,7 +91,8 @@ my $xml_service = <<'__STOCKQUOTESERVICE_WSDL';
         location="http://example.com/stockquote/stockquote.wsdl"/>
 
     <binding name="StockQuoteSoapBinding" type="defs:StockQuotePortType">
-        <soap:binding style="document" transport="http://schemas.xmlsoap.org/soap/http"/>
+        <soap:binding style="document"
+           transport="http://schemas.xmlsoap.org/soap/http"/>
         <operation name="GetLastTradePrice">
            <soap:operation soapAction="http://example.com/GetLastTradePrice"/>
            <input>

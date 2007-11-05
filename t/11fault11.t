@@ -12,11 +12,12 @@ use Data::Dumper;
 $Data::Dumper::Indent = 1;
 
 use XML::Compile::SOAP11::Client;
+use XML::Compile::SOAP::Util qw/SOAP11ENV/;
 
 use Test::More tests => 37;
 use XML::LibXML;
 
-my $soap11_env = 'http://schemas.xmlsoap.org/soap/envelope/';
+my $soap11_env = SOAP11ENV;
 
 # elementFormDefault="qualified">
 my $schema = <<__HELPERS;

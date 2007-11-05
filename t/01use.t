@@ -4,7 +4,7 @@ use warnings;
 use strict;
 
 use lib 'lib', 't';
-use Test::More tests => 13;
+use Test::More tests => 15;
 use TestTools;
 
 # The versions of the following packages are reported to help understanding
@@ -32,6 +32,8 @@ foreach my $package (@show_versions)
 warn "libxml2 ".XML::LibXML::LIBXML_DOTTED_VERSION()."\n";
 
 require_ok('XML::Compile::SOAP');
+require_ok('XML::Compile::SOAP::Util');
+require_ok('XML::Compile::SOAP::Encoding');
 require_ok('XML::Compile::SOAP11');
 require_ok('XML::Compile::SOAP11::Client');
 require_ok('XML::Compile::SOAP11::Server');

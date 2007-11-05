@@ -6,21 +6,20 @@ use base 'XML::Compile::SOAP';
 
 use Log::Report 'xml-compile-soap', syntax => 'SHORT';
 
-my $base  = 'http://www.w3.org/2003/05';
+use XML::Compile::SOAP::Util qw/:soap12/;
 
-my $role  = "$base/soap-envelope/role";
 my %roles =
- ( NEXT     => "$role/next"
- , NONE     => "$role/none"
- , ULTIMATE => "$role/ultimateReceiver"
+ ( NEXT     => SOAP12NEXT
+ , NONE     => SOAP12NONE
+ , ULTIMATE => SOAP12ULTIMATE
  );
 my %rroles = reverse %roles;
 
 XML::Compile->addSchemaDirs(__FILE__);
 XML::Compile->knownNamespace
- ( "$base/soap-encoding" => '2003-soap-encoding.xsd'
- , "$base/soap-envelope" => '2003-soap-envelope.xsd'
- , "$base/soap-rpc"      => '2003-soap-rpc.xsd'
+ ( &SOAP12ENC => '2003-soap-encoding.xsd'
+ , &SOAP12ENV => '2003-soap-envelope.xsd'
+ , &SOAP12RPC => '2003-soap-rpc.xsd'
  );
 
 =chapter NAME
@@ -64,11 +63,11 @@ sub new($@)
 sub init($)
 {   my ($self, $args) = @_;
     $args->{version}               ||= 'SOAP12';
-    my $env = $args->{envelope_ns} ||= "$base/soap-envelope";
-    my $enc = $args->{encoding_ns} ||= "$base/soap-encoding";
+    my $env = $args->{envelope_ns} ||= SOAP12ENV;
+    my $enc = $args->{encoding_ns} ||= SOAP12ENC;
     $self->SUPER::init($args);
 
-    my $rpc = $self->{rpc} = $args->{rpc} || "$base/soap-rpc";
+    my $rpc = $self->{rpc} = $args->{rpc} || SOAP12RPC;
 
     my $schemas = $self->schemas;
     $schemas->importDefinitions($env);

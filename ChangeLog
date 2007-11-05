@@ -1,6 +1,20 @@
 
 === version history of XML::Compile::SOAP
 
+version 0.59:
+
+	Changes:
+
+	- requires XML::Compile 0.57
+
+	Improvements:
+
+	- added XML::Compile::SOAP::Util, where all often-used URIs
+	  are now defined.
+
+	- added XML::Compile::SOAP::Encoding, for XML-RPC.
+	  tests in t/13enc11.t and t/14dec11.t
+
 version 0.58: Mon Oct 22 10:53:30 CEST 2007
 
 	Fixes:
