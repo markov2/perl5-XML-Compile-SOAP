@@ -1,7 +1,22 @@
 
 === version history of XML::Compile::SOAP
 
-version 0.59:
+version 0.60: Tue Nov  6 13:52:45 CET 2007
+
+	Changes:
+
+	- requires XML::Compile 0.58
+
+	- Empty parameter list at operation will be passed to a
+	  single body element.
+
+	Improvements:
+
+	- XML::Compile::SOAP::Encoding::decSimplify()
+
+	- Working(!) example included.
+
+version 0.59: Mon Nov  5 15:57:30 CET 2007
 
 	Changes:
 

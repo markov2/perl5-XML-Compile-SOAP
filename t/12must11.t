@@ -88,10 +88,10 @@ my $hash2 = $receiver2->($msg1_soap);
 ok(defined $hash2, 'received2 works');
 is(ref $hash2, 'HASH', 'produced HASH');
 
-ok(defined $hash2->{Fault});
-ok(defined $hash2->{Fault}{faultcode});
-ok(defined $hash2->{Fault}{faultstring});
-ok(defined $hash2->{header});
+ok(defined $hash2->{Fault},              'fault');
+ok(defined $hash2->{Fault}{faultcode},   'faultcode');
+ok(defined $hash2->{Fault}{faultstring}, 'faultstring');
+ok(defined $hash2->{header},             'header');
 
 #
 # any sender must accept faults
@@ -102,11 +102,11 @@ my $msg2_soap = <<__FAULT;
    xmlns:SOAP-ENV="http://schemas.xmlsoap.org/soap/envelope/">
    <SOAP-ENV:Body>
      <SOAP-ENV:Fault>
-       <SOAP-ENV:faultcode>SOAP-ENV:MustUnderstand</SOAP-ENV:faultcode>
-       <SOAP-ENV:faultstring>
+       <faultcode>SOAP-ENV:MustUnderstand</faultcode>
+       <faultstring>
           SOAP mustUnderstand {http://test-types}good
-       </SOAP-ENV:faultstring>
-       <SOAP-ENV:detail/>
+       </faultstring>
+       <detail/>
      </SOAP-ENV:Fault>
    </SOAP-ENV:Body>
 </SOAP-ENV:Envelope>

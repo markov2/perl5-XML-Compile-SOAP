@@ -71,8 +71,6 @@ sub new(@)
 sub init()
 {   my $self = shift;
     my $name = $self->name;
-use Carp;
-confess %$self unless $name;
 
     # autodetect namespaces used
     my $port = $self->port;

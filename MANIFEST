@@ -2,6 +2,9 @@ ChangeLog
 MANIFEST
 Makefile.PL
 README.todo
+examples/namesservice/namesservice.wsdl
+examples/namesservice/namesservice.xsd
+examples/namesservice/run.pl
 lib/XML/Compile/SOAP.pm
 lib/XML/Compile/SOAP/Client.pm
 lib/XML/Compile/SOAP/Encoding.pm

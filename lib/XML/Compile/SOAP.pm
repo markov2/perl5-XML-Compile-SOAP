@@ -4,8 +4,9 @@ use strict;
 package XML::Compile::SOAP;
 
 use Log::Report 'xml-compile-soap', syntax => 'SHORT';
-use XML::Compile        ();
-use XML::Compile::Util  qw/pack_type unpack_type/;
+use XML::Compile         ();
+use XML::Compile::Util   qw/pack_type unpack_type/;
+use XML::Compile::Schema ();
 
 =chapter NAME
 XML::Compile::SOAP - base-class for SOAP implementations
@@ -332,18 +333,28 @@ sub sender($)
           my %copy  = %$values;  # do not destroy the calling hash
           my %data;
 
-          $data{$_}         = delete $copy{$_} for qw/Header Body/;
-          $data{Body}     ||= {};
+          $data{$_}   = delete $copy{$_} for qw/Header Body/;
+          $data{Body} ||= {};
 
-          $data{Header}{$_} = delete $copy{$_} for @$hlabels;
-          $data{Body}{$_}   = delete $copy{$_} for @$blabels, @$flabels;
-
-          if(!keys %copy) { ; }
-          elsif(@$blabels==1 && !$data{Body}{$blabels->[0]})
-          {   $data{Body}{$blabels->[0]} = \%copy;
+          foreach my $label (@$hlabels)
+          {   defined $copy{$label} or next;
+              error __x"header part {name} specified twice", name => $label
+                  if defined $data{Header}{$label};
+              $data{Header}{$label} ||= delete $copy{$label}
           }
-          else
-          {   error __x"blocks not used: {blocks}", blocks => [keys %copy];
+
+          foreach my $label (@$blabels, @$flabels)
+          {   defined $copy{$label} or next;
+              error __x"body part {name} specified twice", name => $label
+                  if defined $data{Body}{$label};
+              $data{Body}{$label} ||= delete $copy{$label};
+          }
+
+          if(@$blabels==2 && !keys %{$data{Body}} )  # ignore 'Fault'
+          {   $data{Body}{$blabels->[0]} = \%copy; # even when no params
+          }
+          elsif(keys %copy)
+          {   error __x"call data not used: {blocks}", blocks => [keys %copy];
           }
 
           $envelope->($doc, \%data);
@@ -676,11 +687,13 @@ sub readerEncstyleHook()
    { before => $before, after => $after };
 }
 
-
 #------------------------------------------------
 
 =section Transcoding
 SOAP defines encodings, especially for XML-RPC.
+
+=subsection Encoding
+=subsection Decoding
 =cut
 
 sub startEncoding(@)

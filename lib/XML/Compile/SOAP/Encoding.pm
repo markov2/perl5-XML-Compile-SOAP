@@ -90,7 +90,7 @@ a packed TYPE) into a prefixed notation.
 The complication is that the NAMESPACE may not naturally have a prefixed
 assigned to it: the produced SOAP message is the result of compilation,
 and only the namespaces which are registered to be used during compile-time
-are added to the list on the top-level.  See M<compileMessage(prefix_table)>.
+are added to the list on the top-level.  See M<compileMessage(prefixes)>.
 =cut
 
 sub prefixed($;$)
@@ -419,16 +419,19 @@ sub _flatten_multidim($$$)
 Each call to this method will restart the cache of the decoding
 internals.
 
-Currently B<not supported>, is the automatic decoding of:
-
-=over 4
-=item elements which inherit from SOAP-ENC:Array.
-=back
+Currently B<not supported>, is the automatic decoding of elements which
+I<inherit> from C<SOAP-ENC:Array>.  If you encounter these, you have to
+play with hooks.
 
 =option  reader_opts HASH
 =default reader_opts {}
 Extend or overrule the default reader options.  Available options
 are shown in M<XML::Compile::Schema::compile()>.
+
+=option  simplify BOOLEAN
+=default simplify <false>
+Call M<decSimplify()> automatically at the end of M<dec()>, so producing
+an easily accessible output tree.
 =cut
 
 sub _init_decoding($)
@@ -443,7 +446,7 @@ sub _init_decoding($)
       , replace => sub { $self->_dec_array_hook(@_) }
       };
 
-    $self->{dec} = {reader_opts => [%$r]};
+    $self->{dec} = {reader_opts => [%$r], simplify => $opts->{simplify}};
     $self;
 }
 
@@ -453,9 +456,11 @@ Data::Dumper to figure-out what the produced output is: it is a guess,
 so may not be perfect (do not use XML-RPC but document style soap for
 good results).
 
-In LIST context, the HASH with decoded data and a HASH with the
-id index are returned.  In SCALAR context, only the decoded data is
-returned.
+In LIST context, the decoded data is returned and a HASH with the
+C<id> index are returned.  In SCALAR context, only the decoded data is
+returned.  When M<startDecoding(simplify)> is true, then the returned
+data is concise but may be sloppy.  Otherwise, a HASH is returned
+containing as much info as could be extracted from the tree.
 =cut
 
 sub dec(@)
@@ -466,6 +471,9 @@ sub dec(@)
 
     my $index = $self->{dec}{index};
     $self->_dec_resolve_hrefs($index);
+
+    $data = $self->decSimplify($data)
+        if $self->{dec}{simplify};
 
     wantarray ? ($data, $index) : $data;
 }
@@ -595,7 +603,6 @@ sub _dec_resolve_hrefs($)
     while(@$hrefs)
     {   my ($to, $where) = (shift @$hrefs, shift @$hrefs);
         my $dest = $index->{$to};
-#warn "TO $to, $dest";
         unless($dest)
         {   warning __x"cannot find id for href {name}", name => $to;
             next;
@@ -606,7 +613,6 @@ sub _dec_resolve_hrefs($)
 
 sub _dec_array_hook($$$)
 {   my ($self, $node, $args, $where, $local) = @_;
-#warn "DECODE ARRAY HOOK", $node->toString;
 
     my $at = $node->getAttributeNS($self->encodingNS, 'arrayType')
         or return $node;
@@ -665,6 +671,42 @@ sub _dec_array_multi_slice($$$)
 
     [ map { $self->_dec_array_multi_slice($childs, $basetype, \@dims) }
         1..$rows ]
+}
+
+=method decSimplify TREE, OPTIONS
+Simplify the TREE of output produced by M<dec()> to contain only
+data.  Of course, this will remove useful information.
+
+From each of the HASHes in the tree, the C<_NAME>, C<_TYPE>, C<id>,
+and any/anyAttribute fields are removed.  If only a C<_> is left over,
+that related value will replace the HASH as a whole.
+=cut
+
+sub decSimplify($@)
+{   my ($self, $tree, %opts) = @_;
+    $self->_dec_simple($tree, \%opts);
+}
+
+sub _dec_simple($$)
+{   my ($self, $tree, $opts) = @_;
+
+    ref $tree
+        or return $tree;
+
+    if(ref $tree eq 'ARRAY')
+    {   my @a = map { $self->_dec_simple($_, $opts) } @$tree;
+        return @a==1 ? $a[0] : \@a;
+    }
+
+    ref $tree eq 'HASH'
+        or return $tree;
+
+    my %h;
+    while(my ($k, $v) = each %$tree)
+    {   next if $k =~ m/^(?:_NAME$|_TYPE$|id$|\{)/;
+        $h{$k} = ref $v ? $self->_dec_simple($v, $opts) : $v;
+    }
+    keys(%h)==1 && exists $h{_} ? $h{_} : \%h;
 }
 
 1;

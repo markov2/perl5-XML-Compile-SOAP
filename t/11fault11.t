@@ -102,12 +102,12 @@ my $msg2_soap = <<__MSG2;
    xmlns:SOAP-ENV="$soap11_env">
   <SOAP-ENV:Body>
     <SOAP-ENV:Fault>
-      <SOAP-ENV:faultcode>SOAP-ENV:Server.first</SOAP-ENV:faultcode>
-      <SOAP-ENV:faultstring>my mistake</SOAP-ENV:faultstring>
-      <SOAP-ENV:faultactor>http://schemas.xmlsoap.org/soap/actor/next</SOAP-ENV:faultactor>
-      <SOAP-ENV:detail>
+      <faultcode>SOAP-ENV:Server.first</faultcode>
+      <faultstring>my mistake</faultstring>
+      <faultactor>http://schemas.xmlsoap.org/soap/actor/next</faultactor>
+      <detail>
          <x0:fault_one><help>please ignore</help></x0:fault_one>
-      </SOAP-ENV:detail>
+      </detail>
     </SOAP-ENV:Fault>
   </SOAP-ENV:Body>
 </SOAP-ENV:Envelope>

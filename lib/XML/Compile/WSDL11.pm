@@ -308,7 +308,6 @@ sub operation(@)
      , bind_op  => $bind_op
      , name     => $name
      );
-#warn Dumper $operation;
 
     $operation;
 }
