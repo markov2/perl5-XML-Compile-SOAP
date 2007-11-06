@@ -4,7 +4,7 @@ use 5.008;
 
 WriteMakefile
  ( NAME	 	=> 'XML::Compile::SOAP'
- , VERSION	=> 0.60
+ , VERSION	=> '0.61'
  , PREREQ_PM    =>
    { XML::Compile    => 0.58
    , Log::Report     => 0.11
@@ -13,7 +13,7 @@ WriteMakefile
 
    , Test::More      => 0.54
    , Test::Deep      => 0.095
-   , Test::Pod       => 1.00
+   , Test::Pod       => '1.00'
    }
  , AUTHOR       => 'Mark Overmeer'
  , ABSTRACT     => 'XML over SOAP, client side'

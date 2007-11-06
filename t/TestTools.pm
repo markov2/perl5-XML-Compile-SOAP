@@ -260,7 +260,6 @@ sub compare_xml($$;$)
     if(!defined $dump) { ; }
     elsif($dump =~ m/\n|\s\s/)
     {   # output expects superfluous blanks
-warn "Duh?";
         $expect =~ s/\n\z//;
     }
     else

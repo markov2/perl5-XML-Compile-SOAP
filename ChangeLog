@@ -1,6 +1,12 @@
 
 === version history of XML::Compile::SOAP
 
+version 0.61: Tue Nov  6 13:56:54 CET 2007
+
+	Fixes:
+
+	- expected installation problmes due to version number.
+
 version 0.60: Tue Nov  6 13:52:45 CET 2007
 
 	Changes:
