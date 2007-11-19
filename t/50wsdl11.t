@@ -16,8 +16,9 @@ use Data::Dumper;
 $Data::Dumper::Indent = 1;
 
 use XML::Compile::WSDL11;
+use XML::Compile::Transport::SOAPHTTP;
 
-use Test::More tests => 39;
+use Test::More tests => 42;
 use Test::Deep;
 
 my $wsdlns = 'http://schemas.xmlsoap.org/wsdl/';
@@ -222,11 +223,40 @@ is($op->soapVersion, 'SOAP11');
 # create client
 #
 
-my $client = $op->prepareClient;
-ok(defined $client, 'prepared client');
+sub fake_server($$)
+{  my ($request, $trace) = @_;
+   my $content = $request->decoded_content;
+   compare_xml($content, <<__EXPECTED, 'fake server received');
+<SOAP-ENV:Envelope
+   xmlns:x0="http://example.com/stockquote/schemas"
+   xmlns:SOAP-ENV="http://schemas.xmlsoap.org/soap/envelope/">
+  <SOAP-ENV:Body>
+     <x0:TradePriceRequest>
+        <tickerSymbol>IBM</tickerSymbol>
+     </x0:TradePriceRequest>
+  </SOAP-ENV:Body>
+</SOAP-ENV:Envelope>
+__EXPECTED
+
+   HTTP::Response->new(200, 'answer manually created'
+    , [ 'Content-Type' => 'text/xml' ]
+    , <<__ANSWER);
+<SOAP-ENV:Envelope
+   xmlns:x0="http://example.com/stockquote/schemas"
+   xmlns:SOAP-ENV="http://schemas.xmlsoap.org/soap/envelope/">
+  <SOAP-ENV:Body>
+     <x0:TradePrice>
+         <price>3.14</price>
+     </x0:TradePrice>
+  </SOAP-ENV:Body>
+</SOAP-ENV:Envelope>
+__ANSWER
+}
+
+my $client = $op->compileClient(transport_hook => \&fake_server);
+ok(defined $client, 'compiled client');
 isa_ok($client, 'CODE');
 
-__END__
-
-my $answer = $client->(body => { tickerSymbol => 'IBM' });
-warn Dumper $answer;
+my $answer = $client->(tickerSymbol => 'IBM');
+ok(defined $answer, 'got answer');
+cmp_deeply($answer, {body => {price => 3.14}});  # body is the name of the part

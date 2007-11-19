@@ -36,10 +36,10 @@ XML::Compile::WSDL11 - create SOAP messages defined by WSDL 1.1
  $wsdl->addWSDL(...additional WSDL file...);
  $wsdl->importDefinitions(...more schemas...);
 
- my $call    = $wsdl->prepareClient('GetStockPrice');
+ my $call    = $wsdl->compileClient('GetStockPrice');
 
  my $op      = $wsdl->operation('GetStockPrice');
- my $call    = $op->prepareClient;
+ my $call    = $op->compileClient;
 
  my $anwer   = $call->(%request);
  my ($anwer, $trace) = $call->(%request);
@@ -53,7 +53,7 @@ XML::Compile::WSDL11 - create SOAP messages defined by WSDL 1.1
 =chapter DESCRIPTION
 
 B<< This module is UNDER CONSTRUCTION.
-Missing: pure HTTP GET/POST bindings, multipart-mime; XML-RPC >>
+Missing: pure HTTP GET/POST bindings, multipart-mime; SOAP-RPC >>
 
 An WSDL file defines a set of schemas and how to use the defined
 types using SOAP connections.  The parsing is based on the WSDL
@@ -312,26 +312,26 @@ sub operation(@)
     $operation;
 }
 
-=method prepareClient [NAME], OPTIONS
+=method compileClient [NAME], OPTIONS
 Creates temporarily an M<XML::Compile::WSDL11::Operation> with M<operation()>,
-and then calls C<prepareClient()> on that; an usual combination.
+and then calls C<compileClient()> on that; an usual combination.
 
 As OPTIONS are available the combination of all possibilities for
-M<operation()> and all of M<XML::Compile::WSDL11::Operation::prepareClient()>.
+M<operation()> and all of M<XML::Compile::WSDL11::Operation::compileClient()>.
 For instance, C<transport_hook>.
 =cut
 
-sub prepareClient(@)
+sub compileClient(@)
 {   my $self = shift;
     unshift @_, 'operation' if @_ % 2;
     my $op   = $self->operation(@_) or return ();
-    $op->prepareClient(@_);
+    $op->compileClient(@_);
 }
 
 =section Inspection
 
 All of the following methods are usually NOT meant for end-users. End-users
-should stick to the M<operation()> and M<prepareClient()> methods.
+should stick to the M<operation()> and M<compileClient()> methods.
 
 =method index [CLASS, [QNAME]]
 With a CLASS and QNAME, it returns one WSDL definition HASH or undef.
@@ -471,7 +471,7 @@ a choice, then you are required to select one explicitly.
  my $wsdl   = XML::Compile::WSDL11->new('def.wsdl');
 
  # once for each of the defined operations
- my $call   = $wsdl->prepareClient('GetStockPrice');
+ my $call   = $wsdl->compileClient('GetStockPrice');
 
  # see XML::Compile::SOAP chapter DETAILS about call params
  my $answer = $call->(%request);

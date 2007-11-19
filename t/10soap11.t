@@ -109,3 +109,4 @@ my $hash1 = $server1->($msg1_soap);
 is(ref $hash1, 'HASH', 'produced HASH');
 
 cmp_deeply($hash1, $msg1_data, "server parsed input");
+

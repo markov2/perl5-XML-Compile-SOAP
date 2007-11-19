@@ -25,7 +25,7 @@ XML::Compile::SOAP::Tester - test SOAP without daemon
 
  use XML::Compile::WSDL11 ();
  my $wsdl    = XML::Compile::WSDL11->new('my_wsdl.xml');
- my $call    = $wsdl->prepareClient($action);
+ my $call    = $wsdl->compileClient($action);
  $tester->fromWSDL($wsdl);
  $tester->addCallback($action, \&get_stock_price);
 

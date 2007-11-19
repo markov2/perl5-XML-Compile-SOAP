@@ -5,7 +5,7 @@ package XML::Compile::SOAP;  #!!!
 
 use Log::Report 'xml-compile-soap', syntax => 'SHORT';
 use List::Util qw/min first/;
-use XML::Compile::Util qw/odd_elements/;
+use XML::Compile::Util qw/odd_elements SCHEMA2001/;
 
 =chapter NAME
 XML::Compile::SOAP::Encoding - SOAP encoding
@@ -24,7 +24,7 @@ XML::Compile::SOAP::Encoding - SOAP encoding
 
  # create: <code xsi:type="xsd:int">43</code>
  my $int = pack_type SCHEMA2001, 'int';
- my $xml = $client->typed(code => $int, 43);
+ my $xml = $client->typed($int, code => 43);
 
  # create: <ref href="#id-1"/>  (xyz get's id if it hasn't)
  my $xml = $client->href('ref', $xyz);
@@ -56,7 +56,7 @@ code again.  Of course, you can also C<use> this package explicitly.
 =chapter METHODS
 
 =section Transcoding
-SOAP defines encodings, especially for XML-RPC.
+SOAP defines encodings, especially for SOAP-RPC.
 
 =subsection Encoding
 
@@ -64,8 +64,25 @@ SOAP defines encodings, especially for XML-RPC.
 This needs to be called before any encoding routine, because it
 initializes the internals.  Each call will reset all compiled
 cached translator routines.
+
+When you use the standard RPC-encoded interface, this will be
+called for you.
+
 =requires doc XML::LibXML::Document
-=requires namespaces HASH
+
+=option  namespaces HASH|ARRAY
+=default namespaces {}
+Like M<XML::Compile::Schema::compile(output_namespaces)>, this can
+be a HASH (see example) or an ARRAY with prefix-uri pairs.
+
+=example
+ my %ns;
+ $ns{$MYNS} = {uri => $MYNS, prefix => 'm'};
+ $soap->startEncoding(doc => $doc, namespaces => \%ns);
+
+ # or
+ $soap->startEncoding(doc => $doc, namespaces => [ m => $MYNS ]);
+ 
 =cut
 
 # startEncoding is always implemented, loading this class
@@ -76,11 +93,40 @@ sub _init_encoding($)
     $doc && UNIVERSAL::isa($doc, 'XML::LibXML::Document')
         or error __x"encoding required an XML document to work with";
 
-    my $allns = $args->{namespaces}
-        or error __x"encoding requires prepared namespace table";
+    my $ns = $args->{namespaces} || {};
+    if(ref $ns eq 'ARRAY')
+    {   my @ns = @$ns;
+        $ns    = {};
+        while(@ns)
+        {   my ($prefix, $uri) = (shift @ns, shift @ns);
+            $ns->{$uri} = {uri => $uri, prefix => $prefix};
+        }
+    }
 
+    $args->{namespaces} = $ns;
     $self->{enc} = $args;
+
+    $self->encAddNamespaces
+      ( xsd => $self->schemaNS
+      , xsi => $self->schemaInstanceNS
+      );
+
     $self;
+}
+
+=method encAddNamespaces PAIRS
+Add prefix definitions for this one encoding cyclus.  Each time
+M<startEncoding()> is called, the table is reset.  The namespace
+table is returned.
+=cut
+
+sub encAddNamespaces(@)
+{   my $ns = shift->{enc}{namespaces};
+    while(@_)
+    {   my ($prefix, $uri) = (shift, shift);
+        $ns->{$uri} = {uri => $uri, prefix => $prefix};
+    }
+    $ns;
 }
 
 =method prefixed TYPE|(NAMESPACE,LOCAL)
@@ -100,11 +146,6 @@ sub prefixed($;$)
 
     my $def  =  $self->{enc}{namespaces}{$ns}
         or error __x"namespace prefix for your {ns} not defined", ns => $ns;
-
-    # not used at compile-time, but now we see we needed it.
-    $def->{used}
-      or warning __x"explicitly pass namespace {ns} in compileMessage(prefixes)"
-            , ns => $ns;
 
     $def->{prefix}.':'.$local;
 }
@@ -141,18 +182,22 @@ sub enc($$$)
     $write->($enc->{doc}, {_ => $value, id => $id} );
 }
 
-=method typed NAME, TYPE, VALUE
+=method typed TYPE, NAME, VALUE
 A "typed" element shows its type explicitly, via the "xsi:type" attribute.
 The VALUE will get processed via an auto-generated XML::Compile writer,
-so validated.  The processing is cashed.  When VALUE already is an
-M<XML::LibXML::Element>, then no processing nor value checking will be
-performed.
+so validated.  The processing is cashed.
+
+When VALUE already is an M<XML::LibXML::Element>, then no processing
+nor value checking will be performed.
+
+BE WARNED: the TYPE must be a fully qualified type.
 =cut
 
 sub typed($$$)
-{   my ($self, $name, $type, $value) = @_;
+{   my ($self, $type, $name, $value) = @_;
     my $enc = $self->{enc};
-    my $el  = $enc->{doc}->createElement($name);
+    my $doc = $enc->{doc};
+    my $el  = $doc->createElement($name);
 
     my $typedef = $self->prefixed($self->schemaInstanceNS,'type');
     $el->setAttribute($typedef, $self->prefixed($type));
@@ -163,11 +208,25 @@ sub typed($$$)
          , output_namespaces  => $enc->{namespaces}
          , include_namespaces => 0
          );
-        $value = $write->($enc->{doc}, $value);
+        $value = $write->($doc, $value);
     }
 
     $el->addChild($value);
     $el;
+}
+
+=method struct TYPE, CHILDS
+Create a structure, an element with childs.  The CHILDS must be fully
+prepared M<XML::LibXML::Element> objects.
+=cut
+
+sub struct($@)
+{   my ($self, $type, @childs) = @_;
+    my $typedef = $self->prefixed($type);
+    my $doc     = $self->{enc}{doc};
+    my $struct  = $doc->createElement($typedef);
+    $struct->addChild($_) for @childs;
+    $struct;
 }
 
 =method element NAME, TYPE, VALUE
@@ -453,7 +512,7 @@ sub _init_decoding($)
 =method dec XMLNODES
 Decode the XMLNODES (list of M<XML::LibXML::Element> objects).  Use
 Data::Dumper to figure-out what the produced output is: it is a guess,
-so may not be perfect (do not use XML-RPC but document style soap for
+so may not be perfect (do not use RPC but document style soap for
 good results).
 
 In LIST context, the decoded data is returned and a HASH with the
@@ -566,10 +625,21 @@ sub _dec_other($)
     my $local = $node->localName;
 
     my $type = pack_type $ns, $local;
-    my $read = $self->_dec_reader($type)
-        or return $node;
+    my $data;
 
-    my $data = $read->($node);
+    my $read = try { $self->_dec_reader($type) };
+    if($@)
+    {    # warn $@->wasFatal->message;  --> element not found
+         # Element not known, so we must autodetect the type
+         if($node->hasChildNodes)
+         {   my @childs = grep {$_->isa('XML::LibXML::Element')} $node->childNodes;
+             $data = { $local => $self->_dec(\@childs) };
+         }
+    }
+    else
+    {    $data = $read->($node);
+    }
+
     $data = { _ => $data } if ref $data ne 'HASH';
     $data->{_NAME} = $type;
 
@@ -684,6 +754,7 @@ that related value will replace the HASH as a whole.
 
 sub decSimplify($@)
 {   my ($self, $tree, %opts) = @_;
+    defined $tree or return ();
     $self->_dec_simple($tree, \%opts);
 }
 

@@ -4,7 +4,7 @@ use warnings;
 use strict;
 
 use lib 'lib', 't';
-use Test::More tests => 15;
+use Test::More tests => 16;
 use TestTools;
 
 # The versions of the following packages are reported to help understanding
@@ -41,8 +41,9 @@ require_ok('XML::Compile::SOAP12');
 require_ok('XML::Compile::SOAP12::Client');
 require_ok('XML::Compile::SOAP12::Server');
 require_ok('XML::Compile::SOAP::Client');
-require_ok('XML::Compile::SOAP::HTTPClient');
 require_ok('XML::Compile::SOAP::Server');
 require_ok('XML::Compile::SOAP::Tester');
+require_ok('XML::Compile::Transport');
+require_ok('XML::Compile::Transport::SOAPHTTP');
 require_ok('XML::Compile::WSDL11');
 require_ok('XML::Compile::WSDL11::Operation');

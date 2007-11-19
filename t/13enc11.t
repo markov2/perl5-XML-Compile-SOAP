@@ -56,7 +56,7 @@ compare_xml($enc2, '<SOAP-ENC:int id="hhtg">42</SOAP-ENC:int>');
 # typed()
 #
 
-my $typed1 = $soap->typed('code', pack_type(SCHEMA2001, 'int'), 43);
+my $typed1 = $soap->typed(pack_type(SCHEMA2001, 'int'), code => 43);
 compare_xml($typed1, '<code xsi:type="xsd:int">43</code>');
 
 #
@@ -117,22 +117,22 @@ __XML
 
 # SOAP11 NOTE example 3
 
-my $e3a = $soap->typed(thing => $int, 12345);
+my $e3a = $soap->typed($int, thing => 12345);
 isa_ok($e3a, 'XML::LibXML::Element');
 compare_xml($e3a, '<thing xsi:type="xsd:int">12345</thing>');
 
-my $e3b = $soap->typed(thing => pack_type(SCHEMA2001, 'decimal'), 6.789);
+my $e3b = $soap->typed(pack_type(SCHEMA2001, 'decimal'), thing => 6.789);
 isa_ok($e3b, 'XML::LibXML::Element');
 compare_xml($e3b, '<thing xsi:type="xsd:decimal">6.789</thing>');
 
 my $e3t = 'Of Mans First ... ... and all our woe,';
-my $e3c = $soap->typed(thing => $string, $e3t);
+my $e3c = $soap->typed($string, thing => $e3t);
 isa_ok($e3c, 'XML::LibXML::Element');
 compare_xml($e3c, "<thing xsi:type=\"xsd:string\">$e3t</thing>");
 
 my $e3u = 'http://www.dartmouth.edu/~milton/reading_room/';
 
-my $e3d = $soap->typed(thing => pack_type(SCHEMA2001, 'anyURI'), $e3u);
+my $e3d = $soap->typed(pack_type(SCHEMA2001, 'anyURI'), thing => $e3u);
 isa_ok($e3d, 'XML::LibXML::Element');
 compare_xml($e3d, "<thing xsi:type=\"xsd:anyURI\">$e3u</thing>");
 

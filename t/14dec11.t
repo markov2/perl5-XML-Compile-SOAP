@@ -17,7 +17,7 @@ use XML::Compile::Util       qw/SCHEMA2001 pack_type/;
 
 use Math::BigFloat;
 
-use Test::More tests => 92;
+use Test::More tests => 98;
 use XML::LibXML;
 use TestTools qw/compare_xml/;
 
@@ -60,10 +60,13 @@ __XML
     my @elements = grep { $_->isa('XML::LibXML::Element') } $body->childNodes;
     my ($h, $i) = $soap->dec(@elements);
 
+#warn "H: ",Dumper $h;
     cmp_deeply($h, $expect_data);
+#warn "I: ",Dumper $i;
     cmp_deeply($i, $expect_index);
 
     my $s = $soap->decSimplify($h);
+#warn "S: ", Dumper $s;
     cmp_deeply($s, $simple_data, 'simplified');
 }
 
@@ -379,4 +382,21 @@ check_decode <<__XML, [$a11_1], $a11s_1, {'array-1'=>$a11_2},'multidim nested';
     <item SOAP-ENC:position="[7,2]">Eight row, third col</item>
   </SOAP-ENC:Array>
 </SOAP-ENC:Array>
+__XML
+
+my $a12_1 = { _TYPE => '{http://www.w3.org/2001/XMLSchema}string',
+              _ => 'South Dakota' };
+my $a12_2 = { _TYPE => '{http://schemas.xmlsoap.org/soap/encoding/}string',
+              _ => 'New York' };
+
+my $a12 = [ { _NAME => '{http://www.soapware.org/}getStateNameResponse',
+            , getStateNameResponse => [ $a12_1, $a12_2 ] } ];
+
+my $s12 = { getStateNameResponse => [ 'South Dakota', 'New York' ] };
+
+check_decode <<__XML, $a12, $s12, {}, 'unknown struct';
+<m:getStateNameResponse xmlns:m="http://www.soapware.org/">
+   <Result xsi:type="xsd:string">South Dakota</Result>
+   <SOAP-ENC:string>New York</SOAP-ENC:string>
+</m:getStateNameResponse>
 __XML

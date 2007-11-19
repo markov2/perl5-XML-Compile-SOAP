@@ -1,6 +1,42 @@
 
 === version history of XML::Compile::SOAP
 
+version 0.62: Mon Nov 19 12:55:42 CET 2007
+
+	Changes:
+
+	- XML::Compile::SOAP::HTTPClient renamed into
+	  XML::Compile::Transport::SOAPHTTP.
+	  It is reworked to extend the new XML::Compile::Transport.
+	  Change invisible to WSDL users, but very visible to people
+	  who create their own messages.  Some of the trace records
+	  changed name as well.
+
+	- swapped arguments of ::Encoding::typed() from
+	   (name, type, value) to (type, name, value);
+
+	Improvements:
+
+	- moved README.todo text to XML::Compile::SOAP man-page,
+	  because people often use pre-packaged modules and therefore
+	  may not see the README files.
+
+	- extended the documentation a lot.
+
+	- implemented XML::Compile::SOAP::compileClient(), which was
+	  documented but not present.
+
+	- added transport base class XML::Compile::Transport.
+
+	- compileMessage() accepts pre-compiled READER and WRITERs,
+	  not only element types.
+
+	- implemented (and documented/tested) literal and encoded RPC.
+
+	- Encoding::encAddNamespaces()
+
+	- use fake_server to t/wsdl11.t
+
 version 0.61: Tue Nov  6 13:56:54 CET 2007
 
 	Fixes:

@@ -8,12 +8,14 @@ use XML::Compile         ();
 use XML::Compile::Util   qw/pack_type unpack_type/;
 use XML::Compile::Schema ();
 
+use Time::HiRes          qw/time/;
+
 =chapter NAME
 XML::Compile::SOAP - base-class for SOAP implementations
 
 =chapter SYNOPSIS
- ** WARNING: Implementation not finished (but making progress)
- ** see README.todo in distribution!!!
+ ** WARNING: This implementation is quite new!  Only SOAP1.1
+ ** see TODO, at the end of this page
 
  use XML::Compile::SOAP11::Client;
  use XML::Compile::Util qw/pack_type/;
@@ -36,7 +38,6 @@ XML::Compile::SOAP - base-class for SOAP implementations
    , body     => [ b1 => $b1el ]
    , destination    => [ h1 => 'NEXT' ]
    , mustUnderstand => 'h1'
-   , encodings => { b1 => { use => 'literal' }}
    );
 
  my $decode_response = $client->compileMessage
@@ -44,13 +45,11 @@ XML::Compile::SOAP - base-class for SOAP implementations
    , header    => [ h2 => $h2el ]
    , body      => [ b2 => $b2el ]
    , faults    => [ ... ]
-   , encodings => { h2 => { use => 'literal' }}
    );
 
- my $http = XML::Compile::SOAP::HTTPClient->new
-   ( action  => 'http://...'
-   , address => $server
-   );
+ my $http = XML::Compile::Transport::SOAPHTTP
+    ->new(address => $server);
+ my $http = $transport->compileClient(action => ...);
 
  # In nice, small steps:
 
@@ -58,24 +57,30 @@ XML::Compile::SOAP - base-class for SOAP implementations
  my $request  = $encode_query->($query);
  my ($response, $trace) = $http->($request);
  my $answer   = $decode_response->($response);
+
  use Data::Dumper;
  warn Dumper $answer;     # see: a HASH with h2 and b2!
- if($answer->{Fault}) ... # error
+ if($answer->{Fault}) ... # error was reported
 
  # Simplify your life
+ # also in this case: if you have a WSDL, this is created for you.
+ # This is Document-style SOAP
 
  my $call   = $client->compileClient
    ( kind      => 'request-response'
-   , request   => $encode_query
-   , response  => $decode_response
+   , name      => 'my first call'
+   , encode    => $encode_query
+   , decode    => $decode_response
    , transport => $http
    );
+
+ # With or without WSDL file the same
 
  my $result = $call->(h1 => ..., b1 => ...);
  print $result->{h2}->{...};
  print $result->{b2}->{...};
 
- my ($result, $trace) = $call->(...);
+ my ($result, $trace) = $call->(...);  # LIST with show trace
 
 =chapter DESCRIPTION
 
@@ -85,9 +90,21 @@ most often used.  The SOAP1.2 definition (F<http://www.w3.org/TR/soap12/>)
 is quite different; this module tries to define a sufficiently abstract
 interface to hide the protocol differences.
 
-On the moment, B<XML-RPC is not supported>.  There are many more limitations,
-which can be found in the README.todo file which is part of the
-distribution package.
+Be aware that there are three kinds of SOAP:
+
+=over 4
+=item 1.
+Document style (literal) SOAP, where there is a WSDL file which explicitly
+types all out-going and incoming messages.  Very easy to use.
+
+=item 2.
+RPC style SOAP literal.  The WSDL file is not explicit about the
+content of the messages, but all messages must be schema defined types.
+
+=item 3.
+RPC style SOAP encoded.  The sent data is nowhere described formally.
+The data is transported in some ad-hoc way.
+=back
 
 =chapter METHODS
 
@@ -197,15 +214,18 @@ to explicitly specify the element to be processed.
 =option  header ENTRIES
 =default header C<undef>
 ARRAY of PAIRS, defining a nice LABEL (free of choice but unique)
-and an element reference.  The LABEL will appear in the Perl HASH, to
+and an element type name.  The LABEL will appear in the Perl HASH, to
 refer to the element in a simple way.
+
+The element type is used to construct a reader or writer.  You may also
+create your own reader or writer, and then pass a compatible CODE reference.
 
 =option  body   ENTRIES
 =default body   []
-ARRAY of PAIRS, defining a nice LABEL (free of choice but unique,
-also w.r.t. the header and fault ENTRIES).  The LABEL will appear
-in the Perl HASH only, to be able to refer to a body element in a
-simple way.
+ARRAY of PAIRS, defining a nice LABEL (free of choice but unique, also
+w.r.t. the header and fault ENTRIES) and an element type name or CODE
+reference.  The LABEL will appear in the Perl HASH only, to be able to
+refer to a body element in a simple way.
 
 =option  faults ENTRIES
 =default faults []
@@ -250,13 +270,7 @@ call to the compiled subroutine will return C<undef>.
 =default roles []
 Alternative for option C<role>
 
-=option  encodings HASH-of-HASHes
-=default encodings {}
-Message components can be encoded, as defined in WSDL.   Typically, some
-message part has a binding C<< use="encoded" >> and C<encodingStyle>
-and C<namespace> parameters.  The encodings are organized per label.
-
-=option  style 'document'|'rpc'
+=option  style 'document'|'rpc-literal'|'rpc-encoded'
 =default style 'document'
 
 =option  prefixes HASH
@@ -271,8 +285,169 @@ sub compileMessage($@)
 
       $direction eq 'SENDER'   ? $self->sender(\%args)
     : $direction eq 'RECEIVER' ? $self->receiver(\%args)
-    : error __x"message direction is 'SENDER' or 'RECEIVER', not {dir}"
+    : error __x"message direction is 'SENDER' or 'RECEIVER', not `{dir}'"
          , dir => $direction;
+}
+
+=method compileClient OPTIONS
+
+=option  name STRING
+=default name "unnamed"
+Currently only used in some error messages, but may be used more intensively
+in the future.
+
+=option  kind STRING
+=default kind C<request-response>
+Which kind of client is this.  WSDL11 defines four kinds of client-server
+interaction.  Only C<request-response> (the default) is currently supported.
+
+=requires encode CODE
+The CODE reference is produced by M<compileMessage()>, and must be a
+SENDER: translates Perl data structures into the SOAP message in XML.
+
+=requires decode CODE
+The CODE reference is produced by M<compileMessage()>, and must be a
+RECEIVER: translate a SOAP message into Perl data.
+
+=requires transport CODE
+The CODE reference is produced by an extensions of
+M<XML::Compile::Transport::compileClient()>
+(usually M<XML::Compile::Transport::SOAPHTTP::compileClient()>.
+
+=option  rpcout TYPE|CODE
+=default rpcout C<undef>
+The TYPE of the RPC output message (RPC literal style) or a CODE reference
+which can be created to produce the RPC block (RPC encoded style).
+
+=option  rpcin TYPE|CODE
+=default rpcin <depends on type of rpcout>
+
+The TYPE of the RPC input message (RPC literal style) or a CODE reference
+which can be created to parse the RPC block (RPC encoded style).
+
+If this option is not specified, but there is an C<rpcout> with TYPE
+value, then the value for this options will default for that type name
+with C<Response> concatenated: a commonly used convension.
+
+If this option is not used, but there is an C<rpcout> with CODE
+reference, then a standard decode routine is called.  That routine
+does use M<XML::Compile::SOAP::Encoding::decSimplify()> to get an
+as simple as possible return structure.
+
+=cut
+
+sub _rpcin_default($$$)
+{   my ($soap, $type, $msg) = @_;
+    my $tree   = $soap->dec($msg) or return ();
+    my $simple = $soap->decSimplify($tree) or return ();
+
+    return each %$simple
+    if ref $simple eq 'HASH' && keys %$simple == 1;
+
+    my ($ns, $local) = unpack_type $type;
+    ($local => $simple);
+}
+
+my $rr = 'request-response';
+sub compileClient(@)
+{   my ($self, %args) = @_;
+
+    my $name = $args{name} || 'unnamed';
+    my $kind = $args{kind} || $rr;
+    $kind eq $rr
+        or error __x"only `{rr}' operations are supported, not `{kind}' for {name}"
+             , rr => $rr, kind => $kind, name => $name;
+
+    my $encode = $args{encode}
+        or error __x"encode for client {name} required", name => $name;
+
+    my $decode = $args{decode}
+        or error __x"decode for client {name} required", name => $name;
+
+    my $transport = $args{transport}
+        or error __x"transport for client {name} required", name => $name;
+
+    my $core = sub
+    {   my $start = time;
+        my ($data, $charset) = UNIVERSAL::isa($_[0], 'HASH') ? @_ : ({@_});
+        my $req   = $encode->($data, $charset);
+
+        my %trace;
+        my $ans   = $transport->($req, \%trace);
+
+        wantarray
+            or return defined $ans ? $decode->($ans) : undef;
+
+        $trace{date}   = localtime $start;
+        $trace{start}  = $start;
+        $trace{encode_elapse} = $trace{transport_start} - $start;
+
+        defined $ans
+            or return (undef, \%trace);
+
+        my $dec = $decode->($ans);
+        my $end = time;
+        $trace{decode_elapse} = $end - $trace{transport_end};
+        $trace{elapse} = $end - $start;
+
+        ($dec, \%trace);
+    };
+
+    # Outgoing messages
+
+    my $rpcout = $args{rpcout}
+        or return $core;
+
+    my $rpc_encoder
+      = UNIVERSAL::isa($rpcout, 'CODE') ? $rpcout
+      : $self->schemas->compile
+        ( WRITER => $rpcout
+        , include_namespaces => 1
+        );
+
+    my $out = sub
+      {    @_ % 2  # auto-collect rpc parameters
+      ? ( rpc => [$rpc_encoder, shift], @_ ) # possible header blocks
+      : ( rpc => [$rpc_encoder, [@_] ]     ) # rpc body only
+      };
+
+
+    # Incoming messages
+
+    my $rpcin = $args{rpcin} ||
+      (UNIVERSAL::isa($rpcout, 'CODE') ? \&_rpcin_default : $rpcout.'Response');
+
+    # RPC intelligence wrapper
+
+    if(UNIVERSAL::isa($rpcin, 'CODE'))     # rpc-encoded
+    {   return sub
+        {   my ($dec, $trace) = $core->($out->(@_));
+            return wantarray ? ($dec, $trace) : $dec
+                if $dec->{Fault};
+
+            foreach my $k (keys %$dec)
+            {   my $node = $dec->{$k};
+                ref $node && $node->isa('XML::LibXML::Element')
+                     or next;
+                $self->startDecoding;
+                my ($n, $v) = $rpcin->($self, $k, delete $dec->{$k});
+                $dec->{$n} = $v if defined $v;
+            }
+
+            wantarray ? ($dec, $trace) : $dec;
+        };
+    }
+    else                                   # rpc-literal
+    {   my $rpc_decoder = $self->schemas->compile(READER => $rpcin);
+        (undef, my $rpcin_local) = unpack_type $rpcin;
+
+        return sub
+        {   my ($dec, $trace) = $core->($out->(@_));
+            $dec->{$rpcin_local} = $rpc_decoder->(delete $dec->{$rpcin})
+              if $dec->{$rpcin};
+            wantarray ? ($dec, $trace) : $dec;
+        };
+    }
 }
 
 #------------------------------------------------
@@ -293,72 +468,88 @@ sub sender($)
     $self->prefixPreferences($allns, $args->{prefixes}, 1)
         if $args->{prefixes};
 
-    $allns->{$self->schemaInstanceNS}{used}++
-        if $args->{style} eq 'rpc';
-
-    # Translate message parts
+    # Translate header
 
     my ($header, $hlabels) = $self->writerCreateHeader
       ( $args->{header} || [], $allns
       , $args->{mustUnderstand}, $args->{destination}
       );
 
-    my $headerhook = $self->writerHook($envns, 'Header', @$header);
+    # Translate body (3 options)
 
-    my ($body, $blabels) = $self->writerCreateBody
-      ( $args->{body} || [], $allns );
+    my $style   = $args->{style};
+    my $bodydef = $args->{body} || [];
+
+    if($style eq 'rpc-literal')
+    {   unshift @$bodydef, $self->writerCreateRpcLiteral($allns);
+    }
+    elsif($style eq 'rpc-encoded')
+    {   unshift @$bodydef, $self->writerCreateRpcEncoded($allns);
+    }
+    elsif($style ne 'document')
+    {   error __x"unknown soap message style `{style}'", style => $style;
+    }
+
+    my ($body, $blabels) = $self->writerCreateBody($bodydef, $allns);
+
+    # Translate body faults
 
     my ($fault, $flabels) = $self->writerCreateFault
       ( $args->{faults} || [], $allns
       , pack_type($envns, 'Fault')
       );
 
-    my $bodyhook = $self->writerHook($envns, 'Body', @$body, @$fault);
-    my $encstyle = $self->writerEncstyleHook($allns);
+    my @hooks =
+      ( ($style eq 'rpc-encoded' ? $self->writerEncstyleHook($allns) : ())
+      , $self->writerHook($envns, 'Header', @$header)
+      , $self->writerHook($envns, 'Body', @$body, @$fault)
+      );
 
     #
     # Pack everything together in one procedure
     #
 
     my $envelope = $self->schemas->compile
-     ( WRITER => pack_type($envns, 'Envelope')
-     , hooks  => [ $encstyle, $headerhook, $bodyhook ]
-     , output_namespaces    => $allns
-     , elements_qualified   => 1
-     , attributes_qualified => 1
-     );
+      ( WRITER => pack_type($envns, 'Envelope')
+      , hooks  => \@hooks
+      , output_namespaces    => $allns
+      , elements_qualified   => 1
+      , attributes_qualified => 1
+      );
 
-    sub { my ($values, $charset) = ref $_[0] eq 'HASH' ? @_ : ( {@_}, undef);
-          my $doc   = XML::LibXML::Document->new('1.0', $charset || 'UTF-8');
-          my %copy  = %$values;  # do not destroy the calling hash
-          my %data;
+    sub
+    {   my ($values, $charset) = ref $_[0] eq 'HASH' ? @_ : ( {@_}, undef);
+        my $doc   = XML::LibXML::Document->new('1.0', $charset || 'UTF-8');
+        my %copy  = %$values;  # do not destroy the calling hash
+        my %data;
 
-          $data{$_}   = delete $copy{$_} for qw/Header Body/;
-          $data{Body} ||= {};
+        $data{$_}   = delete $copy{$_} for qw/Header Body/;
+        $data{Body} ||= {};
 
-          foreach my $label (@$hlabels)
-          {   defined $copy{$label} or next;
-              error __x"header part {name} specified twice", name => $label
-                  if defined $data{Header}{$label};
-              $data{Header}{$label} ||= delete $copy{$label}
-          }
+        foreach my $label (@$hlabels)
+        {   defined $copy{$label} or next;
+            error __x"header part {name} specified twice", name => $label
+                if defined $data{Header}{$label};
+            $data{Header}{$label} ||= delete $copy{$label}
+        }
 
-          foreach my $label (@$blabels, @$flabels)
-          {   defined $copy{$label} or next;
-              error __x"body part {name} specified twice", name => $label
-                  if defined $data{Body}{$label};
-              $data{Body}{$label} ||= delete $copy{$label};
-          }
+        foreach my $label (@$blabels, @$flabels)
+        {   defined $copy{$label} or next;
+            error __x"body part {name} specified twice", name => $label
+                if defined $data{Body}{$label};
+            $data{Body}{$label} ||= delete $copy{$label};
+        }
 
-          if(@$blabels==2 && !keys %{$data{Body}} )  # ignore 'Fault'
-          {   $data{Body}{$blabels->[0]} = \%copy; # even when no params
-          }
-          elsif(keys %copy)
-          {   error __x"call data not used: {blocks}", blocks => [keys %copy];
-          }
+        if(@$blabels==2 && !keys %{$data{Body}} ) # ignore 'Fault'
+        {  # even when no params, we fill at least one body element
+            $data{Body}{$blabels->[0]} = \%copy;
+        }
+        elsif(keys %copy)
+        {   error __x"call data not used: {blocks}", blocks => [keys %copy];
+        }
 
-          $envelope->($doc, \%data);
-        };
+        $envelope->($doc, \%data);
+    };
 }
 
 =method writerHook NAMESPACE, LOCAL, ACTIONS
@@ -369,27 +560,28 @@ sub writerHook($$@)
  
    +{ type    => pack_type($ns, $local)
     , replace =>
-         sub { my ($doc, $data, $path, $tag) = @_;
-               my %data = %$data;
-               my @h = @do;
-               my @childs;
-               while(@h)
-               {   my ($k, $c) = (shift @h, shift @h);
-                   if(my $v = delete $data{$k})
-                   {    my $g = $c->($doc, $v);
-                        push @childs, $g if $g;
-                   }
-               }
-               warning __x"unused values {names}", names => [keys %data]
-                   if keys %data;
+        sub
+        {   my ($doc, $data, $path, $tag) = @_;
+            my %data = %$data;
+            my @h = @do;
+            my @childs;
+            while(@h)
+            {   my ($k, $c) = (shift @h, shift @h);
+                if(my $v = delete $data{$k})
+                {    my $g = $c->($doc, $v);
+                     push @childs, $g if $g;
+                }
+            }
+            warning __x"unused values {names}", names => [keys %data]
+                if keys %data;
 
-               # Body must be present, even empty, Header doesn't
-               @childs || $tag =~ m/Body$/ or return ();
+            # Body must be present, even empty, Header doesn't
+            @childs || $tag =~ m/Body$/ or return ();
 
-               my $node = $doc->createElement($tag);
-               $node->appendChild($_) for @childs;
-               $node;
-             }
+            my $node = $doc->createElement($tag);
+            $node->appendChild($_) for @childs;
+            $node;
+        }
     };
 }
 
@@ -400,22 +592,22 @@ sub writerEncstyleHook($)
 {   my ($self, $allns) = @_;
     my $envns   = $self->envelopeNS;
     my $style_w = $self->schemas->compile
-     ( WRITER => pack_type($envns, 'encodingStyle')
-     , output_namespaces    => $allns
-     , include_namespaces   => 0
-     , attributes_qualified => 1
-     );
+      ( WRITER => pack_type($envns, 'encodingStyle')
+      , output_namespaces    => $allns
+      , include_namespaces   => 0
+      , attributes_qualified => 1
+      );
     my $style;
 
-    my $before  = sub {
-	my ($doc, $values, $path) = @_;
+    my $before  = sub
+      { my ($doc, $values, $path) = @_;
         ref $values eq 'HASH' or return $values;
         $style = $style_w->($doc, delete $values->{encodingStyle});
         $values;
       };
 
-    my $after = sub {
-        my ($doc, $node, $path) = @_;
+    my $after = sub
+      { my ($doc, $node, $path) = @_;
         $node->addChild($style) if defined $style;
         $node;
       };
@@ -440,7 +632,8 @@ sub writerCreateHeader($$$$)
     while(@h)
     {   my ($label, $element) = splice @h, 0, 2;
 
-        my $code = $schema->compile
+        my $code = UNIVERSAL::isa($element,'CODE') ? $element
+         : $schema->compile
            ( WRITER => $element
            , output_namespaces  => $allns
            , include_namespaces => 0
@@ -475,18 +668,64 @@ sub writerCreateBody($$)
     while(@b)
     {   my ($label, $element) = splice @b, 0, 2;
 
-        my $code = $schema->compile
-           ( WRITER => $element
-           , output_namespaces  => $allns
-           , include_namespaces => 0
-           , elements_qualified => 'TOP'
-           );
+        my $code = UNIVERSAL::isa($element, 'CODE') ? $element
+        : $schema->compile
+          ( WRITER => $element
+          , output_namespaces  => $allns
+          , include_namespaces => 0
+          , elements_qualified => 'TOP'
+          );
 
         push @rules, $label => $code;
         push @blabels, $label;
     }
 
     (\@rules, \@blabels);
+}
+
+=method writerCreateRpcLiteral NAMESPACE-TABLE
+Create a handler which understands RPC literal specifications.
+=cut
+
+sub writerCreateRpcLiteral($)
+{   my ($self, $allns) = @_;
+    my $lit = sub
+     { my ($doc, $def) = @_;
+       UNIVERSAL::isa($def, 'ARRAY')
+           or error __x"rpc style requires compileClient with rpcin parameters";
+
+       my ($code, $data) = @$def;
+       $code->($doc, $data);
+     };
+
+    (rpc => $lit);
+}
+
+=method writerCreateRpcEncoded NAMESPACE-TABLE
+Create a handler which understands RPC encoded specifications.
+=cut
+
+sub writerCreateRpcEncoded($)
+{   my ($self, $allns) = @_;
+    my $lit = sub
+     { my ($doc, $def) = @_;
+       UNIVERSAL::isa($def, 'ARRAY')
+           or error __x"rpc style requires compileClient with rpcin parameters";
+
+       my ($code, $data) = @$def;
+       $self->startEncoding(doc => $doc);
+
+       my $top = $code->($self, $doc, $data);
+
+       my $enc = $self->{enc};
+       foreach (sort values %{$enc->{namespaces}})
+       {   $top->setAttribute("xmlns:$_->{prefix}", $_->{uri});
+       }
+
+       $top;
+     };
+
+    (rpc => $lit);
 }
 
 =method writerCreateFault FAULT-DEFS, NAMESPACE-TABLE, FAULTTYPE
@@ -515,14 +754,14 @@ sub writerCreateFault($$$)
           );
 
         my $code = sub
-         { my ($doc, $data)  = (shift, shift);
-           my %copy = %$data;
-           $copy{faultactor} = $self->roleURI($copy{faultactor});
-           my $det = delete $copy{detail};
-           my @det = !defined $det ? () : ref $det eq 'ARRAY' ? @$det : $det;
-           $copy{detail}{$type} = [ map {$details->($doc, $_)} @det ];
-           $fault->($doc, \%copy);
-         };
+          { my ($doc, $data)  = (shift, shift);
+            my %copy = %$data;
+            $copy{faultactor} = $self->roleURI($copy{faultactor});
+            my $det = delete $copy{detail};
+            my @det = !defined $det ? () : ref $det eq 'ARRAY' ? @$det : $det;
+            $copy{detail}{$type} = [ map {$details->($doc, $_)} @det ];
+            $fault->($doc, \%copy);
+          };
 
         push @rules, $label => $code;
         push @flabels, $label;
@@ -547,38 +786,47 @@ sub receiver($)
     error __"option 'mustUnderstand' only for writers"
         if $args->{understand};
 
-    my $schema = $self->schemas;
-    my $envns  = $self->envelopeNS;
+    my $style   = $args->{style};
+    my $bodydef = $args->{body} || [];
+
+    $style =~ m/^(?:rpc-literal|rpc-encoded|document)$/
+        or error __x"unknown soap message style `{style}'", style => $style;
 
 # roles are not checked (yet)
 #   my $roles  = $args->{roles} || $args->{role} || 'ULTIMATE';
 #   my @roles  = ref $roles eq 'ARRAY' ? @$roles : $roles;
 
-    my $faultdec   = $self->readerParseFaults($args->{faults} || [], $envns);
-    my $header     = $self->readerParseHeader($args->{header} || []);
-    my $body       = $self->readerParseBody($args->{body} || []);
+    my $faultdec = $self->readerParseFaults($args->{faults} || []);
+    my $header   = $self->readerParseHeader($args->{header} || []);
+    my $body     = $self->readerParseBody($bodydef);
 
-    my $headerhook = $self->readerHook($envns, 'Header', @$header);
-    my $bodyhook   = $self->readerHook($envns, 'Body',   @$body);
-    my $encstyle   = $self->readerEncstyleHook;
+    my $envns    = $self->envelopeNS;
+    my @hooks    = 
+      ( ($style eq 'rpc-encoded' ? $self->readerEncstyleHook : ())
+      , $self->readerHook($envns, 'Header', @$header)
+      , $self->readerHook($envns, 'Body',   @$body)
+      );
 
-    my $envelope   = $self->schemas->compile
+    my $envelope = $self->schemas->compile
      ( READER => pack_type($envns, 'Envelope')
-     , hooks  => [ $encstyle, $headerhook, $bodyhook ]
+     , hooks  => \@hooks
+     , anyElement   => 'TAKE_ALL'
+     , anyAttribute => 'TAKE_ALL'
      );
 
-    sub { my $xml   = shift;
-          my $data  = $envelope->($xml);
-          my @pairs = ( %{delete $data->{Header} || {}}
-                      , %{delete $data->{Body}   || {}});
-          while(@pairs)
-          {  my $k       = shift @pairs;
-             $data->{$k} = shift @pairs;
-          }
-
-          $faultdec->($data);
-          $data;
+    sub
+    {   my $xml   = shift;
+        my $data  = $envelope->($xml);
+        my @pairs = ( %{delete $data->{Header} || {}}
+                    , %{delete $data->{Body}   || {}});
+        while(@pairs)
+        {  my $k       = shift @pairs;
+           $data->{$k} = shift @pairs;
         }
+
+        $faultdec->($data);
+        $data;
+    };
 }
 
 =method readerHook NAMESPACE, LOCAL, ACTIONS
@@ -588,26 +836,27 @@ sub readerHook($$$@)
 {   my ($self, $ns, $local, @do) = @_;
     my %trans = map { ($_->[1] => [ $_->[0], $_->[2] ]) } @do; # we need copies
  
-   +{ type    => pack_type($ns, $local)
-    , replace =>
-        sub
-          { my ($xml, $trans, $path, $label) = @_;
-            my %h;
-            foreach my $child ($xml->childNodes)
-            {   next unless $child->isa('XML::LibXML::Element');
-                my $type = pack_type $child->namespaceURI, $child->localName;
-                if(my $t = $trans{$type})
-                {   my $v = $t->[1]->($child);
-                    $h{$t->[0]} = $v if defined $v;
-                    next;
-                }
-                return ($label => $self->replyMustUnderstandFault($type))
-                    if $child->getAttribute('mustUnderstand') || 0;
-
-                $h{$type} = $child;  # not decoded
+    my $replace = sub
+      { my ($xml, $trans, $path, $label) = @_;
+        my %h;
+        foreach my $child ($xml->childNodes)
+        {   next unless $child->isa('XML::LibXML::Element');
+            my $type = pack_type $child->namespaceURI, $child->localName;
+            if(my $t = $trans{$type})
+            {   my $v = $t->[1]->($child);
+                $h{$t->[0]} = $v if defined $v;
+                next;
             }
-            ($label => \%h);
-          }
+            return ($label => $self->replyMustUnderstandFault($type))
+                if $child->getAttribute('mustUnderstand') || 0;
+
+            $h{$type} = $child;  # not decoded
+        }
+        ($label => \%h);
+      };
+
+   +{ type    => pack_type($ns, $local)
+    , replace => $replace
     };
 }
 
@@ -622,8 +871,9 @@ sub readerParseHeader($)
     my @h      = @$header;
     while(@h)
     {   my ($label, $element) = splice @h, 0, 2;
-        push @rules, [$label, $element
-          , $schema->compile(READER => $element, anyElement => 'TAKE_ALL')];
+        my $code = UNIVERSAL::isa($element, 'CODE') ? $element
+          : $schema->compile(READER => $element, anyElement => 'TAKE_ALL');
+        push @rules, [$label, $element, $code];
 
     }
 
@@ -641,8 +891,9 @@ sub readerParseBody($)
     my @b      = @$body;
     while(@b)
     {   my ($label, $element) = splice @b, 0, 2;
-        push @rules, [$label, $element
-          , $schema->compile(READER => $element, anyElement => 'TAKE_ALL')];
+        my $code = UNIVERSAL::isa($element, 'CODE') ? $element
+          : $schema->compile(READER => $element, anyElement => 'TAKE_ALL');
+        push @rules, [$label, $element, $code];
     }
 
     \@rules;
@@ -690,7 +941,7 @@ sub readerEncstyleHook()
 #------------------------------------------------
 
 =section Transcoding
-SOAP defines encodings, especially for XML-RPC.
+SOAP defines encodings, especially for SOAP-RPC.
 
 =subsection Encoding
 =subsection Decoding
@@ -739,102 +990,315 @@ sub replyMustUnderstandFault($) { panic "not implemented" }
 
 =chapter DETAILS
 
-=section Using the produced calls
+=section SOAP introduction
+
+Although the specification of SOAP1.1 and WSDL1.1 are thin, the number
+of special constructs are many.  And, of course, all poorly documented.
+Both SOAP and WSDL have 1.2 versions, which will clear things up a lot,
+but not used that often yet.
+
+WSDL defines two kinds of messages: B<document> style SOAP and B<rpc>
+style SOAP.  In I<Document style SOAP>, the messages are described in
+great detail in the WSDL: the message components are all defined in
+Schema's; the worst things you can (will) encounter are C<any> schema
+elements which require additional manual processing.
+
+I would like to express my personal disgust over I<RPC style SOAP>.
+In this case, the body of the message is I<not> clearly specified in the
+WSDL... which violates the whole purpose of using interface descriptions
+in the first place!  In a client-server interface definition, you really
+wish to be very explicit in the data you communicate.  Gladly, SOAP1.2
+shares my feelings a little, and speaks against RPC although still
+supporting it.
+
+Anyway, we have to live with this feature.  SOAP-RPC is simple
+to use on strongly typed languages, to exchange data when you create both
+the client software and the server software.  You can simply autogenerate
+the data encoding.  Clients written by third parties have to find the
+documentation on how to use the RPC call in some other way... in text,
+if they are lucky; the WSDL file does not contain the prototype of the
+procedures, but that doesn't mean that they are free-format.
+
+The B<encoded RPC> messsages are shaped to the procedures which are
+being called on the server.  The body of the sent message contains the
+ordered list of parameters to be passed as 'in' and 'in/out' values to the
+remote procedure.  The body of the returned message lists the result value
+of the procedure, followed by the ordered 'out' and 'in/out' parameters.
+
+The B<literal RPC> messages are half-breed document style message: there is
+a schema which tells you how to interpret the body, but the WSDL doesn't
+tell you what the options are.
+
+=section Using SOAP calls
+
+=subsection Naming types and elements
+
+XML uses namespaces: URIs which are used as constants, grouping a set
+of type and element definitions.  By using name-spaces, you can avoid
+name clashes, which have frustrate many projects in history, when they
+grew over a certain size... at a certain size, it becomes too hard to
+think of good distriguishable names.  In such case, you must be happy
+when you can place those names in a context, and use the same naming in
+seperate contexts without confusion.
+
+That being said: XML supports both namespace- and non-namespace elements
+and schema's; and of cause many mixed cases.  It is by far preferred to
+use namespace schemas only.  For a schema xsd file, look for the
+C<targetNamespace> attribute of the C<schema> element: if present, it
+uses namespaces.
+
+In XML data, it is seen as a hassle to write the full length of the URI
+each time that a namespace is addressed.  For this reason, prefixes
+are used as abbreviations.  In programs, you can simply assign short
+variable names to long URIs, so we do not need that trick.
+
+Within your program, you use
+
+  $MYSN = 'long URI of namespace';
+  ... $type => "{$MYNS}typename" ...
+
+or nicer
+
+  use XML::Compile::Util qw/pack_type/;
+  use constant MYNS => 'some uri';
+  ... $type => pack_type(MYNS, 'typename') ...
+
+The M<XML::Compile::Util> module provides a helpfull methods and constants,
+as does the M<XML::Compile::SOAP::Util>.
+
+=subsection Calling the server (Document style)
 
 First, you compile the call either via a WSDL file (see
-M<XML::Compile::WSDL11>), or in small manual steps, as described in
-the next section.  So, in one of both ways, you end-up with
+M<XML::Compile::WSDL11>), or in a few manual steps (which are described
+in the next section).  In either way, you end-up with a CODE references
+which can be called multiple times.
 
     # compile once
-    my $call = $soap->compileClient(...);
+    my $call   = $soap->compileClient(...);
 
     # and call often
-    my $anwer = $call->(%request);  # list of pairs
-    my $anwer = $call->(\%request); # same, but HASH
-    my $anwer = $call->(\%request, 'UTF-8');  # same
+    my $answer = $call->(%request);  # list of pairs
+    my $answer = $call->(\%request); # same, but HASH
+    my $answer = $call->(\%request, 'UTF-8');  # same
 
-But what is the structure of C<%request> and C<$answer> ?  Well, there
+But what is the structure of C<%request> and C<$answer>?  Well, there
 are various syntaxes possible: from structurally perfect, to user-friendly.
 
-First, find out which data structures can be present.  When you compiled
+First, find out which data structures can be present: when you compiled
 your messages explicitly, you have picked your own names.  When the
-call was initiated from a WSDL file, then you have to find the names
-of the message parts which can be used.  The component names are for
-header blocks, body blocks, headerfaults, and (body) faults.
+call was initiated from a WSDL file, then you have to find the names of
+the message parts which can be used: the part names for header blocks,
+body blocks, headerfaults, and (body) faults.  Do not worry to much,
+you will get (hopefully understandable) run-time error messages when
+the structure is incorrect.
 
 Let's say that the WSDL defines this (ignoring all name-space issues)
 
- <message name="GetLastTradePriceInput">
-   <part name="count" type="int" />
-   <part name="request" element="TradePriceRequest"/>
- </message>
+ <definitions xmlns:xx="MYNS"
+   <message name="GetLastTradePriceInput">
+    <part name="count" type="int" />
+    <part name="request" element="xx:TradePriceRequest"/>
+   </message>
 
- <message name="GetLastTradePriceOutput">
-   <part name="answer" element="TradePrice"/>
- </message>
+   <message name="GetLastTradePriceOutput">
+    <part name="answer" element="xx:TradePrice"/>
+   </message>
 
- <definitions ...>
-  <binding ...>
-   <operation ...>
-    <input>
-     <soap:header message="GetLastTradePriceInput" part="count"
-     <soap:body message="GetLastTradePriceInput" parts="request"
-    <output>
-     <soap:body message="GetLastTradePriceOutput"
+   <binding
+    <operation
+     <input>
+      <soap:header message="GetLastTradePriceInput" part="count"
+      <soap:body message="GetLastTradePriceInput" parts="request"
+     <output>
+      <soap:body message="GetLastTradePriceOutput"
 
-The input message needs explicitly named parts, in this case, where the
+The input message needs explicitly named parts in this case, where the
 output message simply uses all defined in the body.  So, the input message
-has one header block C<count>, and one body block C<request>.  The output
-message only has one body block C<answer>.
+has one header part C<count>, and one body part C<request>.  The output
+message only has one part named C<answer>, which is all defined for the
+message and therefore its name can be omitted.
 
 Then, the definitions of the blocks:
 
- <element name="TradePriceRequest">
-   <complexType>
+ <schema targetNamespace="MYNS"
+   <element name="TradePriceRequest">
+    <complexType>
      <all>
-       <element name="tickerSymbol" type="string"/>
+      <element name="tickerSymbol" type="string"/>
 
- <element name="TradePrice">
-   <complexType>
+   <element name="TradePrice">
+    <complexType>
      <all>
-       <element name="price" type="float"/>
+      <element name="price" type="float"/>
+ </schema>
 
 Now, calling the compiled function can be done like this:
 
-  my $anwer = $call->(count => 5, request => {tickerSymbol => 'IBM'});
-  my $anwer = $call->(
-      {count => 5, request => {tickerSymbol => 'IBM'}}, 'UTF-8');
+  my $got
+     = $call->(  count => 5, request => {tickerSymbol => 'IBM'}  );
+     = $call->({ count => 5, request => {tickerSymbol => 'IBM'} });
+     = $call->({ count => 5, request => {tickerSymbol => 'IBM'} }
+        , 'UTF-8');
 
-However, in this case you may simplify the call.  First, all pairs
-which use known block names are collected.  Then, if there is exactly
-one body block which is not used yet, it will get all of the left over
-names.  So... in this case, you could also use
+If the first arguments for the code ref is a HASH, then there may be
+a second which specifies the required character-set.  The default is
+C<UTF-8>, which is very much adviced.
+
+=subsection Parameter unpacking (Document Style)
+
+In the example situation of previous section, you may simplify the
+call even further.  To understand how, we need to understand the
+parameter unpacking algorithm.
+
+The structure which we need to end up with, looks like this
+
+  $call->(\%data, $charset);
+  %data = ( Header => {count => 5}
+          , Body   =>
+             { request => {tickerSymbol => 'IBM'} }
+          );
+
+The structure of the SOAP message is directly mapped on this
+nested complex HASH.  But is inconvenient to write each call
+like this, therefore the C<$call> parameters are transformed into
+the required structure according to the following rules:
+
+=over 4
+=item 1.
+if called with a LIST, then that will become a HASH
+=item 2.
+when a C<Header> and/or C<Body> are found in the HASH, those are
+used
+=item 3.
+if there are more parameters in the HASH, then those with names of
+known header and headerfault message parts are moved to the C<Header>
+sub-structure.  Body and fault message parts are moved to the C<Body>
+sub-structure.
+=item 4.
+If the C<Body> sub-structure is empty, and there is only one body part
+expected, then all remaining parameters are put in a HASH for that part.
+This also happens if there are not parameters: it will result in an
+empty HASH for that block.
+=back
+
+So, in our case this will also do, because C<count> is a known part,
+and C<request> gets all left-overs, being the only body part.
 
  my $got = $call->(count => 5, tickerSymbol => 'IBM');
 
 This does not work if the block element is a simple type.  In most
-existing SOAP schemas, this simplification probably is possible.
+existing Document style SOAP schemas, this simplification probably
+is possible.
 
-The C<$got> is a HASH, which will not be simplified.  The return
-might be (M<Data::Dumper> is your friend)
+=subsection Understanding the output (Document style)
+
+The C<$got> is a HASH, which will not be simplified automatically:
+it may change with future extensions of the interface.  The return
+is a complex nested structure, and M<Data::Dumper> is your friend.
 
  $got = { answer => { price => 16.3 } }
 
 To access the value use
 
  printf "%.2f US\$\n", $got->{answer}->{price};
- printf "%.2f US\$\n", $got->{answer}{price};
+ printf "%.2f US\$\n", $got->{answer}{price};   # same
 
-=subsection Faults
+or
+
+ my $answer = $got->{answer};
+ printf "%.2f US\$\n", $answer->{price};
+
+=subsection Calling the server (SOAP-RPC style literal)
+
+SOAP-RPC style messages which have C<<use=literal>> cannot be used
+without a little help.  However, one extra definition per procedure
+call suffices.
+
+This a complete code example, although you need to fill in some
+specifics about your environment.  If you have a WSDL file, then it
+will be a little simpler, see M<XML::Compile::WSDL11::compileClient()>.
+
+ # You probably need these
+ use XML::Compile::SOAP11::Client;
+ use XML::Compile::Transport::SOAPHTTP;
+ use XML::Compile::Util  qw/pack_type/;
+
+ # Literal style RPC
+ my $outtype = pack_type $MYNS, 'myFunction';
+ my $intype  = pack_type $MYNS, 'myFunctionResponse';
+ my $style   = 'rpc-literal';
+
+ # Encoded style RPC (see next section on these functions)
+ my $outtype = \&my_pack_params;
+ my $in type = \&my_unpack_params;
+ my $style   = 'rpc-encoded';
+
+ # For all RPC calls, you need this only once:
+ my $transp  = XML::Compile::Transport::SOAPHTTP->new(...);
+ my $http    = $transp->compileClient(...);
+ my $soap    = XML::Compile::SOAP11::Client->new(...);
+ my $send    = $soap->compileMessage('SENDER',   style => $style, ...);
+ my $get     = $soap->compileMessage('RECEIVER', style => $style, ...);
+
+ # Per RPC procedure
+ my $myproc = $soap->compileClient
+   ( name   => 'MyProc'
+   , encode => $send, decode => $get, transport => $http
+   , rpcout => $outtype, rpcin => $intype
+   );
+
+ my $answer = $myproc->(@parameters);   # as document style
+
+Actually, the C<< @paramers >> are slightly less flexible as in document
+style SOAP.  If you use header blocks, then the called CODE reference
+will not be able to distinguish between parameters for the RPC block and
+parameters for the header blocks.  Therefore, in that situation, you
+MUST separate the rpc data explicitly as one argument.
+
+  my $answer = $trade_price
+    ->( {symbol => 'IBM'}    # the RPC package implicit
+      , transaction => 5     # in the header
+      );
+
+  my $answer = $trade_price  # RPC very explicit
+    ->(rpc => {symbol => 'IBM'}, transaction => 5);
+
+When the number of arguments is odd, the first is indicating the RPC
+element, and the other pairs refer to header blocks.
+
+The C<$answer> structure may contain a C<Fault> entry, or a decoded
+datastructure with the results of your query.  One call using
+M<Data::Dumper> will show you more than I can explain in a few hundred
+words.
+
+=subsection Calling the server (SOAP-RPC style, encoded)
+
+SOAP-RPC is a simplification of the interface description: basically,
+the interface is not described at all but left to good communication
+between the client and server authors.  In strongly typed languages,
+this is quite simple to enforce: the client side and server side use
+the same (remote) method prototype.  However, in Perl we are blessed
+without these typed prototypes...
+
+The approach of M<SOAP::Lite>, is to guess the types of the passed
+parameters.  For instance, "42" will get passed as Integer.  This
+may lead to nasty problems: a float parameter "2.0" will get passed
+as integer "2", or a string representing a house number "8" is passed
+as an number.  This may not be accepted by the SOAP server.
+
+So, using SOAP-RPC in M<XML::Compile::SOAP> will ask a little more
+effort from you: you have to state parameter types explicitly.
+
+=subsection Faults (Document and RPC style)
 
 Faults and headerfaults are a slightly different story: the type which
 is specified with them is not of the fault XML node itself, but of the
-C<details> sub-element within the standard fault structure.
+C<detail> sub-element within the standard fault structure.
 
 When producing the data for faults, you must be aware of the fact that
 the structure is different for SOAP1.1 and SOAP1.2.  When interpreting
 faults, the same problems are present, although the implementation
-tries to help you.
+tries to help you by hiding the differences.
 
 Check whether SOAP1.1 or SOAP1.2 is used by looking for a C<faultcode>
 (SOAP1.1) or a C<Code> (SOAP1.2) field in the data:
@@ -846,7 +1310,7 @@ Check whether SOAP1.1 or SOAP1.2 is used by looking for a C<faultcode>
   }
 
 In either protocol case, the following will get you at a compatible
-structure:
+structure in two steps:
 
   if(my $fault = $got->{Fault})
   {   my $decoded = $got->{$fault->{_NAME}};
@@ -855,13 +1319,15 @@ structure:
   }
 
 See the respective manuals M<XML::Compile::SOAP11> and
-M<XML::Compile::SOAP12> for the (ugly) specifics.
+M<XML::Compile::SOAP12> for the hairy details.  But one thing can be said:
+when the fault is declared formally, then the C<_NAME> will be the name
+of that part.
 
-=section Calling SOAP without WSDL
+=section SOAP without WSDL (Document style)
 
-See the manual page of M<XML::Compile::WSDL11> to see how simple
-you can use this module when you have a WSDL file at hand.  The
-creation of a correct WSDL file is NOT SIMPLE.
+See the manual page of M<XML::Compile::WSDL11> to see how simple you
+can use this module when you have a WSDL file at hand.  The creation of
+a correct WSDL file is NOT SIMPLE.
 
 When using SOAP without WSDL file, it gets a little bit more complicate
 to use: you need to describe the content of the messages yourself.
@@ -953,7 +1419,7 @@ And the output is:
  </SOAP-ENV:Envelope>
 
 Some transport protocol will sent this data from the client to the
-server.  See M<XML::Compile::SOAP::HTTPClient>, as one example.
+server.  See M<XML::Compile::Transport::SOAPHTTP>, as one example.
 
 On the SOAP server side, we will parse the message.  The string C<$soap>
 contains the XML.  The program looks like this:
@@ -969,7 +1435,22 @@ contains the XML.  The program looks like this:
 Now, the C<$data_out> reference on the server, is stucturally exactly 
 equivalent to the C<%data_in> from the client.
 
-=section Encodings
+=chapter TODO
+
+On the moment, the following limitations exist:
+
+=over 4
+
+=item .
+Only one real-life experiment with document style SOAP has been made:
+see the examples directory.
+
+=item .
+Only SOAP1.1 sufficiently implemented (probably).  There are some
+steps into SOAP1.2, but it is not yet tested nor ready to be tested.
+
+=back
+
 =cut
 
 1;

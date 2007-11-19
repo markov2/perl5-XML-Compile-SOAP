@@ -22,10 +22,12 @@ my $debug = 1;
 
 # All the other XML modules should be automatically included.
 use XML::Compile::WSDL11;
+use XML::Compile::Transport::SOAPHTTP;
 
 # Other usefile modules
 use Data::Dumper;          # Data::Dumper is your friend.
 $Data::Dumper::Indent = 1;
+
 use List::Util   qw/first/;
 
 my $format_list;
@@ -55,8 +57,8 @@ $wsdl->schemas->importDefinitions('namesservice.xsd');
 # Pick one of these tests
 #
 
-# get_countries();
-  get_name_info();
+  get_countries();
+# get_name_info();
 # get_names_in_country();
 
 exit 0;
@@ -111,22 +113,33 @@ sub get_countries()
 
     if($debug)
     {
-       printf "Processing time: %4f ms\n", $trace->{elapse};
+        printf "Call initiated at: $trace->{date}\n";
+        print  "SOAP call timing:\n";
+        printf "      encoding: %7.2f ms\n", $trace->{encode_elapse}    *1000;
+        printf "     transport: %7.2f ms\n", $trace->{transport_elapse} *1000;
+        printf "      decoding: %7.2f ms\n", $trace->{decode_elapse}    *1000;
+        printf "    total time: %7.2f ms ",  $trace->{elapse}           *1000;
+        printf "= %.3f seconds\n\n", $trace->{elapse};
 
-       if(my $request = $trace->{request})   # a HTTP::Request object
-       {   my $req = $request->as_string;
-           $req =~ s/^/  /gm;
-           print "\nRequest:\n", $req;
-       }
+        print  "transport time components:\n";
+        printf "     stringify: %7.2f ms\n", $trace->{stringify_elapse} *1000;
+        printf "    connection: %7.2f ms\n", $trace->{connect_elapse}   *1000;
+        printf "       parsing: %7.2f ms\n", $trace->{parse_elapse}     *1000;
 
-       if(my $response = $trace->{response}) # a HTTP::Response object
-       {   my $resp = $response->as_string;
-           $resp =~ s/^/  /gm;
-           print "\nResponse:\n", $resp;
-       }
+        if(my $request = $trace->{http_request})   # a HTTP::Request object
+        {   my $req = $request->as_string;
+            $req =~ s/^/  /gm;
+            print "\nRequest:\n", $req;
+        }
+
+        if(my $response = $trace->{http_response}) # a HTTP::Response object
+        {   my $resp = $response->as_string;
+            $resp =~ s/^/  /gm;
+            print "\nResponse:\n", $resp;
+        }
     }
 
-    # And now?  What do I get back? Data::Dumper is your friend:
+    # And now?  What do I get back?  I love Data::Dumper.
     # warn Dumper $answer;
 
     #
@@ -163,11 +176,9 @@ sub get_countries()
 
     my $countries = $answer->{parameters}{country};
 
-    if($debug)
-    {   print "getCountries() lists ".scalar(@$countries)." countries:\n";
-        foreach my $country (@$countries)
-        {   print "   $country\n";
-        }
+    print "getCountries() lists ".scalar(@$countries)." countries:\n";
+    foreach my $country (sort @$countries)
+    {   print "   $country\n";
     }
 }
 
@@ -225,16 +236,17 @@ sub get_names_in_country()
     my $country;
     while(1)
     {   $country = $term->readline("Most common names in which country? ");
-        chomp($country);
+        chomp $country;
         $country eq '' or last;
         print "  please specify a country name.\n";
     }
 
+    # find the name case-insensitive in the list of available countries
     my $name = first { /^\Q$country\E$/i } @$countries;
 
     unless($name)
-    {   print "Cannot find name '$country', defaulting to 'other countries'\n";
-        $name = 'other countries';
+    {   $name = 'other countries';
+        print "Cannot find name '$country', defaulting to '$name'\n";
         print "Available countries are:\n";
         $format_list = join ', ', @$countries;
         write;
@@ -247,7 +259,7 @@ sub get_names_in_country()
 
     my $names    = $answer2->{parameters}{name};
     $names
-        or die "No data available\n";
+        or die "No data available for country `$name'\n";
 
     $format_list = join ', ', @$names;
     write;
