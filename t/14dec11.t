@@ -32,7 +32,7 @@ my $xsi     = SCHEMA2001.'-instance';
 my $int     = pack_type SCHEMA2001, 'int';
 my $string  = pack_type SCHEMA2001, 'string';
 
-$soap->startDecoding;
+$soap->startDecoding(simplify => 0);
 
 sub check_decode($$$$;$)
 {   my ($item, $expect_data, $simple_data, $expect_index, $text) = @_;
@@ -58,16 +58,19 @@ __XML
     isa_ok($body, 'XML::LibXML::Element');
 
     my @elements = grep { $_->isa('XML::LibXML::Element') } $body->childNodes;
-    my ($h, $i) = $soap->dec(@elements);
+    my $h = $soap->dec(@elements);
 
 #warn "H: ",Dumper $h;
-    cmp_deeply($h, $expect_data);
-#warn "I: ",Dumper $i;
-    cmp_deeply($i, $expect_index);
+    cmp_deeply($h, $expect_data, 'complex data');
+
+    my ($index, $hrefs) = ({}, []);
+    $soap->_dec_find_ids_hrefs($index, $hrefs, \$h);
+#warn "I: ",Dumper $index;
+    cmp_deeply($index, $expect_index, 'index');
 
     my $s = $soap->decSimplify($h);
 #warn "S: ", Dumper $s;
-    cmp_deeply($s, $simple_data, 'simplified');
+    cmp_deeply($s, $simple_data, 'simplified data');
 }
 
 check_decode '<SOAP-ENC:int>41</SOAP-ENC:int>'

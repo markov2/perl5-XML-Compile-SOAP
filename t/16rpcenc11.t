@@ -50,7 +50,8 @@ sub fake_server(@)
     <m:getStateName
        xmlns:m="http://www.soapware.org/"
        xmlns:xsd="http://www.w3.org/1999/XMLSchema"
-       xmlns:xsi="http://www.w3.org/1999/XMLSchema-instance">
+       xmlns:xsi="http://www.w3.org/1999/XMLSchema-instance"
+       SOAP-ENV:encodingStyle="http://schemas.xmlsoap.org/soap/encoding/">
       <statenum xsi:type="xsd:int">41</statenum>
     </m:getStateName>
   </SOAP-ENV:Body>
@@ -105,4 +106,5 @@ my $get_state = $client->compileClient
 
 my $answer = $get_state->();
 ok(defined $answer, 'call success');
+
 cmp_deeply($answer, {getStateNameResponse => 'South Dakota'});

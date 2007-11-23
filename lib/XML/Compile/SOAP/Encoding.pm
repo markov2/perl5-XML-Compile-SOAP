@@ -31,7 +31,7 @@ XML::Compile::SOAP::Encoding - SOAP encoding
  my $xml = $client->href('ref', $xyz, 'id-1');  # explicit label
  
  # create: <number>3</number>   (gets validated as well!)
- my $xml = $client->element(number => $int, 3);
+ my $xml = $client->element($int, number => 3);
 
  # create one-dimensional array of ints
  my $xml = $client->array(undef, $int, \@xml);
@@ -188,30 +188,44 @@ The VALUE will get processed via an auto-generated XML::Compile writer,
 so validated.  The processing is cashed.
 
 When VALUE already is an M<XML::LibXML::Element>, then no processing
-nor value checking will be performed.
+nor value checking will be performed.  The NAME will be ignored.
 
-BE WARNED: the TYPE must be a fully qualified type.
+If the TYPE is not qualified, then it is interpreted as basic type, as
+defined by the selected schema (see M<new(schema_ns)>).  If you explicitly
+need a non-namespace typed item, then use an empty namespace.  In any
+case, the type must be defined and the value is validated.
+
+=examples
+
+ my $xml = $soap->typed(int => count => 5);
+ my $xml = $soap->typed(pack_type(SCHEMA1999, 'int'), count => 5);
+
+ my $xml = $soap->typed(pack_type('', 'mine'), a => 1);
+ my $xml = $soap->typed('{}mine'), a => 1); #same
+
 =cut
 
 sub typed($$$)
 {   my ($self, $type, $name, $value) = @_;
     my $enc = $self->{enc};
     my $doc = $enc->{doc};
-    my $el  = $doc->createElement($name);
 
-    my $typedef = $self->prefixed($self->schemaInstanceNS,'type');
-    $el->setAttribute($typedef, $self->prefixed($type));
-
-    unless(UNIVERSAL::isa($value, 'XML::LibXML::Element'))
-    {   my $write = $self->{writer}{$type} ||= $self->schemas->compile
-         ( WRITER => $type
-         , output_namespaces  => $enc->{namespaces}
-         , include_namespaces => 0
-         );
-        $value = $write->($doc, $value);
+    my $showtype;
+    if($type =~ s/^\{\}//)
+    {   $showtype = $type;
+    }
+    else
+    {   my ($tns, $tlocal) = unpack_type $type;
+        unless(length $tns)
+        {   $tns = $self->schemaNS;
+            $type = pack_type $tns, $tlocal;
+        }
+        $showtype = $self->prefixed($tns, $tlocal);
     }
 
-    $el->addChild($value);
+    my $el = $self->element($type, $name, $value);
+    my $typedef = $self->prefixed($self->schemaInstanceNS, 'type');
+    $el->setAttribute($typedef, $showtype);
     $el;
 }
 
@@ -229,26 +243,34 @@ sub struct($@)
     $struct;
 }
 
-=method element NAME, TYPE, VALUE
+=method element TYPE, NAME, VALUE
 Create an element.  The NAME is for node, where a namespace component
-is translated into a prefix.
+is translated into a prefix.  When you wish for a C<type> attribute,
+use M<typed()>.
+
+When the TYPE does not contain a namespace indication, it is taken
+in the selected schema namespace.  If the VALUE already is a
+M<XML::LibXML::Element>, then that one is used (and the NAME ignored).
 =cut
 
 sub element($$$)
-{   my ($self, $name, $type, $value) = @_;
+{   my ($self, $type, $name, $value) = @_;
+
+    return $value
+        if UNIVERSAL::isa($value, 'XML::LibXML::Element');
+
     my $enc = $self->{enc};
-    my $el  = $enc->{doc}->createElement($name);
+    my $doc = $enc->{doc};
 
-    unless(UNIVERSAL::isa($value, 'XML::LibXML::Element'))
-    {   my $write = $self->{writer}{$type} ||= $self->schemas->compile
-         ( WRITER => $type
-         , output_namespaces  => $enc->{namespaces}
-         , include_namespaces => 0
-         );
-        $value = $write->($enc->{doc}, $value);
-    }
+    my $el  = $doc->createElement($name);
+    my $write = $self->{writer}{$type} ||= $self->schemas->compile
+      ( WRITER => $type
+      , output_namespaces  => $enc->{namespaces}
+      , include_namespaces => 0
+      );
 
-    $el->addChild($value);
+    $value = $write->($doc, $value);
+    $el->addChild($value) if defined $value;
     $el;
 }
 
@@ -270,6 +292,34 @@ sub href($$$)
     my $ename = $self->prefixed($name);
     my $el  = $self->{enc}{doc}->createElement($ename);
     $el->setAttribute(href => "#$id");
+    $el;
+}
+
+=method nil [TYPE], NAME
+Create an element with NAME which explicitly has the C<xsi:nil> attribute.
+If the NAME is full (has a namespace to it), it will be translated into
+a QNAME, otherwise, it is considered not namespace qualified.
+
+If a TYPE is given, then an explicit type parameter is added.
+=cut
+
+sub nil($;$)
+{   my $self = shift;
+    my ($type, $name) = @_==2 ? @_ : (undef, $_[0]);
+    my ($ns, $local) = unpack_type $name;
+
+    my $doc  = $self->{enc}{doc};
+    my $el
+      = $ns
+      ? $doc->createElementNS($ns, $local)
+      : $doc->createElement($local);
+
+    my $xsi = $self->schemaInstanceNS;
+    $el->setAttribute($self->prefixed($xsi, 'nil'), 'true');
+
+    $el->setAttribute($self->prefixed($xsi, 'type'), $self->prefixed($type))
+       if $type;
+
     $el;
 }
 
@@ -496,16 +546,21 @@ an easily accessible output tree.
 sub _init_decoding($)
 {   my ($self, $opts) = @_;
 
-    my $r = $opts->{reader_opts} || {};
-    $r->{anyElement}   ||= 'TAKE_ALL';
-    $r->{anyAttribute} ||= 'TAKE_ALL';
+    my %r =  $opts->{reader_opts} ? %{$opts->{reader_opts}} : ();
+    $r{anyElement}   ||= 'TAKE_ALL';
+    $r{anyAttribute} ||= 'TAKE_ALL';
+    $r{permit_href}    = 1;
 
-    push @{$r->{hooks}},
-      { type    => pack_type($self->encodingNS, 'Array')
-      , replace => sub { $self->_dec_array_hook(@_) }
-      };
+    push @{$r{hooks}},
+     { type    => pack_type($self->encodingNS, 'Array')
+     , replace => sub { $self->_dec_array_hook(@_) }
+     };
 
-    $self->{dec} = {reader_opts => [%$r], simplify => $opts->{simplify}};
+    $self->{dec} =
+     { reader_opts => [%r]
+     , simplify    => $opts->{simplify}
+     };
+
     $self;
 }
 
@@ -515,26 +570,45 @@ Data::Dumper to figure-out what the produced output is: it is a guess,
 so may not be perfect (do not use RPC but document style soap for
 good results).
 
-In LIST context, the decoded data is returned and a HASH with the
-C<id> index are returned.  In SCALAR context, only the decoded data is
-returned.  When M<startDecoding(simplify)> is true, then the returned
-data is concise but may be sloppy.  Otherwise, a HASH is returned
-containing as much info as could be extracted from the tree.
+The decoded data is returned.  When M<startDecoding(simplify)> is true,
+then the returned data is compact but may be sloppy.  Otherwise,
+a HASH is returned containing as much info as could be extracted from
+the tree.
 =cut
 
 sub dec(@)
 {   my $self  = shift;
-    $self->{dec}{href}  = [];
-    $self->{dec}{index} = {};
-    my $data  = $self->_dec(\@_);
+    my $data  = $self->_dec( [@_] );
+ 
+#warn "DATA=", Dumper $data;
+    my ($index, $hrefs) = ({}, []);
+    $self->_dec_find_ids_hrefs($index, $hrefs, \$data);
+    $self->_dec_resolve_hrefs ($index, $hrefs);
 
-    my $index = $self->{dec}{index};
-    $self->_dec_resolve_hrefs($index);
-
+#warn "RESOLVED DATA=", Dumper $data;
     $data = $self->decSimplify($data)
         if $self->{dec}{simplify};
+#warn "Simplified $self->{dec}{simplify} DATA=", Dumper $data;
 
-    wantarray ? ($data, $index) : $data;
+    ref $data eq 'ARRAY'
+        or return $data;
+
+    # find the root element
+    my $encns = $self->encodingNS;
+    my @roots;
+    for(my $i = 0; $i < @_ && $i < @$data; $i++)
+    {   my $root = $_[$i]->getAttributeNS($encns, 'root');
+        push @roots, $data->[$i] if !defined $root || $root!=0;
+    }
+
+    my $answer
+      = !@roots        ? $data
+      : @$data==@roots ? $data
+      : @roots==1      ? $roots[0]
+      : \@roots;
+
+#warn "FINAL DATA=", Dumper $answer;
+    $answer;
 }
 
 sub _dec_reader($@)
@@ -567,10 +641,8 @@ sub _dec($;$$$)
             $place = \$res[-1];
         }
 
-        my $href = $node->getAttribute('href') || '';
-        if($href =~ s/^#//)
-        {   $$place = undef;
-            $self->_dec_href($node, $href, $place);
+        if(my $href = $node->getAttribute('href') || '')
+        {   $$place = { href => $href };
             next;
         }
 
@@ -595,13 +667,8 @@ sub _dec($;$$$)
         $$place = $self->_dec_soapenc($node, pack_type($ns, $local));
     }
 
-    $self->_dec_index($_->{id} => $_)
-        for grep {ref $_ eq 'HASH' && defined $_->{id}} @res;
-
     \@res;
 }
-
-sub _dec_index($$) { $_[0]->{dec}{index}{$_[1]} = $_[2] }
 
 sub _dec_typed($$$)
 {   my ($self, $node, $type, $index) = @_;
@@ -613,10 +680,14 @@ sub _dec_typed($$$)
     my $read = $self->_dec_reader($full)
         or return $node;
 
-    my $data = $read->($node);
-    $data = { _ => $data } if ref $data ne 'HASH';
+    my $child = $read->($node);
+    my $data  = ref $child eq 'HASH' ? $child : { _ => $child };
     $data->{_TYPE} = $full;
-    $data;
+
+    my $id = $node->getAttribute('id');
+    $data->{id} = $id if defined $id;
+
+    { $local => $data };
 }
 
 sub _dec_other($)
@@ -643,10 +714,9 @@ sub _dec_other($)
     $data = { _ => $data } if ref $data ne 'HASH';
     $data->{_NAME} = $type;
 
-    if(my $id = $node->getAttribute('id'))
-    {   $self->_dec_index($id => $data);
-        $data->{id} = $id;
-    }
+    my $id = $node->getAttribute('id');
+    $data->{id} = $id if defined $id;
+
     $data;
 }
 
@@ -660,15 +730,41 @@ sub _dec_soapenc($$)
     $data;
 }
 
-sub _dec_href($$$)
-{   my ($self, $node, $to, $where) = @_;
-    my $data;
-    push @{$self->{dec}{href}}, $to => $where;
+sub _dec_find_ids_hrefs($$$)
+{   my ($self, $index, $hrefs, $node) = @_;
+    ref $$node or return;
+
+    if(ref $$node eq 'ARRAY')
+    {   foreach my $child (@$$node)
+        {   $self->_dec_find_ids_hrefs($index, $hrefs, \$child);
+        }
+    }
+    elsif(ref $$node eq 'HASH')
+    {   $index->{$$node->{id}} = $$node
+            if defined $$node->{id};
+
+        if(my $href = $$node->{href})
+        {   push @$hrefs, $href => $node if $href =~ s/^#//;
+        }
+
+        foreach my $k (keys %$$node)
+        {   $self->_dec_find_ids_hrefs($index, $hrefs, \( $$node->{$k} ));
+        }
+    }
+    elsif(UNIVERSAL::isa($$node, 'XML::LibXML::Element'))
+    {   my $search = XML::LibXML::XPathContext->new($$node);
+        $index->{$_->value} = $_->getOwnerElement
+            for $search->findnodes('.//@id');
+
+        # we cannot restore deep hrefs, so only top level
+        if(my $href = $$node->getAttribute('href'))
+        {   push @$hrefs, $href => $node if $href =~ s/^#//;
+        }
+    }
 }
 
-sub _dec_resolve_hrefs($)
-{   my ($self, $index) = @_;
-    my $hrefs = $self->{dec}{href};
+sub _dec_resolve_hrefs($$)
+{   my ($self, $index, $hrefs) = @_;
 
     while(@$hrefs)
     {   my ($to, $where) = (shift @$hrefs, shift @$hrefs);
@@ -755,6 +851,7 @@ that related value will replace the HASH as a whole.
 sub decSimplify($@)
 {   my ($self, $tree, %opts) = @_;
     defined $tree or return ();
+    $self->{dec}{_simple_recurse} = {};
     $self->_dec_simple($tree, \%opts);
 }
 
@@ -764,6 +861,11 @@ sub _dec_simple($$)
     ref $tree
         or return $tree;
 
+    return $tree
+        if $self->{dec}{_simple_recurse}{$tree};
+
+    $self->{dec}{_simple_recurse}{$tree}++;
+
     if(ref $tree eq 'ARRAY')
     {   my @a = map { $self->_dec_simple($_, $opts) } @$tree;
         return @a==1 ? $a[0] : \@a;
@@ -772,12 +874,16 @@ sub _dec_simple($$)
     ref $tree eq 'HASH'
         or return $tree;
 
-    my %h;
-    while(my ($k, $v) = each %$tree)
-    {   next if $k =~ m/^(?:_NAME$|_TYPE$|id$|\{)/;
-        $h{$k} = ref $v ? $self->_dec_simple($v, $opts) : $v;
+    foreach my $k (keys %$tree)
+    {   if($k =~ m/^(?:_NAME$|_TYPE$|id$|\{)/) { delete $tree->{$k} }
+        elsif(ref $tree->{$k})
+        {   $tree->{$k} = $self->_dec_simple($tree->{$k}, $opts);
+        }
     }
-    keys(%h)==1 && exists $h{_} ? $h{_} : \%h;
+
+    delete $self->{dec}{_simple_recurse}{$tree};
+
+    keys(%$tree)==1 && exists $tree->{_} ? $tree->{_} : $tree;
 }
 
 1;

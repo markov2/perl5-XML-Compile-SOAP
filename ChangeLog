@@ -1,6 +1,37 @@
 
 === version history of XML::Compile::SOAP
 
+version 0.63: Sat Nov 24 00:14:07 CET 2007
+
+	Changes:
+
+	- requires XML::Compile 0.60
+
+	- ::Encode::typed() now uses selected schemaNS as default, so
+	  simplifies the type parameter.
+
+	- ::Encode::element() now also has the 'type' as first parameter,
+	  like ::typed().
+
+	Fixes:
+
+	- detection of operation type, where WSDL used prefixes.
+
+	- some improvements and changes where not listed in the changelog
+	  for version 0.62
+
+	- fixed ::Encode::typed() when value is already an element
+
+	- WSDL11 headers parsed wrongly. [Gert Doering]
+
+	Improvements:
+
+	- added t/51wsdl11enc.t
+
+	- added ::Encoding::nil()
+
+	- test for ::Encoding::struct();
+
 version 0.62: Mon Nov 19 12:55:42 CET 2007
 
 	Changes:
@@ -14,6 +45,9 @@ version 0.62: Mon Nov 19 12:55:42 CET 2007
 
 	- swapped arguments of ::Encoding::typed() from
 	   (name, type, value) to (type, name, value);
+
+	- WSDL11(::Operation)::prepareClient() renamed into
+	  ::compileClient()
 
 	Improvements:
 
@@ -33,7 +67,9 @@ version 0.62: Mon Nov 19 12:55:42 CET 2007
 
 	- implemented (and documented/tested) literal and encoded RPC.
 
-	- Encoding::encAddNamespaces()
+	- added Encoding::encAddNamespaces()
+
+	- added Encoding::struct()
 
 	- use fake_server to t/wsdl11.t
 

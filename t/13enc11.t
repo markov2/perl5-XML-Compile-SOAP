@@ -14,7 +14,7 @@ use XML::Compile::SOAP11::Client;
 use XML::Compile::SOAP::Util qw/:soap11/;
 use XML::Compile::Util       qw/SCHEMA2001 pack_type/;
 
-use Test::More tests => 60;
+use Test::More tests => 65;
 use XML::LibXML;
 use TestTools qw/compare_xml/;
 
@@ -59,6 +59,13 @@ compare_xml($enc2, '<SOAP-ENC:int id="hhtg">42</SOAP-ENC:int>');
 my $typed1 = $soap->typed(pack_type(SCHEMA2001, 'int'), code => 43);
 compare_xml($typed1, '<code xsi:type="xsd:int">43</code>');
 
+my $typed2 = $soap->typed(float => price => 2.71);
+compare_xml($typed2, '<price xsi:type="xsd:float">2.71</price>');
+
+# no namespace less schema defined (yet)
+# my $typed3 = $soap->typed('{}nons' => price => 12.1);
+# compare_xml($typed3, '<price xsi:type="nons">12.1</price>');
+
 #
 # href()
 #
@@ -72,15 +79,31 @@ compare_xml($href2, '<SOAP-ENC:xyz href="#hhtg"/>');
 compare_xml($enc2, '<SOAP-ENC:int id="hhtg">42</SOAP-ENC:int>');
 
 #
+# NIL
+#
+
+my $nil1 = $soap->nil('friend');
+compare_xml($nil1, '<friend xsi:nil="true"/>');
+
+my $nil2 = $soap->nil(pack_type($TestNS, 'friend'));
+compare_xml($nil2, <<__XML);
+<friend xmlns="$TestNS" xsi:nil="true"/>
+__XML
+
+compare_xml($soap->nil($string, pack_type($TestNS, 'friend')), <<__XML);
+<friend xmlns="http://test-ns" xsi:nil="true" xsi:type="xsd:string"/>
+__XML
+
+#
 # array()
 #
 
 # SOAP11 NOTE example 1
 
-my $e1a = $soap->element(number => $int, 3);
+my $e1a = $soap->element($int, number => 3);
 isa_ok($e1a, 'XML::LibXML::Element', 'example 1');
 compare_xml($e1a, '<number>3</number>');
-my $e1b = $soap->element(number => $int, 4);
+my $e1b = $soap->element($int, number => 4);
 
 my $a1 = $soap->array('myFavoriteNumbers', $int, [$e1a, $e1b], id => 'array-1');
 isa_ok($a1, 'XML::LibXML::Element');
@@ -229,7 +252,7 @@ __XML
 
 # SOAP11 NOTE example 6
 
-my @e6 = map { $soap->element(item => $string, $_) }
+my @e6 = map { $soap->element($string, item => $_) }
   qw/r1c1 r1c2 r1c3 r2c1 r2c2/;
 my $a6a = $soap->array(undef, $string, [ @e6[0..2] ], id => 'array-1');
 compare_xml($a6a, <<__XML);
@@ -309,7 +332,7 @@ __XML
 
 # SOAP11 NOTE "partially transmitted arrays"
 
-my @e8 = map { $soap->element(item => $string, "The $_ element") }
+my @e8 = map { $soap->element($string, item => "The $_ element") }
    qw/first second third fourth fifth/;
 
 my $a8a = $soap->array(undef, $string, \@e8);
@@ -386,7 +409,7 @@ __XML
 
 # SOAP11 NOTE multidimensional arrays
 
-my @e9 = map { $soap->element(item => $string, $_) }
+my @e9 = map { $soap->element($string, item => $_) }
    qw/r1c1 r1c2 r1c3 r2c1 r2c2 r2c3/;
 my @t9 = ( [ @e9[0..2] ], [ @e9[3..5] ] );
 my $a9a = $soap->multidim(undef, $string, \@t9);
@@ -415,8 +438,8 @@ __XML
 
 # now the example from the spec
 my $t10;
-$t10->[2][2] = $soap->element(item => $string, 'Third row, third col');
-$t10->[7][2] = $soap->element(item => $string, 'Eight row, third col');
+$t10->[2][2] = $soap->element($string, item => 'Third row, third col');
+$t10->[7][2] = $soap->element($string, item => 'Eight row, third col');
 $t10->[9]    = undef;
 $t10->[0][9] = undef;
 my $a10a = $soap->multidim(undef, $string, $t10);
@@ -445,4 +468,30 @@ compare_xml($a10c, <<__XML);
     <item SOAP-ENC:position="[7,2]">Eight row, third col</item>
   </SOAP-ENC:Array>
 </SOAP-ENC:Array>
+__XML
+
+#
+# Struct
+#
+
+my $struct1 = $soap->struct(MyMessage => $enc1, $enc2, $typed1
+  , $typed2, $href1, $href2, $a1, $a2);
+
+compare_xml($struct1, <<'__XML');
+<MyMessage>
+  <SOAP-ENC:int id="id-1">41</SOAP-ENC:int>
+  <SOAP-ENC:int id="hhtg">42</SOAP-ENC:int>
+  <code xsi:type="xsd:int">43</code>
+  <price xsi:type="xsd:float">2.71</price>
+  <ref href="#id-1"/>
+  <SOAP-ENC:xyz href="#hhtg"/>
+  <myFavoriteNumbers id="array-1" SOAP-ENC:arrayType="xsd:int[2]">
+    <number>3</number>
+    <number>4</number>
+  </myFavoriteNumbers>
+  <SOAP-ENC:Array SOAP-ENC:arrayType="xsd:int[2]">
+    <SOAP-ENC:int>3</SOAP-ENC:int>
+    <SOAP-ENC:int>4</SOAP-ENC:int>
+  </SOAP-ENC:Array>
+</MyMessage>
 __XML
