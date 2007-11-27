@@ -118,6 +118,9 @@ sub _init_encoding($)
 Add prefix definitions for this one encoding cyclus.  Each time
 M<startEncoding()> is called, the table is reset.  The namespace
 table is returned.
+
+=method encAddNamespace PAIRS
+Convenience alternative for M<encAddNamespaces()>.
 =cut
 
 sub encAddNamespaces(@)
@@ -128,6 +131,8 @@ sub encAddNamespaces(@)
     }
     $ns;
 }
+
+sub encAddNamespace(@) { shift->encAddNamespaces(@_) }
 
 =method prefixed TYPE|(NAMESPACE,LOCAL)
 Translate a NAMESPACE-LOCAL combination (which may be represented as
@@ -261,6 +266,9 @@ sub element($$$)
 
     my $enc = $self->{enc};
     my $doc = $enc->{doc};
+
+    $type = pack_type $self->schemaNS, $type   # make absolute
+        if $type !~ m/^\{/;
 
     my $el  = $doc->createElement($name);
     my $write = $self->{writer}{$type} ||= $self->schemas->compile
@@ -580,15 +588,12 @@ sub dec(@)
 {   my $self  = shift;
     my $data  = $self->_dec( [@_] );
  
-#warn "DATA=", Dumper $data;
     my ($index, $hrefs) = ({}, []);
     $self->_dec_find_ids_hrefs($index, $hrefs, \$data);
     $self->_dec_resolve_hrefs ($index, $hrefs);
 
-#warn "RESOLVED DATA=", Dumper $data;
     $data = $self->decSimplify($data)
         if $self->{dec}{simplify};
-#warn "Simplified $self->{dec}{simplify} DATA=", Dumper $data;
 
     ref $data eq 'ARRAY'
         or return $data;
@@ -607,7 +612,6 @@ sub dec(@)
       : @roots==1      ? $roots[0]
       : \@roots;
 
-#warn "FINAL DATA=", Dumper $answer;
     $answer;
 }
 
@@ -648,19 +652,18 @@ sub _dec($;$$$)
 
         if($ns ne $encns)
         {   my $typedef = $node->getAttributeNS($self->schemaInstanceNS,'type');
-            $typedef  ||= $basetype;
             if($typedef)
             {   $$place = $self->_dec_typed($node, $typedef);
                 next;
             }
 
-            $$place = $self->_dec_other($node);
+            $$place = $self->_dec_other($node, $basetype);
             next;
         }
 
         my $local = $node->localName;
         if($local eq 'Array')
-        {   $$place = $self->_dec_other($node);
+        {   $$place = $self->_dec_other($node, $basetype);
             next;
         }
 
@@ -673,7 +676,7 @@ sub _dec($;$$$)
 sub _dec_typed($$$)
 {   my ($self, $node, $type, $index) = @_;
 
-    my ($prefix, $local) = $type =~ m/(.*?)\:(.*)/ ? ($1, $2) : ('', $type);
+    my ($prefix, $local) = $type =~ m/^(.*?)\:(.*)/ ? ($1, $2) : ('',$type);
     my $ns   = length $prefix ? $node->lookupNamespaceURI($prefix) : '';
     my $full = pack_type $ns, $local;
 
@@ -683,6 +686,7 @@ sub _dec_typed($$$)
     my $child = $read->($node);
     my $data  = ref $child eq 'HASH' ? $child : { _ => $child };
     $data->{_TYPE} = $full;
+    $data->{_NAME} = pack_type $node->namespaceURI, $node->localName;
 
     my $id = $node->getAttribute('id');
     $data->{id} = $id if defined $id;
@@ -690,29 +694,44 @@ sub _dec_typed($$$)
     { $local => $data };
 }
 
-sub _dec_other($)
-{   my ($self, $node) = @_;
-    my $ns    = $node->namespaceURI || '';
+sub _dec_other($$)
+{   my ($self, $node, $basetype) = @_;
     my $local = $node->localName;
+    my $ns    = $node->namespaceURI || '';
+    my $elem  = pack_type $ns, $local;
 
-    my $type = pack_type $ns, $local;
     my $data;
 
-    my $read = try { $self->_dec_reader($type) };
+    my $type  = $basetype || $elem;
+    my $read  = try { $self->_dec_reader($type) };
     if($@)
-    {    # warn $@->wasFatal->message;  --> element not found
+    {    # warn $@->wasFatal->message;  #--> element not found
          # Element not known, so we must autodetect the type
-         if($node->hasChildNodes)
-         {   my @childs = grep {$_->isa('XML::LibXML::Element')} $node->childNodes;
-             $data = { $local => $self->_dec(\@childs) };
+         my @childs = grep {$_->isa('XML::LibXML::Element')} $node->childNodes;
+         if(@childs)
+         {   my ($childbase, $dims);
+             if($type =~ m/(.+?)\s*\[([\d,]+)\]$/)
+             {   $childbase = $1;
+                 $dims = ($2 =~ tr/,//) + 1;
+             }
+             my $dec_childs =  $self->_dec(\@childs, $childbase, 0, $dims);
+             $local = '_' if $local eq 'Array';  # simplifies better
+             $data  = { $local => $dec_childs } if $dec_childs;
+         }
+         else
+         {   $data =
+               { $local => $node->textContent
+               , _TYPE  => $type
+               };
          }
     }
     else
     {    $data = $read->($node);
+         $data = { _ => $data } if ref $data ne 'HASH';
+         $data->{_TYPE} = $basetype if $basetype;
     }
 
-    $data = { _ => $data } if ref $data ne 'HASH';
-    $data->{_NAME} = $type;
+    $data->{_NAME} = $elem;
 
     my $id = $node->getAttribute('id');
     $data->{id} = $id if defined $id;
@@ -786,11 +805,20 @@ sub _dec_array_hook($$$)
     $at =~ m/^(.*) \s* \[ ([\d,]+) \] $/x
         or return $node;
 
-    my ($basetype, $dims) = ($1, $2);
+    my ($preftype, $dims) = ($1, $2);
     my @dims = split /\,/, $dims;
+   
+    my $basetype;
+    if(index($preftype, ':') >= 0)
+    {   my ($prefix, $local) = split /\:/, $preftype;
+        $basetype = pack_type $node->lookupNamespaceURI($prefix), $local;
+    }
+    else
+    {   $basetype = pack_type '', $preftype;
+    }
 
     return $self->_dec_array_one($node, $basetype, $dims[0])
-       if @dims == 1;
+        if @dims == 1;
 
      my $first = first {$_->isa('XML::LibXML::Element')} $node->childNodes;
 
@@ -868,7 +896,24 @@ sub _dec_simple($$)
 
     if(ref $tree eq 'ARRAY')
     {   my @a = map { $self->_dec_simple($_, $opts) } @$tree;
-        return @a==1 ? $a[0] : \@a;
+        return $a[0] if @a==1;
+
+        # array of hash with each one element becomes hash
+        my %out;
+        foreach my $hash (@a)
+        {   ref $hash eq 'HASH' && keys %$hash==1
+                or return \@a;
+
+            my ($name, $value) = each %$hash;
+            if(!exists $out{$name}) { $out{$name} = $value }
+            elsif(ref $out{$name} eq 'ARRAY')
+            {   $out{$name} = [ $out{$name} ]   # array of array: keep []
+                    if ref $out{$name}[0] ne 'ARRAY' && ref $value eq 'ARRAY';
+                push @{$out{$name}}, $value;
+            }
+            else { $out{$name} = [ $out{$name}, $value ] }
+        }
+        return \%out;
     }
 
     ref $tree eq 'HASH'

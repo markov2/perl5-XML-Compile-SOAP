@@ -176,7 +176,7 @@ sub make_friend_request($$$)
         push @people, $soap->struct($person_type, $n, $f);
     }
 
-    $soap->struct(makeFriends => @people);
+    $soap->struct(pack_type($TestNS, 'makeFriends') => @people);
 }
 
 my $prepared_answer;
@@ -187,7 +187,7 @@ sub fake_server($$)
 <SOAP-ENV:Envelope
    xmlns:SOAP-ENV="http://schemas.xmlsoap.org/soap/envelope/">
   <SOAP-ENV:Body>
-    <makeFriends
+    <p:makeFriends
        xmlns:p="http://cyclic.test"
        xmlns:xsd="http://www.w3.org/2001/XMLSchema"
        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
@@ -200,7 +200,7 @@ sub fake_server($$)
         <name xsi:type="xsd:string">Jason</name>
         <friend xsi:nil="true"/>
       </p:Person>
-    </makeFriends>
+    </p:makeFriends>
   </SOAP-ENV:Body>
 </SOAP-ENV:Envelope>
 __XML

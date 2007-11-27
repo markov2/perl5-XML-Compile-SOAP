@@ -1,0 +1,47 @@
+
+==== README to examples/namesservice/
+
+This directory contains 8 examples based on the same existing remote
+server.
+
+The server published a nice WSDL file, and a separate schema, which
+have been beautified a bit but nothing more.
+
+ . namesservice.wsdl
+   The WSDL file, describing the service.
+
+ . namesservice.xsd
+   The Schema file, describing the data types transmitted.
+
+Then, the first four examples, explain how to communicate to the
+server using certain (fake) pre-conditions:
+
+ . has_wsdl.pl
+   Shows how to use the WSDL file to access the server.  Of course, this
+   is by far the preferred way.
+
+ . has_schema.pl
+   Do not use the WSDL file, but only use the type definitions as found in
+   the schema.  Basically, a manual translation is made from the knowledge
+   about the protocol (often found in some textual specification, when
+   there is no WSDL) into the same structures as the WSDL produces.
+
+ . rpc-literal.pl
+   When there is a schema which defines types, but using the RPC way of
+   doing things: not tell which messages will be passed 'at compile time',
+   but 'at run time'.
+
+ . rpc-encoded.pl
+   Just ignore the fact that we can use the schema, but manually implement
+   all (complex) message structures.
+
+Besides the above intensively documented implementations, there are also
+four simplified implementations included in the package.  Those may shape
+your own code, after you understand the structure.
+
+  . has_wsdl2.pl is a simplification of has_wsdl.pl
+  . has_schema2.pl is a simplification of has_schema.pl
+  . rpc-literal2.pl is a simplification of rpc-literal.pl
+  . rpc-encoded2.pl is a simplification of rpc-encoded.pl
+
+Please contribute.

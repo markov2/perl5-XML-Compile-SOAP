@@ -4,8 +4,8 @@
 #    See http://www.thomas-bayer.com/names-service/
 
 # Author: Mark Overmeer, 6 Nov 2007
-# Using:  XML::Compile 0.58
-#         XML::Compile::SOAP 0.60
+# Using:  XML::Compile 0.60
+#         XML::Compile::SOAP 0.63
 # Copyright by the Author, under the terms of Perl itself.
 # Feel invited to contribute your examples!
 
@@ -15,16 +15,14 @@ use strict;
 
 # To make Perl find the modules without the package being installed.
 use lib '../../lib';
-use lib '../../../XMLCompile/lib';  # my home test environment
-
-# Configuration
-my $debug = 1;
+use lib '../../../XMLCompile/lib'   # my home test environment
+      , '../../../LogReport/lib';
 
 # All the other XML modules should be automatically included.
 use XML::Compile::WSDL11;
 use XML::Compile::Transport::SOAPHTTP;
 
-# Other usefile modules
+# Other useful modules
 use Data::Dumper;          # Data::Dumper is your friend.
 $Data::Dumper::Indent = 1;
 
@@ -37,7 +35,7 @@ format =
 .
 
 # Forward declarations
-sub get_countries();
+sub get_countries($);
 sub get_name_info();
 sub get_names_in_country();
 
@@ -57,9 +55,31 @@ $wsdl->schemas->importDefinitions('namesservice.xsd');
 # Pick one of these tests
 #
 
-  get_countries();
-# get_name_info();
-# get_names_in_country();
+my $answer = '';
+while(lc $answer ne 'q')
+{
+    print <<__SELECTOR;
+
+    Which call do you like to see:
+      1) getCountries
+      2) getCountries with trace output
+      3) getNameInfo
+      4) getNamesInCountry
+      Q) quit demo
+
+__SELECTOR
+
+    $answer = $term->readline("Pick one of above [1/2/3/4/Q] ");
+    chomp $answer;
+
+       if($answer eq '1') { get_countries(0) }
+    elsif($answer eq '2') { get_countries(1) }
+    elsif($answer eq '3') { get_name_info()  }
+    elsif($answer eq '4') { get_names_in_country() }
+    elsif(lc $answer ne 'q' && length $answer)
+    {   print "Illegal choice\n";
+    }
+}
 
 exit 0;
 
@@ -68,18 +88,19 @@ exit 0;
 # This one is explained in most detail
 #
 
-sub get_countries()
-{
+sub get_countries($)
+{   my $show_trace = shift;
+
     # first compile a handler which you can call as often as you want.
     # If you do not know the name of the portType, then just put anything
     # here: the error message will list your options.
 
     my $getCountries
-        = $wsdl->prepareClient('getCountries');
+        = $wsdl->compileClient('getCountries');
 
     # Actually, above is an abbreviation of
-    #   = $wsdl->prepareClient(operation => 'getCountries');
-    #   = $wsdl->find(operation => 'getCountries')->prepareClient;
+    #   = $wsdl->compileClient(operation => 'getCountries');
+    #   = $wsdl->find(operation => 'getCountries')->compileClient;
     # You may need to go into more the extended syntaxes if you have multiple
     # services, ports, bindings, or such in you WSDL file.  Is so, the run-time
     # will ask you to do so, offering alternatives.
@@ -111,7 +132,7 @@ sub get_countries()
     # Some ways of debugging
     #
 
-    if($debug)
+    if($show_trace)
     {
         printf "Call initiated at: $trace->{date}\n";
         print  "SOAP call timing:\n";
@@ -189,17 +210,17 @@ sub get_countries()
 sub get_name_info()
 {
     # ask the user for a name
-    my $name = $term->readline("Personal name for info (empty to stop) ");
+    my $name = $term->readline("Personal name for info: ");
     chomp $name;
 
-    length $name or return;  # quit
+    length $name or return;
 
     #
     # Ask information about the specified name
     # (we are not using the country list, received before)
     #
 
-    my $getNameInfo = $wsdl->prepareClient('getNameInfo');
+    my $getNameInfo = $wsdl->compileClient('getNameInfo');
 
     my ($answer, $trace2) = $getNameInfo->(name => $name);
     #print Dumper $answer, $trace2;
@@ -224,8 +245,8 @@ sub get_name_info()
 
 sub get_names_in_country()
 {   # usually in the top of your script: reusable
-    my $getCountries      = $wsdl->prepareClient('getCountries');
-    my $getNamesInCountry = $wsdl->prepareClient('getNamesInCountry');
+    my $getCountries      = $wsdl->compileClient('getCountries');
+    my $getNamesInCountry = $wsdl->compileClient('getNamesInCountry');
 
     my $answer1 = $getCountries->();
     die "Cannot get countries: $answer1->{Fault}{faultstring}\n"

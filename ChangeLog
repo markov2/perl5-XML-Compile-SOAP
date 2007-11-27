@@ -1,6 +1,35 @@
 
 === version history of XML::Compile::SOAP
 
+version 0.64: Tue Nov 27 11:42:45 CET 2007
+
+	Changes:
+
+	- various improvements in the output of Encode::decSimplify(),
+	  the automatic decoded rpc-encoded messages.
+
+	- depends on XML::Compile 0.61
+
+	Fixes:
+
+	- ::Encoding::_dec_typed() confused URI and prefix.
+
+	- rpc-encoded now tests that user's constructed question has
+	  a name-space.
+
+	Improvements:
+
+	- updated examples in example/namesservice/
+	  WSDL example is now called: has_wsdl.pl
+
+	- added new example/namesservices examples:
+	  New pure Schema example: has_schema.pl
+	  RPC-literal example: rpc-literal.pl
+	  RPC-Encoded example: rpc-encoded.pl
+	  and 4 related simplifications, named xxxx2.pl
+
+	- Added for convenience: Encoding::encAddNamespace() [without s]
+
 version 0.63: Sat Nov 24 00:14:07 CET 2007
 
 	Changes:

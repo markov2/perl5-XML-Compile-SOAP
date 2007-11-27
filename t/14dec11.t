@@ -60,7 +60,7 @@ __XML
     my @elements = grep { $_->isa('XML::LibXML::Element') } $body->childNodes;
     my $h = $soap->dec(@elements);
 
-#warn "H: ",Dumper $h;
+#warn "H: ",Dumper $h, $expect_data;
     cmp_deeply($h, $expect_data, 'complex data');
 
     my ($index, $hrefs) = ({}, []);
@@ -69,7 +69,7 @@ __XML
     cmp_deeply($index, $expect_index, 'index');
 
     my $s = $soap->decSimplify($h);
-#warn "S: ", Dumper $s;
+#warn "S: ", Dumper $s, $simple_data;
     cmp_deeply($s, $simple_data, 'simplified data');
 }
 
@@ -87,7 +87,7 @@ check_decode '<SOAP-ENC:int id="hhtg">42</SOAP-ENC:int>'
   , 'soapenc simple with id';
 
 check_decode '<code xsi:type="xsd:int">43</code>'
-  , [ { _ => 43, _TYPE => "{$SchemaNS}int" } ]
+  , [ { _NAME => 'code', _ => 43, _TYPE => "{$SchemaNS}int" } ]
   , 43
   , {}
   , 'typed';
@@ -107,10 +107,15 @@ __SCHEMA
 
 my $a1 =
   { _NAME => pack_type($TestNS, 'myFavoriteNumbers'), id => 'array1'
-  , _ => [ { _TYPE => $int, _ => 3 }, { _TYPE => $int, _ => 4 } ]
+  , _ => [ { _TYPE => $int, _NAME => 'number', _ => 3 }
+         , { _TYPE => $int, _NAME => 'number', _ => 4 } ]
   };
 
-check_decode <<__XML, [$a1, $a1], [[3,4],[3,4]], {array1 => $a1}, 'array 1';
+# this simplification is incorrect; probably that href is not a
+# realistic example either
+my $a1b = [[3,4], [3,4]];
+
+check_decode <<__XML, [$a1, $a1], $a1b, {array1 => $a1}, 'array 1';
 <test:myFavoriteNumbers id="array1" SOAP-ENC:arrayType="xsd:int[2]">
   <number>3</number>
   <number>4</number>
@@ -138,11 +143,12 @@ my $e3u = 'http://www.dartmouth.edu/~milton/reading_room/';
 my $bf3 = Math::BigFloat->new(6.789);
 my $a3 =
   { _NAME => $encarray
-  , _ => [ { _TYPE => $int, _ => 12345}
-         , { _TYPE => pack_type(SCHEMA2001, 'decimal'), _ => $bf3 }
-         , { _TYPE => $string, _ => $e3t }
-         , { _TYPE => pack_type(SCHEMA2001, 'anyURI'), _ => $e3u }
-         ]
+  , _ =>
+    [ { _NAME => 'thing', _TYPE => $int, _ => 12345}
+    , { _NAME => 'thing', _TYPE => pack_type(SCHEMA2001, 'decimal'), _ => $bf3 }
+    , { _NAME => 'thing', _TYPE => $string, _ => $e3t }
+    , { _NAME => 'thing', _TYPE => pack_type(SCHEMA2001, 'anyURI'), _ => $e3u }
+    ]
   };
 
 check_decode <<__XML, [$a3], [12345,$bf3,$e3t,$e3u], {}, 'array 3';
@@ -176,9 +182,10 @@ my $bf4a = Math::BigFloat->new(1.56);
 my $bf4b = Math::BigFloat->new(1.48);
 my $a4c  =
   { _NAME => $encarray
-  , _ => [ { _TYPE => $ot, Product => 'Apple', Price => $bf4a }
-         , { _TYPE => $ot, Product => 'Peach', Price => $bf4b }
-         ]
+  , _ =>
+     [ { _NAME => 'Order', _TYPE => $ot, Product => 'Apple', Price => $bf4a }
+     , { _NAME => 'Order', _TYPE => $ot, Product => 'Peach', Price => $bf4b }
+     ]
   };
 my $a4s = [ {Product => 'Apple', Price => $bf4a}
           , {Product => 'Peach', Price => $bf4b} ];
@@ -199,17 +206,17 @@ __XML
 my $a5_1 =
  { _NAME => $encarray
  , id => 'array-1'
- , _ => [ { _TYPE => $string, _ => 'r1c1' }
-        , { _TYPE => $string, _ => 'r1c2' }
-        , { _TYPE => $string, _ => 'r1c3' }
+ , _ => [ { _NAME => 'item', _TYPE => $string, _ => 'r1c1' }
+        , { _NAME => 'item', _TYPE => $string, _ => 'r1c2' }
+        , { _NAME => 'item', _TYPE => $string, _ => 'r1c3' }
         ]
  };
 
 my $a5_2 =
  { _NAME => $encarray
  , id => 'array-2'
- , _ => [ { _TYPE => $string, _ => 'r2c1' }
-        , { _TYPE => $string, _ => 'r2c2' }
+ , _ => [ { _NAME => 'item', _TYPE => $string, _ => 'r2c1' }
+        , { _NAME => 'item', _TYPE => $string, _ => 'r2c2' }
         ]
  };
 
@@ -289,8 +296,8 @@ my $s7e4 = 'The fourth element';
 my $a7 =
   { _NAME => $encarray
   , _ => [ undef, undef
-         , { _TYPE => $string, _ => $s7e3 }
-         , { _TYPE => $string, _ => $s7e4 }
+         , { _NAME => 'item', _TYPE => $string, _ => $s7e3 }
+         , { _NAME => 'item', _TYPE => $string, _ => $s7e4 }
          , undef ]
   };
 my $a7s = [undef, undef, $s7e3, $s7e4, undef];
@@ -305,9 +312,9 @@ __XML
 my $a8 =
   { _NAME => $encarray
   , _ => [ undef
-         , { _TYPE => $string, _ => $s7e2 }
+         , { _NAME => 'item', _TYPE => $string, _ => $s7e2 }
          , undef
-         , { _TYPE => $string, _ => $s7e4 }
+         , { _NAME => 'item', _TYPE => $string, _ => $s7e4 }
          , undef ]
   };
 my $a8s = [ undef, $s7e2, undef, $s7e4, undef ];
@@ -319,7 +326,7 @@ check_decode <<__XML, [$a8], $a8s, {}, 'array with position';
 </SOAP-ENC:Array>
 __XML
 
-my @e9 = map { +{_TYPE => $string, _ => $_} }
+my @e9 = map { +{_NAME => 'item', _TYPE => $string, _ => $_} }
    qw/r1c1 r1c2 r1c3 r2c1 r2c2 r2c3/;
 
 my $a9 =
@@ -357,8 +364,13 @@ check_decode <<__XML, [$a10], $a10s, {}, 'multidim with position';
 __XML
 
 my $a11_2 = { _NAME => $encarray, id => 'array-1'};
-$a11_2->{_}[2][2] = { _TYPE => $string, _ => 'Third row, third col' };
-$a11_2->{_}[7][2] = { _TYPE => $string, _ => 'Eight row, third col' };
+
+$a11_2->{_}[2][2] = { _NAME => 'item', _TYPE => $string
+  ,  _ => 'Third row, third col' };
+
+$a11_2->{_}[7][2] = { _NAME => 'item', _TYPE => $string
+  , _ => 'Eight row, third col' };
+
 my $a11_1 = { _NAME => $encarray, _ => [undef, undef, $a11_2, undef] };
 my $a11   = [ $a11_1, $a11_2 ];
 
@@ -368,7 +380,7 @@ $a11s_2->[7][2] = 'Eight row, third col';
 my $a11s_1 = [undef, undef, $a11s_2, undef];
 my $a11s = [ $a11s_1 , $a11s_2];
 
-check_decode <<__XML, $a11, $a11s, {'array-1' => $a11_2},'multidim nested';
+check_decode <<__XML, $a11, $a11s, {'array-1' => $a11_2}, 'multidim nested 1';
 <SOAP-ENC:Array SOAP-ENC:arrayType="xsd:string[,][4]" SOAP-ENC:offset="[2]">
   <SOAP-ENC:Array href="#array-1"/>
 </SOAP-ENC:Array>
@@ -378,7 +390,7 @@ check_decode <<__XML, $a11, $a11s, {'array-1' => $a11_2},'multidim nested';
 </SOAP-ENC:Array>
 __XML
 
-check_decode <<__XML, [$a11_1], $a11s_1, {'array-1'=>$a11_2},'multidim nested';
+check_decode <<__XML, [$a11_1], $a11s_1, {'array-1'=>$a11_2},'multidim nested 2';
 <SOAP-ENC:Array SOAP-ENC:arrayType="xsd:string[,][4]" SOAP-ENC:offset="[2]">
   <SOAP-ENC:Array SOAP-ENC:arrayType="xsd:string[10,10]" id="array-1">
     <item SOAP-ENC:position="[2,2]">Third row, third col</item>
@@ -387,10 +399,10 @@ check_decode <<__XML, [$a11_1], $a11s_1, {'array-1'=>$a11_2},'multidim nested';
 </SOAP-ENC:Array>
 __XML
 
-my $a12_1 = { _TYPE => '{http://www.w3.org/2001/XMLSchema}string',
-              _ => 'South Dakota' };
-my $a12_2 = { _TYPE => '{http://schemas.xmlsoap.org/soap/encoding/}string',
-              _ => 'New York' };
+my $a12_1 = { _TYPE => '{http://www.w3.org/2001/XMLSchema}string'
+            , _NAME => 'Result',  _ => 'South Dakota' };
+my $a12_2 = { _TYPE => '{http://schemas.xmlsoap.org/soap/encoding/}string'
+            ,  _ => 'New York' };
 
 my $a12 = [ { _NAME => '{http://www.soapware.org/}getStateNameResponse',
             , getStateNameResponse => [ $a12_1, $a12_2 ] } ];

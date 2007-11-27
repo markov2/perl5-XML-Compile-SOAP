@@ -34,7 +34,7 @@ require you to specify more information about the expected message types.
 
 =method new OPTIONS
 The OPTIONS are all collected from the WSDL description by
-M<XML::Compile::WSDL::operation()>.  End-users should not attempt to
+M<XML::Compile::WSDL11::operation()>.  End-users should not attempt to
 initiate this object directly.
 
 =requires name     STRING
@@ -471,30 +471,30 @@ sub collectMessageParts($$$)
 
     if(my $bind_headers = $bind->{"{$soapns}header"})
     {   $bind_header_reader
-        ||= $self->schemas->compile(READER => "{$soapns}header");
+         ||= $self->schemas->compile(READER => "{$soapns}header");
 
         my @headers = map {$bind_header_reader->($_)} @$bind_headers;
 
         foreach my $header (odd_elements @headers)
         {   my $use = $header->{use}
                 or error __x"message {name} header requires use attribute"
-                      , name => $msgname;
+                     , name => $msgname;
 
             my $hmsgname = $header->{message}
                 or error __x"message {name} header requires message attribute"
-                      , name => $msgname;
+                     , name => $msgname;
 
             my $hmsg = $self->wsdl->find(message => $hmsgname)
                 or error __x"cannot find header message {name}"
-                      , name => $hmsgname;
+                     , name => $hmsgname;
 
             my $partname = $header->{part}
                 or error __x"message {name} header requires part attribute"
-                      , name => $msgname;
+                     , name => $msgname;
 
             $encodings{$partname} = $header;
             push @{$parts{header}}
-               , $self->messageSelectParts($hmsg, $partname);
+              , $self->messageSelectParts($hmsg, $partname);
 
             foreach my $hf ( @{$header->{headerfault} || []} )
             {   my $hfmsg  = $self->wsdl->find(message => $hf->{message})
@@ -503,7 +503,7 @@ sub collectMessageParts($$$)
                 my $hfname = $hf->{part};
                 $encodings{$hfname} = $hf;
                 push @{$parts{headerfault}}
-                   , $self->messageSelectParts($hfmsg, $hfname);
+                  , $self->messageSelectParts($hfmsg, $hfname);
             }
 
             $encodings{$partname} = $header;
@@ -600,4 +600,3 @@ sub collectFaultParts($$$)
 }
 
 1;
-
