@@ -107,12 +107,17 @@ massive amount of additional information added as well.
 You may add information to the trace.  You have to return a textual
 representation of the XML answer, or C<undef> to indicate that the
 message was totally unacceptable.
+
+=option  kind STRING
+=default kind 'request-response'
+Kind of communication, as defined by WSDL.
 =cut
 
 my $parser = XML::LibXML->new;
 sub compileClient(@)
 {   my ($self, %args) = @_;
     my $call  = $self->_prepare_call(\%args);
+    my $kind  = $args{kind} || 'request-response';
 
     sub
     {   my ($xmlout, $trace) = @_;
@@ -130,9 +135,16 @@ sub compileClient(@)
         {   $xmlin = eval {$parser->parse_string($textin)};
             $trace->{error} = $@ if $@;
         }
-        else
-        {   $trace->{error} = 'no xml as answer';
+
+        my $answer;
+        if($kind eq 'one-way')
+        {   my $response = $trace->{http_response};
+            my $code = defined $response ? $response->code : -1;
+            if($code==202) { $answer = $xmlin || {} }
+            else { $trace->{error} = "call failed with code $code" }
         }
+        elsif($xmlin) { $answer  = $xmlin }
+        else { $trace->{error} = 'no xml as answer' }
 
         my $end = $trace->{transport_end} = time;
 
@@ -140,7 +152,7 @@ sub compileClient(@)
         $trace->{connect_elapse}   = $connected - $stringify;
         $trace->{parse_elapse}     = $end - $connected;
         $trace->{transport_elapse} = $end - $start;
-        $xmlin;
+        $answer;
     }
 }
 

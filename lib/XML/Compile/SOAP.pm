@@ -67,7 +67,7 @@ XML::Compile::SOAP - base-class for SOAP implementations
  # This is Document-style SOAP
 
  my $call   = $client->compileClient
-   ( kind      => 'request-response'
+   ( kind      => 'request-response'  # default
    , name      => 'my first call'
    , encode    => $encode_query
    , decode    => $decode_response
@@ -117,15 +117,16 @@ can be hidden for you)
 
 =requires envelope_ns URI
 =requires encoding_ns URI
-=requires schema_ns URI
+=requires schema_ns   URI
+
 =option  schema_instance_ns URI
 =default schema_instance_ns C<<$schema_ns . '-instance'>>
 
-=option   media_type MIMETYPE
-=default  media_type C<application/soap+xml>
+=option  media_type MIMETYPE
+=default media_type C<application/soap+xml>
 
-=option   schemas    C<XML::Compile::Schema> object
-=default  schemas    created internally
+=option  schemas    C<XML::Compile::Schema> object
+=default schemas    created internally
 Use this when you have already processed some schema definitions.  Otherwise,
 you can add schemas later with C<< $soap->schemas->importDefinitions() >>
 
@@ -300,7 +301,8 @@ is used as default.
 =option  kind STRING
 =default kind C<request-response>
 Which kind of client is this.  WSDL11 defines four kinds of client-server
-interaction.  Only C<request-response> (the default) is currently supported.
+interaction.  Only C<request-response> (the default) and C<one-way> are
+currently supported.
 
 =requires encode CODE
 The CODE reference is produced by M<compileMessage()>, and must be a
@@ -308,7 +310,9 @@ SENDER: translates Perl data structures into the SOAP message in XML.
 
 =requires decode CODE
 The CODE reference is produced by M<compileMessage()>, and must be a
-RECEIVER: translate a SOAP message into Perl data.
+RECEIVER: translate a SOAP message into Perl data.  Even in one-way
+operation, this decode should be provided: some servers may pass back
+some XML in case of errors.
 
 =requires transport CODE
 The CODE reference is produced by an extensions of
@@ -357,8 +361,8 @@ sub compileClient(@)
     }
 
     my $kind = $args{kind} || $rr;
-    $kind eq $rr
-        or error __x"only `{rr}' operations are supported, not `{kind}' for {name}"
+    $kind eq $rr || $kind eq 'one-way'
+        or error __x"operation direction `{kind}' not supported for {name}"
              , rr => $rr, kind => $kind, name => $name;
 
     my $encode = $args{encode}
@@ -378,15 +382,15 @@ sub compileClient(@)
         my %trace;
         my $ans   = $transport->($req, \%trace);
 
-        wantarray
-            or return defined $ans ? $decode->($ans) : undef;
+        wantarray or return
+            UNIVERSAL::isa($ans, 'XML::LibXML::Node') ? $decode->($ans) : $ans;
 
         $trace{date}   = localtime $start;
         $trace{start}  = $start;
         $trace{encode_elapse} = $trace{transport_start} - $start;
 
-        defined $ans
-            or return (undef, \%trace);
+        UNIVERSAL::isa($ans, 'XML::LibXML::Node')
+            or return ($ans, \%trace);
 
         my $dec = $decode->($ans);
         my $end = time;

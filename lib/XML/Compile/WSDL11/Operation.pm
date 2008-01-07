@@ -445,6 +445,10 @@ Collect the components of the message which are actually being used.
 my ($bind_body_reader, $bind_header_reader);
 sub collectMessageParts($$$)
 {   my ($self, $args, $portop, $bind) = @_;
+
+    defined $portop          # communication not in two directions
+        or return ({}, {});
+
     my (%parts, %encodings);
 
     my $msgname  = $portop->{message}

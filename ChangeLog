@@ -1,6 +1,15 @@
 
 === version history of XML::Compile::SOAP
 
+version 0.65: Mon Jan  7 11:58:52 CET 2008
+
+	Improvements:
+
+	- do not fail in ::Operation::collectMessageParts() if the
+	  input or output part description is missing. [Kaare Rasmussen]
+
+	- support for one-way (WSDL) messages, pushed by [Kaare Rasmussen]
+	
 version 0.64: Tue Nov 27 11:42:45 CET 2007
 
 	Changes:
@@ -28,7 +37,7 @@ version 0.64: Tue Nov 27 11:42:45 CET 2007
 	  RPC-Encoded example: rpc-encoded.pl
 	  and 4 related simplifications, named xxxx2.pl
 
-	- Added for convenience: Encoding::encAddNamespace() [without s]
+	- added for convenience: Encoding::encAddNamespace() [without s]
 
 version 0.63: Sat Nov 24 00:14:07 CET 2007
 

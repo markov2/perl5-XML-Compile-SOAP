@@ -17,11 +17,10 @@ $Data::Dumper::Indent = 1;
 
 use XML::Compile::WSDL11;
 use XML::Compile::Transport::SOAPHTTP;
+use XML::Compile::SOAP::Util  qw/WSDL11/;
 
 use Test::More tests => 42;
 use Test::Deep;
-
-my $wsdlns = 'http://schemas.xmlsoap.org/wsdl/';
 
 my $xml_xsd = <<__STOCKQUOTE_XSD;
 <?xml version="1.0"?>
@@ -125,7 +124,7 @@ my $wsdl = XML::Compile::WSDL11->new
 
 ok(defined $wsdl, "created object");
 isa_ok($wsdl, 'XML::Compile::WSDL11');
-is($wsdl->wsdlNamespace, $wsdlns);
+is($wsdl->wsdlNamespace, WSDL11);
 
 my @services = $wsdl->find('service');
 cmp_ok(scalar(@services), '==', 1, 'find service list context');

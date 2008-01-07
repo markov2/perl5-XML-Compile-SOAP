@@ -52,15 +52,23 @@ XML::Compile::WSDL11 - create SOAP messages defined by WSDL 1.1
  
 =chapter DESCRIPTION
 
-B<< This module is UNDER CONSTRUCTION.
-Missing: pure HTTP GET/POST bindings, multipart-mime; SOAP-RPC >>
+This module is QUITE NEW, so needs more exposure to the outside world.
+It currently only supports WSDL 1.1 on SOAP 1.1, with HTTP-SOAP.  Missing
+are pure HTTP GET/POST bindings and multipart-mime transport protocols.
 
-An WSDL file defines a set of schemas and how to use the defined
-types using SOAP connections.  The parsing is based on the WSDL
-schema.
+An WSDL file defines a set of messages to be send and received over SOAP
+connections.  As end-user, you do not have to worry about the complex
+details of the messages and the exchange of them: it's all Perl to you.
+Also faults are handled automatically.
 
-The WSDL definition can get constructed from multiple XML trees, each
-added with M<addWSDL()> (wsdl), or M<importDefinitions()> (schema).
+The only complication you have to worry about, is to shape
+a nested HASH structure to the sending message structure.
+M<XML::Compile::Schema::template()> may help you.
+
+When the definitions are spread over multiple files, you will need to
+use M<addWSDL()> (wsdl), or M<importDefinitions()> (additional schema's)
+explicitly, because M<XML::Compile::Schema> does not wish dynamic internet
+download magic to happen.
 
 =chapter METHODS
 
@@ -469,6 +477,11 @@ a choice, then you are required to select one explicitly.
 
  # once in your program
  my $wsdl   = XML::Compile::WSDL11->new('def.wsdl');
+
+ # XML::Compile::Schema does not want to follow "include" and
+ # "import" commands, so you need to invoke them explicitly.
+ # $wsdl->addWSDL('file2.wsdl');            # optional
+ # $wsdl->importDefinitions('schema1.xsd'); # optional
 
  # once for each of the defined operations
  my $call   = $wsdl->compileClient('GetStockPrice');

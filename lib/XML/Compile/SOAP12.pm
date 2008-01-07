@@ -6,6 +6,7 @@ use base 'XML::Compile::SOAP';
 
 use Log::Report 'xml-compile-soap', syntax => 'SHORT';
 
+use XML::Compile::Util       qw/SCHEMA2001/;
 use XML::Compile::SOAP::Util qw/:soap12/;
 
 my %roles =
@@ -50,6 +51,7 @@ where it is replaced by a C<notUnderstood> structure.
 =default version     'SOAP12'
 =default envelope_ns C<http://www.w3.org/2003/05/soap-envelope>
 =default encoding_ns C<http://www.w3.org/2003/05/soap-encoding>
+=default schema_ns   SCHEMA2001
 
 =option  rpc_ns      URI
 =default rpc_ns      C<http://www.w3.org/2003/05/soap-rpc>
@@ -63,6 +65,7 @@ sub new($@)
 sub init($)
 {   my ($self, $args) = @_;
     $args->{version}               ||= 'SOAP12';
+    $args->{schema_ns}             ||= SCHEMA2001;
     my $env = $args->{envelope_ns} ||= SOAP12ENV;
     my $enc = $args->{encoding_ns} ||= SOAP12ENC;
     $self->SUPER::init($args);

@@ -48,5 +48,6 @@ t/15rpclit11.t
 t/16rpcenc11.t
 t/50wsdl11.t
 t/51wsdl11enc.t
+t/52wsdl11one.t
 t/TestTools.pm
 t/pod.t
