@@ -16,8 +16,8 @@ use warnings;
 use strict;
 
 # To make Perl find the modules without the package being installed.
-use lib '../../lib';
-use lib '../../../XMLCompile/lib'   # my home test environment
+use lib '../../lib'
+      , '../../../XMLCompile/lib'   # my home test environment
       , '../../../LogReport/lib';
 
 use XML::Compile::SOAP11::Client;
@@ -108,7 +108,9 @@ sub make_get_countries_out($$$)
     my $top = $soap->struct(pack_type($myns, 'getCountries'));
 #   my $top = $soap->struct("{$myns}getCountries");  # alt, less clean
 
-    $top;
+    # you may return a LIST of elements to be put in the Body.  The
+    # first must be name-space qualified, the other don't.
+    ($top);
 }
 
 sub create_get_countries

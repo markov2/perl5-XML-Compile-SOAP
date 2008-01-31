@@ -92,6 +92,7 @@ sub fake_server(@)
 
     isa_ok($request, 'HTTP::Request');
     compare_xml($request->decoded_content, <<__XML, 'request content');
+<?xml version="1.0" encoding="UTF-8"?>
 <SOAP-ENV:Envelope
    xmlns:x0="http://test-types"
    xmlns:SOAP-ENV="http://schemas.xmlsoap.org/soap/envelope/">
@@ -117,6 +118,7 @@ __XML
       , 'standard response'
       , [ 'Content-Type' => 'text/xml' ]
       , <<__XML);
+<?xml version="1.0" encoding="UTF-8"?>
 <SOAP-ENV:Envelope
    xmlns:x0="http://test-types"
    xmlns:SOAP-ENV="http://schemas.xmlsoap.org/soap/envelope/">

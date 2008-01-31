@@ -239,12 +239,12 @@ DETAILs chapter in the M<XML::Compile::Transport> manual page.
 =option  rpcout TYPE|CODE
 =default rpcout C<undef>
 Pack user values into an outgoing SOAP-RPC structure.
-See M<XML::Compile::SOAP::compileClient(rpcout)>.
+See M<XML::Compile::SOAP::Client::compileClient(rpcout)>.
 
 =option  rpcin TYPE|CODE
 =default rpcin C<undef>
 Decode some received (incoming) SOAP-RPC structure into Perl data structures.
-See M<XML::Compile::SOAP::compileClient(rpcin)>.
+See M<XML::Compile::SOAP::Client::compileClient(rpcin)>.
 =cut
 
 sub compileClient(@)

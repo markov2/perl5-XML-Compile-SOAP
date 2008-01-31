@@ -49,6 +49,7 @@ is(ref $receiver, 'CODE', 'compiled a receiver');
 #
 
 my $msg1_soap = <<__MSG1;
+<?xml version="1.0" encoding="UTF-8"?>
 <SOAP-ENV:Envelope xmlns:x0="$TestNS"
    xmlns:SOAP-ENV="http://schemas.xmlsoap.org/soap/envelope/">
   <SOAP-ENV:Header>
@@ -98,6 +99,7 @@ ok(defined $hash2->{header},             'header');
 #
 
 my $msg2_soap = <<__FAULT;
+<?xml version="1.0" encoding="UTF-8"?>
 <SOAP-ENV:Envelope xmlns:x0="http://test-types"
    xmlns:SOAP-ENV="http://schemas.xmlsoap.org/soap/envelope/">
    <SOAP-ENV:Body>

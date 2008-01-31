@@ -1,6 +1,34 @@
 
 === version history of XML::Compile::SOAP
 
+version 0.66: Thu Jan 31 09:30:18 CET 2008
+
+	Fixes:
+
+	- the SOAP message is a document, not an element.  This way,
+	  we get the right output encoding for free.  Problem spotted
+	  by [Gert Doering]
+
+	- more encoding/decoding character-set issues.  Test script
+	  in t/30charset.t
+
+	Improvements:
+
+	- details about client-side soap moved from ::SOAP into
+	  ::SOAP::Client
+
+	- ::SOAP::compileClient() moved to ::SOAP::Client::
+
+	- example for $wsdl->compileClient() by [Allen Wind]
+
+	- updated the docs, wrt non-existing SOAP1.2 support, triggered
+	  by [Allen Wind]
+
+	- initial implementation of XML::Compile::SOAP::Server
+
+	- return multiple elements in RPC-encoded constructor.
+	  Needed by [Philippe B.]
+
 version 0.65: Mon Jan  7 11:58:52 CET 2008
 
 	Improvements:

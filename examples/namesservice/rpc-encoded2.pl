@@ -16,8 +16,8 @@ use warnings;
 use strict;
 
 # To make Perl find the modules without the package being installed.
-use lib '../../lib';
-use lib '../../../XMLCompile/lib'   # my home test environment
+use lib '../../lib'
+      , '../../../XMLCompile/lib'   # my home test environment
       , '../../../LogReport/lib';
 
 use XML::Compile::SOAP11::Client;

@@ -27,10 +27,9 @@ XML::Compile->knownNamespace
 XML::Compile::SOAP12 - base class for SOAP1.2 implementation
 
 =chapter SYNOPSIS
-
-=chapter DESCRIPTION
 **WARNING** Implementation not finished: not usable!!
 
+=chapter DESCRIPTION
 This module handles the SOAP protocol version 1.2.
 See F<http://www.w3.org/TR/soap12/>).
 

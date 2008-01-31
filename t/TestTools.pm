@@ -256,20 +256,14 @@ sub compare_xml($$;$)
 {   my ($tree, $expect, $msg) = @_;
     my $dump = ref $tree ? $tree->toString : $tree;
 
-    if(!defined $dump) { ; }
-    elsif($dump =~ m/\n|\s\s/)
-    {   # output expects superfluous blanks
-        $expect =~ s/\n\z//;
-    }
-    else
-    {   for($expect)
-        {   s/\>\s+/>/gs;
-            s/\s+\</</gs;
-            s/\>\s+\</></gs;
-            s/\s*\n\s*/ /gs;
-            s/\s{2,}/ /gs;
-            s/\s+\z//gs;
-        }
+    for($dump, $expect)
+    {   defined $_ or next;
+        s/\>\s+/>/gs;
+        s/\s+\</</gs;
+        s/\>\s+\</></gs;
+        s/\s*\n\s*/ /gs;
+        s/\s{2,}/ /gs;
+        s/\s+\z//gs;
     }
     is($dump, $expect, $msg);
 }

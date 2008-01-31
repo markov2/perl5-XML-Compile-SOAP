@@ -226,6 +226,7 @@ sub fake_server($$)
 {  my ($request, $trace) = @_;
    my $content = $request->decoded_content;
    compare_xml($content, <<__EXPECTED, 'fake server received');
+<?xml version="1.0" encoding="UTF-8"?>
 <SOAP-ENV:Envelope
    xmlns:x0="http://example.com/stockquote/schemas"
    xmlns:SOAP-ENV="http://schemas.xmlsoap.org/soap/envelope/">
@@ -240,6 +241,7 @@ __EXPECTED
    HTTP::Response->new(200, 'answer manually created'
     , [ 'Content-Type' => 'text/xml' ]
     , <<__ANSWER);
+<?xml version="1.0" encoding="UTF-8"?>
 <SOAP-ENV:Envelope
    xmlns:x0="http://example.com/stockquote/schemas"
    xmlns:SOAP-ENV="http://schemas.xmlsoap.org/soap/envelope/">

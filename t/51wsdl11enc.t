@@ -184,6 +184,7 @@ sub fake_server($$)
 {   my ($request, $trace) = @_;
     isa_ok($request, 'HTTP::Request', 'constucted request');
     compare_xml($request->decoded_content, <<__XML);
+<?xml version="1.0" encoding="UTF-8"?>
 <SOAP-ENV:Envelope
    xmlns:SOAP-ENV="http://schemas.xmlsoap.org/soap/envelope/">
   <SOAP-ENV:Body>

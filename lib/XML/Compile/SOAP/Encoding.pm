@@ -5,7 +5,7 @@ package XML::Compile::SOAP;  #!!!
 
 use Log::Report 'xml-compile-soap', syntax => 'SHORT';
 use List::Util qw/min first/;
-use XML::Compile::Util qw/odd_elements SCHEMA2001/;
+use XML::Compile::Util qw/odd_elements SCHEMA2001 unpack_type/;
 
 =chapter NAME
 XML::Compile::SOAP::Encoding - SOAP encoding

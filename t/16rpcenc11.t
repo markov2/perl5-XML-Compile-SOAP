@@ -44,6 +44,7 @@ sub fake_server(@)
 
     isa_ok($request, 'HTTP::Request');
     compare_xml($request->decoded_content, <<__XML, 'request content');
+<?xml version="1.0" encoding="UTF-8"?>
 <SOAP-ENV:Envelope
    xmlns:SOAP-ENV="http://schemas.xmlsoap.org/soap/envelope/">
   <SOAP-ENV:Body>
@@ -54,6 +55,7 @@ sub fake_server(@)
        SOAP-ENV:encodingStyle="http://schemas.xmlsoap.org/soap/encoding/">
       <statenum xsi:type="xsd:int">41</statenum>
     </m:getStateName>
+    <dummy xsi:type="xsd:int">0</dummy>
   </SOAP-ENV:Body>
 </SOAP-ENV:Envelope>
 __XML
@@ -65,7 +67,7 @@ __XML
       , 'standard response'
       , [ 'Content-Type' => 'text/xml' ]
       , <<__XML);
-<?xml version="1.0"?>
+<?xml version="1.0" encoding="UTF-8"?>
 <SOAP-ENV:Envelope
    SOAP-ENV:encodingStyle="http://schemas.xmlsoap.org/soap/encoding/"
    xmlns:SOAP-ENC="http://schemas.xmlsoap.org/soap/encoding/"
@@ -92,8 +94,13 @@ sub rpc_outgoing($$$)
 {   my ($soap, $doc, $data) = @_;
     $soap->encAddNamespaces(m => $MYNS);
 
-    my $num = $soap->typed($int, statenum => 41);
-    $soap->struct(pack_type($MYNS, 'getStateName'), $num);
+    my $num  = $soap->typed($int, statenum => 41);
+    my $body = $soap->struct(pack_type($MYNS, 'getStateName'), $num);
+
+    # just to test that it is possible to return multiple body elements.
+    my $dummy = $soap->typed($int, dummy => 0);
+
+    ($body, $dummy);
 }
 
 my $get_state = $client->compileClient

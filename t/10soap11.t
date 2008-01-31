@@ -64,6 +64,7 @@ my $msg1_data =
   };
 
 my $msg1_soap = <<__MESSAGE1;
+<?xml version="1.0" encoding="UTF-8"?>
 <SOAP-ENV:Envelope
    xmlns:x0="http://test-types"
    xmlns:SOAP-ENV="http://schemas.xmlsoap.org/soap/envelope/">

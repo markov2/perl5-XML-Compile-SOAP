@@ -87,6 +87,7 @@ sub fake_server($$)
 {  my ($request, $trace) = @_;
    my $content = $request->decoded_content;
    compare_xml($content, <<__EXPECTED, 'fake server received');
+<?xml version="1.0" encoding="UTF-8"?>
 <SOAP-ENV:Envelope
     xmlns:x0="http://any-ns"
     xmlns:SOAP-ENV="http://schemas.xmlsoap.org/soap/envelope/">

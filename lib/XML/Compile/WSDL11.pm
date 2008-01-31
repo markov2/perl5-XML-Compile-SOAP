@@ -243,6 +243,8 @@ one operation defined within the portType.
 
 =cut
 
+# new options, then also add them to the list in compileClient()
+
 sub operation(@)
 {   my $self = shift;
     my $name = @_ % 2 ? shift : undef;
@@ -325,8 +327,15 @@ Creates temporarily an M<XML::Compile::WSDL11::Operation> with M<operation()>,
 and then calls C<compileClient()> on that; an usual combination.
 
 As OPTIONS are available the combination of all possibilities for
-M<operation()> and all of M<XML::Compile::WSDL11::Operation::compileClient()>.
-For instance, C<transport_hook>.
+M<operation()> (i.e. C<service> and C<port>) and all of
+M<XML::Compile::WSDL11::Operation::compileClient()> (a whole lot,
+for instance C<transport_hook>).
+
+=example
+  $wsdl->compileClient
+    ( operation => 'HelloWorld'
+    , port      => 'PrefillSoap' # only needed in multiple ports
+    );
 =cut
 
 sub compileClient(@)
@@ -335,6 +344,8 @@ sub compileClient(@)
     my $op   = $self->operation(@_) or return ();
     $op->compileClient(@_);
 }
+
+#---------------------
 
 =section Inspection
 
@@ -458,6 +469,8 @@ sub operations(@)
 
     @ops;
 }
+
+#--------------------------------
 
 =chapter DETAILS
 
