@@ -223,12 +223,13 @@ when successfull.
 Only the HTTP protocol is supported on the moment.  The URI is
 the WSDL URI representation of the HTTP protocol.
 
-=option  transporter XML::Compile::Transport object
-=default transporter <created>
-Usually an M<XML::Compile::Transport::SOAPHTTP> object, which is
-used to exchange the data with the server.  By default, a transporter
-compatible to the protocol is created.  However, in most cases you
-want to reuse one (HTTP1.1) connection to a server.
+=option  transport CODE
+=default transport <created>
+The routine which will be used to exchange the
+data with the server.  This code is usually created by
+M<XML::Compile::Transport::SOAPHTTP::compileClient()> By default, a
+transporter compatible to the protocol is created.  However, in most
+cases you want to reuse one (HTTP1.1) connection to a server.
 
 =option  transport_hook CODE
 =default transport_hook C<undef>
@@ -245,6 +246,11 @@ See M<XML::Compile::SOAP::Client::compileClient(rpcout)>.
 =default rpcin C<undef>
 Decode some received (incoming) SOAP-RPC structure into Perl data structures.
 See M<XML::Compile::SOAP::Client::compileClient(rpcin)>.
+
+=option  endpoint_address URI
+=default endpoint_address <from WSDL>
+Overrule the destination address.
+
 =cut
 
 sub compileClient(@)
@@ -305,8 +311,8 @@ sub compileClient(@)
        or error __x"SORRY: only transport of HTTP implemented, not {protocol}"
                , protocol => $proto;
 
-    my $transport = $args{transport};
-    unless($transport)
+    my $send = $args{transport};
+    unless($send)
     {   my $impl = 'XML::Compile::Transport::SOAPHTTP';
 
         # this is an optimization thing: often, the client and server will
@@ -316,18 +322,18 @@ sub compileClient(@)
             or error __x"explicitly put 'use {impl}' in your script"
                   , impl => $impl;
 
-        $transport = $impl->new
-          ( address  => [ $self->endPointAddresses ]
+        my $transport = $impl->new
+          ( address  => [ $args{endpoint_address} || $self->endPointAddresses ]
+          );
+
+        $send = $transport->compileClient
+          ( name         => $self->name
+          , kind         => $self->kind
+          , soap_version => $version
+          , action       => $self->soapAction
+          , hook         => $args{transport_hook}
           );
     }
-
-    my $send = $transport->compileClient
-      ( name         => $self->name
-      , kind         => $self->kind
-      , soap_version => $version
-      , action       => $self->soapAction
-      , hook         => $args{transport_hook}
-      );
 
     $soap->compileClient
       ( name         => $self->name

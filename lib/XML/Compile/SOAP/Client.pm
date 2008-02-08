@@ -76,7 +76,17 @@ with C<Response> concatenated: a commonly used convension.
 If this option is not used, but there is an C<rpcout> with CODE
 reference, then a standard decode routine is called.  That routine
 does use M<XML::Compile::SOAP::Encoding::decSimplify()> to get an
-as simple as possible return structure.
+as simple as possible return structure.  This function tries hard, and
+does some validation as well, however many RPC schemas are horribly
+broken, and thereby the automatic decoding fails.
+
+As alternative, you can try C<XMLin> from M<XML::LibXML::Simple> or
+M<XML::Simple> (SAX based parser).
+
+    rpcin => sub { my $soap = shift; [ map { XMLin($_) } @_ ] }
+
+Each of the body parts now get decoded.  However, this does not resolve
+references and such: the output datastructure is far more verbose.
 
 =cut
 

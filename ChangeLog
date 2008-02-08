@@ -1,6 +1,27 @@
 
 === version history of XML::Compile::SOAP
 
+version 0.67: Fri Feb  8 09:16:15 CET 2008
+
+	Fixes:
+
+	- WSDL types were compiled twice.
+
+	- problems with specifying your own transporter when creating SOAP
+	  calls based on a WSDL.
+
+	- upgrade requirement XML::Compile to 0.68
+
+	- ::Encoding::dec()  [decode RPC] tries harder.
+	  with help of [Philippe B.]
+
+	Improvements:
+
+	- Pass information about location of type definitions to
+	  XML::Compile, for debugging and tracing.
+
+	- ::Encoding::array new option array_type
+
 version 0.66: Thu Jan 31 09:30:18 CET 2008
 
 	Fixes:

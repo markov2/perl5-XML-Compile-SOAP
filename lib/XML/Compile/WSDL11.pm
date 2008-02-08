@@ -8,7 +8,7 @@ use Log::Report 'xml-compile-soap', syntax => 'SHORT';
 
 use XML::Compile::Schema  ();
 use XML::Compile::SOAP    ();
-use XML::Compile::Util    qw/pack_type/;
+use XML::Compile::Util    qw/pack_type unpack_type/;
 use XML::Compile::SOAP::Util qw/:wsdl11/;
 
 use XML::Compile::WSDL11::Operation ();
@@ -83,8 +83,8 @@ M<XML::Compile::Schema::new()>
 =option  wsdl_namespace IRI
 =default wsdl_namespace C<undef>
 Force to accept only WSDL descriptions which are in this namespace.  If
-not specified, the name-space is enforced which is found in the first WSDL
-document.
+not specified, the name-space  which is found in the first WSDL document
+is used.
 =cut
 
 sub init($)
@@ -131,7 +131,7 @@ C<definition> root element.
 sub addWSDL($)
 {   my ($self, $data) = @_;
     defined $data or return;
-    my $node = $self->dataToXML($data)
+    my ($node, %details) = $self->dataToXML($data)
         or return $self;
 
     $node    = $node->documentElement
@@ -148,7 +148,9 @@ sub addWSDL($)
                , wsdlns => $wsdlns, ns => $corens;
 
     my $schemas = $self->schemas;
-    $schemas->importDefinitions($wsdlns);  # to understand WSDL
+
+    # take all defintions from the WSDL, including the types
+    $schemas->importDefinitions($wsdlns, %details);
 
     $wsdlns eq WSDL11
         or error __x"don't known how to handle {wsdlns} WSDL files"
@@ -170,31 +172,22 @@ sub addWSDL($)
     my $tns  = $spec->{targetNamespace}
         or error __x"WSDL sets no targetNamespace";
 
-    # there can be multiple <types>, which each a list of <schema>'s
-    foreach my $type ( @{$spec->{types} || []} )
-    {   foreach my $k (keys %$type)
-        {   next unless $k =~ m/^\{[^}]*\}schema$/;
-            $schemas->importDefinitions(@{$type->{$k}});
+    # WSDL 1.1 par 2.1.1 says: WSDL defs all in own name-space
+    my $index     = $self->{index};
+    my $toplevels = $spec->{gr_import} || [];  # silly WSDL structure
+    foreach my $toplevel (@$toplevels)
+    {   my ($which, $def) = %$toplevel;   # only one
+        $index->{$which}{pack_type $tns, $def->{name}} = $def
+            if $which =~ m/^(?:service|message|binding|portType)$/;
+    }
+
+    foreach my $service ( @{$spec->{service} || []} )
+    {   foreach my $port ( @{$service->{port} || []} )
+        {   $index->{port}{pack_type $tns, $port->{name}} = $port;
         }
     }
 
-    # WSDL 1.1 par 2.1.1 says: WSDL defs all in own name-space
-    my $index = $self->{index};
-    my $toplevels = $spec->{gr_import} || [];  # silly WSDL structure
-    foreach my $toplevel (@$toplevels)
-    {   my $which = (keys %$toplevel)[0];   # only one
-        next unless $which =~ m/^(?:service|message|binding|portType)$/;
-        my $def   = $toplevel->{$which};
-        $index->{$which}{pack_type $tns, $def->{name}} = $def;
-    }
-
-   foreach my $service ( @{$spec->{service} || []} )
-   {   foreach my $port ( @{$service->{port} || []} )
-       {   $index->{port}{pack_type $tns, $port->{name}} = $port;
-       }
-   }
-
-   $self;
+    $self;
 }
 
 =method importDefinitions XMLDATA, OPTIONS

@@ -365,8 +365,14 @@ the slice to be sent (the number of elements starting with the C<offset>
 element)
 
 =option  id STRING
-=default id undef
-Assign an id to the array.
+=default id <undef>
+Assign an id to the array.  If not defined, than no id attribute is
+added.
+
+=option  array_type STRING
+=default array_type <generated>
+The arrayType attribute content.  When explicitly set to undef, the
+attribute is not created.
 
 =option  nested_array STRING
 =default nested_array ''
@@ -408,7 +414,9 @@ sub array($$$@)
     my $type   = $self->prefixed($itemtype)."$nested\[$size]";
 
     $el->setAttribute(id => $opts{id}) if defined $opts{id};
-    $el->setAttribute($self->prefixed($encns, 'arrayType'), $type);
+    my $at     = $opts{array_type} ? $opts{arrayType} 
+               : $self->prefixed($encns, 'arrayType');
+    $el->setAttribute($at, $type) if defined $at;
 
     if($sparse)
     {   my $placeition = $self->prefixed($encns, 'position');
@@ -617,6 +625,21 @@ sub dec(@)
 
 sub _dec_reader($@)
 {   my ($self, $type) = @_;
+    return $self->{dec}{$type} if $self->{dec}{$type};
+
+    my ($typens, $typelocal) = unpack_type $type;
+    my $schemans  = $self->schemaNS;
+
+    if(   $typens ne $schemans
+       && !$self->schemas->namespaces->find(element => $type))
+    {   # work-around missing element
+        $self->schemas->importDefinitions(<<__FAKE_SCHEMA);
+<schema xmlns="$schemans" targetNamespace="$typens" xmlns:d="$typens">
+<element name="$typelocal" type="d:$typelocal" />
+</schema>
+__FAKE_SCHEMA
+    }
+
     $self->{dec}{$type} ||= $self->schemas->compile
       (READER => $type, @{$self->{dec}{reader_opts}}, @_);
 }
@@ -719,10 +742,8 @@ sub _dec_other($$)
              $data  = { $local => $dec_childs } if $dec_childs;
          }
          else
-         {   $data =
-               { $local => $node->textContent
-               , _TYPE  => $type
-               };
+         {   $data->{$local} = $node->textContent;
+             $data->{_TYPE}  = $basetype if $basetype;
          }
     }
     else

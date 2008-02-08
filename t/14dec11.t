@@ -107,8 +107,9 @@ __SCHEMA
 
 my $a1 =
   { _NAME => pack_type($TestNS, 'myFavoriteNumbers'), id => 'array1'
-  , _ => [ { _TYPE => $int, _NAME => 'number', _ => 3 }
-         , { _TYPE => $int, _NAME => 'number', _ => 4 } ]
+  , _ =>
+      [ { _TYPE => $int, _NAME => 'number', _ => 3 }
+      , { _TYPE => $int, _NAME => 'number', _ => 4 } ]
   };
 
 # this simplification is incorrect; probably that href is not a
