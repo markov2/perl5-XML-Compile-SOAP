@@ -1,6 +1,23 @@
 
 === version history of XML::Compile::SOAP
 
+version 0.68: Fri Mar 14 17:56:37 CET 2008
+
+	Fixes:
+
+	- sender/receiver compile options where not passed to
+	  ::Schema::compile()
+
+	- use of ::Transport::SOAPHTTP was not correctly described
+	  in its SYNOPSIS [Marc Sebastian Pelzer]
+
+	- SOAP.pm did not use hires-timings
+
+	Improvements:
+
+	- XML::Compile::SOAP::Trace added for simplified debugging.
+	  This also simplifies example/namesservice/has_wsdl.pl
+
 version 0.67: Fri Feb  8 09:16:15 CET 2008
 
 	Fixes:

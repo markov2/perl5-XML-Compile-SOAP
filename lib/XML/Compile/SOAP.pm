@@ -79,7 +79,8 @@ XML::Compile::SOAP - base-class for SOAP implementations
  print $result->{h2}->{...};
  print $result->{b2}->{...};
 
- my ($result, $trace) = $call->(...);  # LIST with show trace
+ my ($result, $trace) = $call->(...);  # LIST will show trace
+ # $trace is an XML::Compile::SOAP::Trace object
 
 =chapter DESCRIPTION
 

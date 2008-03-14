@@ -17,6 +17,7 @@ lib/XML/Compile/SOAP/Client.pm
 lib/XML/Compile/SOAP/Encoding.pm
 lib/XML/Compile/SOAP/Server.pm
 lib/XML/Compile/SOAP/Tester.pm
+lib/XML/Compile/SOAP/Trace.pm
 lib/XML/Compile/SOAP/Util.pm
 lib/XML/Compile/SOAP11.pm
 lib/XML/Compile/SOAP11/Client.pm

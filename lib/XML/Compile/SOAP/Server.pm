@@ -6,7 +6,7 @@ package XML::Compile::SOAP::Server;
 use Log::Report 'xml-compile-soap', syntax => 'SHORT';
 
 =chapter NAME
-XML::Compile::SOAP::Server - SOAP message handlers
+XML::Compile::SOAP::Server - server-side SOAP message processing
 
 =chapter SYNOPSIS
   # THIS CANNOT BE USED YET: Preparations for new module
@@ -25,7 +25,7 @@ XML::Compile::SOAP::Server - SOAP message handlers
   $daemon->addHandler($type => $daemon);
 
 =chapter DESCRIPTION
-This class defines methods that each server side of the SOAP
+This class defines methods that each server for the SOAP
 message exchange protocols must implement.
 
 =chapter METHODS
@@ -42,28 +42,32 @@ sub init($) { shift }
 
 =requires name STRING
 The identification for this action, for instance used for logging.  When
-the action is created via a WSDL, the portname will be used here.  It is
-a pitty that the portname is not passed in the SOAP message.
+the action is created via a WSDL, the portname will be used here.
+
+It is a pitty that the portname is not passed in the SOAP message,
+because it is not so easy to detect which handler must be called.
 
 =option  action STRING
 =default action <undef>
-A possible SOAPAction string from the HTTP header.  It might be used
-to identify an incoming message (but probably not).
+A possible SOAPaction string from the HTTP header.  It might be used
+to identify an incoming message (but probably not, because it is against
+the official intent of the header field which is routing only).
 
 =option  decode CODE
 =default decode <undef>
 The CODE reference is used to decode the (parsed) XML input message
 into the pure Perl request.  The reference is a READER, created with
 M<XML::Compile::Schema::compile()>.  If no input decoder is specified,
-then the handler will be called with the un-decoded XML::LibXML node
-itself.
+then the  callbackhandler will be called with the un-decoded
+M<XML::LibXML::Document> node.
 
 =option  encode CODE
 =default encode <undef>
-The CODE reference is used to encode the Perl answer structure
-into the output message.  The reference is a WRITER.  created with
+The CODE reference is used to encode the Perl answer structure into the
+output message.  The reference is a WRITER.  created with
 M<XML::Compile::Schema::compile()>.  If no output encoder is specified,
-then the handler must return an XML::LibXML document.
+then the callback must return an M<XML::LibXML::Document>, or only
+produce error messages.
 
 =option  callback CODE
 =default callback <fault: not implemented>
@@ -88,14 +92,14 @@ sub compileHandler(@)
     sub
     {   my ($xmlin) = @_;
         my $doc  = XML::LibXML::Document->new('1.0', 'UTF-8');
-        my $data;
+        my ($data, $answer);
 
         if($decode)
         {   $data = try { $decode->($xmlin) };
             if($@)
             {   my $exception = $@->wasFatal;
                 $exception->throw(reason => 'info');
-                $data = $self->faultValidationFailed($doc, $name,
+                $answer = $self->faultValidationFailed($doc, $name,
                     $exception->message->toString);
             }
         }
@@ -103,10 +107,15 @@ sub compileHandler(@)
         {   $data = $xmlin;
         }
 
-        my $answer = $callback->($self, $doc, $data);
+        $answer = $callback->($self, $doc, $data) if $data;
 
         return $answer
             if UNIVERSAL::isa($answer, 'XML::LibXML::Document');
+
+        unless($answer)
+        {   warning "handler {name} did not return an answer", name => $name;
+            $answer = $self->faultNoAnswerProduced($doc);
+        }
 
         $encode->($doc, $answer);
     };

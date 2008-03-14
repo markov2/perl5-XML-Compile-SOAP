@@ -12,7 +12,6 @@ use LWP::UserAgent ();
 use HTTP::Request  ();
 use HTTP::Headers  ();
 
-use Time::HiRes   qw/time/;
 use XML::LibXML   ();
 use Encode;
 
@@ -28,10 +27,14 @@ XML::Compile::Transport::SOAPHTTP - exchange XML via HTTP
  use XML::Compile::Transport::SOAPHTTP;
 
  my $transporter = XML::Compile::Transport::SOAPHTTP->new(@options);
- my $class = $transporter->compileClient(@options2);
+ my $http = $transporter->compileClient(@options2);
+
+ my $call = $wsdl->compileClient
+  ( operation => 'some-port-name'
+  , transport => $http
+  );
 
  my ($xmlout, $trace) = $call->($xmlin);
- my $xmlout = $call->($xmlin);   # when no trace needed
 
 =chapter DESCRIPTION
 This module handles the exchange of (XML) messages, according to the

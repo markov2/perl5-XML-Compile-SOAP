@@ -4,7 +4,10 @@ use strict;
 package XML::Compile::SOAP::Client;
 
 use Log::Report 'xml-compile-soap', syntax => 'SHORT';
+
 use XML::Compile::Util qw/unpack_type/;
+use XML::Compile::SOAP::Trace;
+use Time::HiRes        qw/time/;
 
 =chapter NAME
 XML::Compile::SOAP::Client - SOAP message initiators
@@ -134,7 +137,6 @@ sub compileClient(@)
         wantarray or return
             UNIVERSAL::isa($ans, 'XML::LibXML::Node') ? $decode->($ans) : $ans;
 
-        $trace{date}   = localtime $start;
         $trace{start}  = $start;
         $trace{encode_elapse} = $trace{transport_start} - $start;
 
@@ -146,7 +148,7 @@ sub compileClient(@)
         $trace{decode_elapse} = $end - $trace{transport_end};
         $trace{elapse} = $end - $start;
 
-        ($dec, \%trace);
+        ($dec, XML::Compile::SOAP::Trace->new(\%trace));
     };
 
     # Outgoing messages

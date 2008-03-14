@@ -351,19 +351,15 @@ Prepare the routines which will decode the request and encode the answer,
 as will be run on the server.  The M<XML::Compile::SOAP::Server> will
 connect these.
 
-Returned is a LIST of three: the soapAction string, the request decoder
-CODE reference, and the answer encoder CODE reference.
-
 =requires soap XML::Compile::SOAP object
 =cut
 
 sub prepareServer(@)
 {   my ($self, %args) = @_;
-    my ($input, $output);
 
+ ### lot of work to do
     my $soap = $args{soap} or panic "no soap to prepare server";
-
-    ($self->soapAction, $input, $output);
+    undef;
 }
 
 =section Helpers
@@ -405,6 +401,8 @@ sub canTransport($$)
 }
 
 =method compileMessages ARGS, 'CLIENT'|'SERVER', SOAP
+The ARGS is a HASH which contains options for M<collectMessageParts()>
+and for M<XML::Compile::Schema::compile()>.
 =cut
 
 sub compileMessages($$$)
@@ -433,12 +431,14 @@ sub compileMessages($$$)
       ( ($role eq 'CLIENT' ? 'SENDER' : 'RECEIVER')
       , %$input_parts,  %$fault_parts,
       , style => $use_style
+      , %$args
       );
 
     my $output = $soap->compileMessage
       ( ($role eq 'CLIENT' ? 'RECEIVER' : 'SENDER')
       , %$output_parts, %$fault_parts
       , style => $use_style
+      , %$args
       );
 
     ($input, $output);
@@ -472,7 +472,6 @@ sub collectMessageParts($$$)
         if($self->soapStyle eq 'document')
         {   my $body_parts = $body->{parts} || [];
             $parts{body} = [$self->messageSelectParts($message, @$body_parts)];
-#warn Dumper $body, $body_parts, $parts{body};
         }
         else  # only for RPC?
         {   $self->soapUse($body->{use} || 'literal');  # correct default?

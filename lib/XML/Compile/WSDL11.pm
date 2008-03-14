@@ -41,8 +41,8 @@ XML::Compile::WSDL11 - create SOAP messages defined by WSDL 1.1
  my $op      = $wsdl->operation('GetStockPrice');
  my $call    = $op->compileClient;
 
- my $anwer   = $call->(%request);
- my ($anwer, $trace) = $call->(%request);
+ my $answer  = $call->(%request);
+ my ($answer, $trace) = $call->(%request);
 
  my @op_defs = $wsdl->operations;
 
@@ -161,7 +161,7 @@ sub addWSDL($)
      , after        => 'ELEMENT_ORDER'
      );
 
-    my $reader  = $schemas->compile        # to parse the WSDL
+    my $reader    = $schemas->compile        # to parse the WSDL
      ( READER       => pack_type($wsdlns, 'definitions')
      , anyElement   => 'TAKE_ALL'
      , anyAttribute => 'TAKE_ALL'
@@ -320,14 +320,22 @@ Creates temporarily an M<XML::Compile::WSDL11::Operation> with M<operation()>,
 and then calls C<compileClient()> on that; an usual combination.
 
 As OPTIONS are available the combination of all possibilities for
-M<operation()> (i.e. C<service> and C<port>) and all of
+=over 4
+=item .
+M<operation()> (i.e. C<service> and C<port>), and all of
+=item .
 M<XML::Compile::WSDL11::Operation::compileClient()> (a whole lot,
-for instance C<transport_hook>).
+for instance C<transport_hook>), plus
+=item .
+everything you can pass to M<XML::Compile::Schema::compile()>, for
+instance C<< check_values => 0 >>
+=back
 
 =example
   $wsdl->compileClient
     ( operation => 'HelloWorld'
     , port      => 'PrefillSoap' # only needed in multiple ports
+    , sloppy_integers => 1
     );
 =cut
 

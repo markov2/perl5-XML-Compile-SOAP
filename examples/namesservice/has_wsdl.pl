@@ -96,7 +96,11 @@ sub get_countries($)
     # here: the error message will list your options.
 
     my $getCountries
-        = $wsdl->compileClient('getCountries');
+        = $wsdl->compileClient
+            ( 'getCountries'
+#           , validate        => 0   # unsafe but faster
+#           , sloppy_integers => 1   # usually ok, faster
+            );
 
     # Actually, above is an abbreviation of
     #   = $wsdl->compileClient(operation => 'getCountries');
@@ -133,31 +137,9 @@ sub get_countries($)
     #
 
     if($show_trace)
-    {
-        printf "Call initiated at: $trace->{date}\n";
-        print  "SOAP call timing:\n";
-        printf "      encoding: %7.2f ms\n", $trace->{encode_elapse}    *1000;
-        printf "     transport: %7.2f ms\n", $trace->{transport_elapse} *1000;
-        printf "      decoding: %7.2f ms\n", $trace->{decode_elapse}    *1000;
-        printf "    total time: %7.2f ms ",  $trace->{elapse}           *1000;
-        printf "= %.3f seconds\n\n", $trace->{elapse};
-
-        print  "transport time components:\n";
-        printf "     stringify: %7.2f ms\n", $trace->{stringify_elapse} *1000;
-        printf "    connection: %7.2f ms\n", $trace->{connect_elapse}   *1000;
-        printf "       parsing: %7.2f ms\n", $trace->{parse_elapse}     *1000;
-
-        if(my $request = $trace->{http_request})   # a HTTP::Request object
-        {   my $req = $request->as_string;
-            $req =~ s/^/  /gm;
-            print "\nRequest:\n", $req;
-        }
-
-        if(my $response = $trace->{http_response}) # a HTTP::Response object
-        {   my $resp = $response->as_string;
-            $resp =~ s/^/  /gm;
-            print "\nResponse:\n", $resp;
-        }
+    {   $trace->printTimings;
+        $trace->printRequest;
+        $trace->printResponse;
     }
 
     # And now?  What do I get back?  I love Data::Dumper.
