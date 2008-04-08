@@ -220,7 +220,8 @@ __ANSWER
      );
 }
 
-my $call = $wsdl->compileClient('makeFriend'
+my $call = $wsdl->compileClient
+  ( 'makeFriend'
   , rpcout => \&make_friend_request 
   , transport_hook => \&fake_server
   );

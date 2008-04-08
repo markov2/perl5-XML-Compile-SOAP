@@ -26,12 +26,12 @@ XML::Compile::Transport::SOAPHTTP - exchange XML via HTTP
 =chapter SYNOPSIS
  use XML::Compile::Transport::SOAPHTTP;
 
- my $transporter = XML::Compile::Transport::SOAPHTTP->new(@options);
- my $http = $transporter->compileClient(@options2);
+ my $http = XML::Compile::Transport::SOAPHTTP->new(@options);
+ my $send = $transporter->compileClient(@options2);
 
  my $call = $wsdl->compileClient
   ( operation => 'some-port-name'
-  , transport => $http
+  , transport => $send
   );
 
  my ($xmlout, $trace) = $call->($xmlin);
@@ -44,6 +44,13 @@ or compose XML, but only worries about the HTTP aspects.
 =chapter METHODS
 
 =c_method new OPTIONS
+The C<keep_alive> and C<timeout> options are used when an M<LWP::UserAgent>
+is created, and ignored when you provide such an object.  In the latter
+case, the values for those are inquired such that you can see the setting
+directly from the passed object.
+
+If you need to change UserAgent settings later, you can always directly
+access the M<LWP::UserAgent> object via M<userAgent()>.
 
 =option  user_agent LWP::UserAgent object
 =default user_agent <created when needed>
@@ -52,12 +59,26 @@ it. Otherwise, one will be created with all the defaults. Providing
 your own user agents -or at least have a look at the configuration-
 seems like a good idea.
 
+=option  keep_alive BOOLEAN
+=default keep_alive <true>
+When connection can be re-used.
+
+=option  timeout SECONDS
+=default timeout 180
+The maximum time for a single connection before the client will close it.
+The server may close it earlier.  Do not set the timeout too long, because
+you want objects to be cleaned-up.
 =cut
 
 sub init($)
 {   my ($self, $args) = @_;
     $self->SUPER::init($args);
-    $self->userAgent($args->{user_agent});
+
+    $self->userAgent
+     ( $args->{user_agent}
+     , keep_alive => (exists $args->{keep_alive} ? $args->{keep_alive} : 1)
+     , timeout => ($args->{timeout} || 180)
+     );
     $self;
 }
 
@@ -65,7 +86,7 @@ sub init($)
 
 =section Accessors
 
-=method userAgent [AGENT]
+=method userAgent [AGENT|(undef, OPTIONS)]
 Returns the User Agent which will be used.  You may change the
 configuration of the AGENT (the returned M<LWP::UserAgent> object)
 or provide one yourself.  See also M<new(user_agent)>.
@@ -75,13 +96,16 @@ compilation, or even inbetween SOAP calls.
 =cut
 
 sub userAgent(;$)
-{   my ($self, $agent) = @_;
+{   my ($self, $agent) = (shift, shift);
     return $self->{user_agent} = $agent
         if defined $agent;
 
     $self->{user_agent}
     ||= LWP::UserAgent->new
          ( requests_redirectable => [ qw/GET HEAD POST M-POST/ ]
+         , parse_head => 0
+         , protocols_allowed => [ qw/http https/ ]
+         , @_
          );
 }
 
@@ -111,10 +135,11 @@ to be grouped.
 =option  mime_type STRING
 =default mime_type <depends on soap version>
 
-=requires action URI
+=option  action URI
+=default action ''
 
-=option  soap_version 'SOAP11'|'SOAP12'
-=default soap_version 'SOAP11'
+=option  soap 'SOAP11'|'SOAP12'|OBJECT
+=default soap 'SOAP11'
 
 =option  header  HTTP::Headers object
 =default header  <created>
@@ -139,10 +164,12 @@ added to simplify bug reports.
 
 =cut
 
+# SUPER::compileClient() calls this method to do the real work
 sub _prepare_call($)
 {   my ($self, $args) = @_;
     my $method   = $args->{method}       || 'POST';
-    my $version  = $args->{soap_version} || 'SOAP11';
+    my $soap     = $args->{soap}         || 'SOAP11';
+    my $version  = ref $soap ? $soap->version : $soap;
     my $mpost_id = $args->{mpost_id}     || 42;
     my $mime     = $args->{mime};
     my $action   = $args->{action}       || '';
@@ -188,6 +215,7 @@ sub _prepare_call($)
     # one as long as possible.
     my $server  = $self->address;
     my $request = HTTP::Request->new($method => $server, $header);
+    $request->protocol('HTTP/1.1');
 
     # Create handler
     # The "content" must be a byte-string, with the utf8 flag

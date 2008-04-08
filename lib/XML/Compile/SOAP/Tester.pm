@@ -53,10 +53,6 @@ Once you have instantiated this object, all compiled client calls
 will get re-routed to methods within the object.  This is useful
 for debugging and regression tests.
 
-If you install the XML-Compile-SOAP-Server distribution, you will
-have an M<XML::Compile::SOAP::HTTPTester> implementation, which
-simulates a remote server in a much more realistic way.
-
 =chapter METHODS
 
 =c_method new OPTIONS

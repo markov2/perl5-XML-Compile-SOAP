@@ -5,6 +5,8 @@ package XML::Compile::SOAP::Server;
 
 use Log::Report 'xml-compile-soap', syntax => 'SHORT';
 
+use XML::Compile::SOAP::Util qw/:soap11/;
+
 =chapter NAME
 XML::Compile::SOAP::Server - server-side SOAP message processing
 
@@ -33,10 +35,38 @@ message exchange protocols must implement.
 =section Instantiation
 This object can not be instantiated, but is only used as secundary
 base class.  The primary must contain the C<new>.
+
+=c_method new OPTIONS
+
+=option  role URI
+=default role 'NEXT'
+In SOAP1.1, the term is 'actor', but SOAP1.2 has renamed this into
+'role': the role [this daemon] plays in the transport protocol.
+
+Please use the role abbreviations as provided by the protocol
+implementations when possible: they will be translated into the
+right URI on time.  See M<XML::Compile::SOAP::roleAbbreviation()>
+and the constants defined in M<XML::Compile::SOAP::Util>
+
 =cut
 
 sub new(@) { panic __PACKAGE__." only secundary in multiple inheritance" }
-sub init($) { shift }
+
+sub init($)
+{  my ($self, $args) = @_;
+   $self->{role} = $self->roleAbbreviation($args->{role} || 'NEXT');
+   $self;
+}
+
+=section Accessors
+
+=method role
+Returns the URI of the role (actor) of this server.
+=cut
+
+sub role() {shift->{role}}
+
+=section Actions
 
 =method compileHandler OPTIONS
 
@@ -46,12 +76,6 @@ the action is created via a WSDL, the portname will be used here.
 
 It is a pitty that the portname is not passed in the SOAP message,
 because it is not so easy to detect which handler must be called.
-
-=option  action STRING
-=default action <undef>
-A possible SOAPaction string from the HTTP header.  It might be used
-to identify an incoming message (but probably not, because it is against
-the official intent of the header field which is routing only).
 
 =option  decode CODE
 =default decode <undef>
@@ -76,22 +100,40 @@ are passed in.  As output, a suitable output structure must be produced.
 If the callback is not set, then a fault message will be returned to the
 user.
 
+=option  selector CODE
+=default selector sub {0}
+One way or the other, you have to figure-out whether a message addresses
+a certain process.  The callback will only be used if the CODE reference
+specified here returns a true value.
+
+The CODE reference will be called with the XML version of the message,
+and a HASH which contains the information about the XML collected with
+M<XML::Compile::SOAP::messageStructure()> plus the C<soap_version> entry.
 =cut
 
 sub compileHandler(@)
 {   my ($self, %args) = @_;
 
     my $decode = $args{decode};
-    my $encode = $args{encode} || $self->compileMessage('SENDER');
+    my $encode = $args{encode}     || $self->compileMessage('SENDER');
     my $name   = $args{name}
         or error __x"each server handler requires a name";
+    my $selector = $args{selector} || sub {0};
 
     # even without callback, we will validate
-    my $callback = $args{callback} || $self->faultNotImplemented($name);
+    my $callback = $args{callback};
+
+    my $invalid = __x"{version} operation {name} called with invalid data"
+      , version => $self->version, name => $name;
+
+    my $empty   = __x"{version} operation {name} did not produce an answer"
+      , version => $self->version, name => $name;
 
     sub
-    {   my ($xmlin) = @_;
-        my $doc  = XML::LibXML::Document->new('1.0', 'UTF-8');
+    {   my ($name, $xmlin, $info) = @_;
+        $selector->($xmlin, $info) or return;
+        trace __x"procedure {name} selected", name => $name;
+
         my ($data, $answer);
 
         if($decode)
@@ -99,26 +141,62 @@ sub compileHandler(@)
             if($@)
             {   my $exception = $@->wasFatal;
                 $exception->throw(reason => 'info');
-                $answer = $self->faultValidationFailed($doc, $name,
-                    $exception->message->toString);
+                info __x"callback {name} validation failed", name => $name;
+                $answer = $self->faultValidationFailed($invalid, $exception);
             }
         }
         else
         {   $data = $xmlin;
         }
 
-        $answer = $callback->($self, $doc, $data) if $data;
+        $answer = $callback->($self, $data)
+            if $data && !$answer;
 
         return $answer
             if UNIVERSAL::isa($answer, 'XML::LibXML::Document');
 
         unless($answer)
-        {   warning "handler {name} did not return an answer", name => $name;
-            $answer = $self->faultNoAnswerProduced($doc);
+        {   info __x"callback {name} did not return an answer", name => $name;
+            $answer = $self->faultNoAnswerProduced($empty);
         }
 
-        $encode->($doc, $answer);
+        $encode->($answer);
     };
+}
+
+=method compileFilter OPTIONS
+This routine returns a CODE reference which can be used for
+M<compileHandler(selector)>; so see whether a certain message has arrived.
+On the moment, only the first C<body> element is used to determine that.
+
+=option  body ARRAY-of-TYPES
+=default body []
+
+=option  header ARRAY-of-TYPES
+=default header <undef>
+
+=option  fault ARRAY-of-TYPES
+=default fault <undef>
+=cut
+
+sub compileFilter(@)
+{   my ($self, %args) = @_;
+    my $nodetype = ($args{body} || [])->[1];
+
+    # called with (XML, INFO)
+      defined $nodetype
+    ? sub { my $f =  $_[1]->{body}[0]; defined $f && $f eq $nodetype }
+    : sub { !defined $_[1]->{body}[0] };  # empty body
+}
+
+=c_method faultWriter
+Returns a CODE reference which can be used to produce faults.
+=cut
+
+sub faultWriter()
+{   my $thing = shift;
+    my $self  = ref $thing ? $thing : $thing->new;
+    $self->compileMessage('SENDER');
 }
 
 1;

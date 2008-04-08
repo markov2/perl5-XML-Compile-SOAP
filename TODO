@@ -1,0 +1,9 @@
+
+==== XML::Compile::SOAP TODO
+
+= last update: April 8 2008, release 0.69
+
+Wishlist:
+  - Jabber protocol for SOAP message exchange.
+    http://www.xmpp.org/extensions/xep-0072.html
+    Requires SOAP1.2 implementation.

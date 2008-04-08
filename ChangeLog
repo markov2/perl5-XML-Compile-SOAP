@@ -1,6 +1,44 @@
 
 === version history of XML::Compile::SOAP
 
+version 0.69: Tue Apr  8 23:48:31 CEST 2008
+
+	Fixes:
+
+	- Trace returned on error was not transformed into an object, and
+	  resulted in unwanted undefs.
+
+	- ::Trace->printTimings() did not handle undefs well.
+
+	- Document that SOAPHTTP::compileClient(action) is optional, not
+	  required
+
+	- ::SOAPHTTP will use LWP::UserAgent with Keep-Alive on.
+
+	Changes:
+
+	- require XML::Compile 0.69 -> 0.73
+
+	- ::WSDL11::Operation canTransport() implementation was broken,
+	  and therefore needed a change of behavior.  Probably invisible
+	  for end-users.
+
+	Improvements:
+
+	- Automatic reuse of transport connections for all WSDL operations
+	  with the same endpoint(s).
+
+	- New method ::SOAP::messageStructure()
+
+	- New facility method ::SOAP::importDefinitions()
+
+	- Added ::Util::MSEXT constant (MicroSoft Extension Framework)
+
+	- Make XML::Compile::SOAP::Daemon work by extending ::SOAP::Server
+	  and ::SOAP11::Server implementations.  Implementation completed.
+
+	- Added TODO file.
+
 version 0.68: Fri Mar 14 17:56:37 CET 2008
 
 	Fixes:

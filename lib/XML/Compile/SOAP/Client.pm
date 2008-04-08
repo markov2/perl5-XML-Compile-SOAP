@@ -56,10 +56,14 @@ and must be a RECEIVER: translate a SOAP message into Perl data.  Even in
 one-way operation, this decode should be provided: some servers may pass
 back some XML in case of errors.
 
-=requires transport CODE
+=requires transport CODE|OBJECT
 The CODE reference is produced by an extensions of
-M<XML::Compile::Transport::compileClient()>
-(usually M<XML::Compile::Transport::SOAPHTTP::compileClient()>.
+M<XML::Compile::Transport::compileClient()> (usually
+M<XML::Compile::Transport::SOAPHTTP::compileClient()>.
+
+If you pass a M<XML::Compile::Transport::SOAPHTTP> object, the
+compileClient will be called for you.  This is possible in case you do
+not have any configuration options to pass with the compileClient().
 
 =option  rpcout TYPE|CODE
 =default rpcout C<undef>
@@ -126,6 +130,16 @@ sub compileClient(@)
     my $transport = $args{transport}
         or error __x"transport for client {name} required", name => $name;
 
+    if(ref $transport eq 'CODE') { ; }
+    elsif(UNIVERSAL::isa($transport, 'XML::Compile::Transport::SOAPHTTP'))
+    {   $transport = $transport->compileClient;
+    }
+    else
+    {   error __x"transport for client {name} is code ref or {type} object, not {is}"
+          , name => $name, type => 'XML::Compile::Transport::SOAPHTTP'
+          , is => (ref $transport || $transport);
+    }
+
     my $core = sub
     {   my $start = time;
         my ($data, $charset) = UNIVERSAL::isa($_[0], 'HASH') ? @_ : ({@_});
@@ -140,15 +154,17 @@ sub compileClient(@)
         $trace{start}  = $start;
         $trace{encode_elapse} = $trace{transport_start} - $start;
 
-        UNIVERSAL::isa($ans, 'XML::LibXML::Node')
-            or return ($ans, \%trace);
+        if(UNIVERSAL::isa($ans, 'XML::LibXML::Node'))
+        {   $ans = $decode->($ans);
+            my $end = time;
+            $trace{decode_elapse} = $end - $trace{transport_end};
+            $trace{elapse} = $end - $start;
+        }
+        else
+        {   $trace{elapse} = $trace{transport_end} - $start;
+        }
 
-        my $dec = $decode->($ans);
-        my $end = time;
-        $trace{decode_elapse} = $end - $trace{transport_end};
-        $trace{elapse} = $end - $start;
-
-        ($dec, XML::Compile::SOAP::Trace->new(\%trace));
+        ($ans, XML::Compile::SOAP::Trace->new(\%trace));
     };
 
     # Outgoing messages

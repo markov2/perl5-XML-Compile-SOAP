@@ -764,7 +764,7 @@ sub _dec_soapenc($$)
 {   my ($self, $node, $type) = @_;
     my $read = $self->_dec_reader($type)
        or return $node;
-    my $data = ($read->($node))[1];
+    my $data = $read->($node);
     $data = { _ => $data } if ref $data ne 'HASH';
     $data->{_TYPE} = $type;
     $data;

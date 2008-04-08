@@ -172,11 +172,11 @@ sub addWSDL($)
     my $tns  = $spec->{targetNamespace}
         or error __x"WSDL sets no targetNamespace";
 
-    # WSDL 1.1 par 2.1.1 says: WSDL defs all in own name-space
+    # WSDL 1.1 par 2.1.1 says: WSDL def types each in own name-space
     my $index     = $self->{index};
     my $toplevels = $spec->{gr_import} || [];  # silly WSDL structure
     foreach my $toplevel (@$toplevels)
-    {   my ($which, $def) = %$toplevel;   # only one
+    {   my ($which, $def) = %$toplevel;        # always only one
         $index->{$which}{pack_type $tns, $def->{name}} = $def
             if $which =~ m/^(?:service|message|binding|portType)$/;
     }
@@ -334,7 +334,7 @@ instance C<< check_values => 0 >>
 =example
   $wsdl->compileClient
     ( operation => 'HelloWorld'
-    , port      => 'PrefillSoap' # only needed in multiple ports
+    , port      => 'PrefillSoap' # only needed when multiple ports
     , sloppy_integers => 1
     );
 =cut

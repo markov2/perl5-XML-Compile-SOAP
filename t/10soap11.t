@@ -13,7 +13,7 @@ $Data::Dumper::Indent = 1;
 
 use XML::Compile::SOAP11::Client;
 
-use Test::More tests => 8;
+use Test::More tests => 10;
 use XML::LibXML;
 
 # elementFormDefault="qualified">
@@ -99,6 +99,18 @@ my $xml1 = $client1->($msg1_data);
 isa_ok($xml1, 'XML::LibXML::Node', 'produced XML');
 compare_xml($xml1, $msg1_soap);
 
+#
+# check the structure
+# as a complication, the prefix is not really interpreted as prefix
+# after the creation of the message...
+
+my $xml1a = XML::LibXML->new->parse_string($xml1->toString(1));
+my $struct = $soap->messageStructure($xml1a);
+ok(defined $struct, 'got message structure');
+cmp_deeply($struct, { body   => [ '{http://test-types}GetLastTradePrice' ],
+                    , header => [ '{http://test-types}Transaction' ] });
+
+
 # Receiver
 # Interpret incoming message
 
@@ -110,4 +122,3 @@ my $hash1 = $server1->($msg1_soap);
 is(ref $hash1, 'HASH', 'produced HASH');
 
 cmp_deeply($hash1, $msg1_data, "server parsed input");
-

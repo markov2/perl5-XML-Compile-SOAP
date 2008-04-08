@@ -5,7 +5,7 @@ package XML::Compile::SOAP;
 
 use Log::Report 'xml-compile-soap', syntax => 'SHORT';
 use XML::Compile         ();
-use XML::Compile::Util   qw/pack_type/;
+use XML::Compile::Util   qw/pack_type type_of_node/;
 use XML::Compile::Schema ();
 
 use Time::HiRes          qw/time/;
@@ -23,7 +23,7 @@ XML::Compile::SOAP - base-class for SOAP implementations
  my $client = XML::Compile::SOAP11::Client->new;
 
  # load extra schemas always explicitly
- $client->schemas->importDefinitions(...);
+ $client->importDefinitions(...);
 
  # !!! The next steps are only required when you do not have
  # !!! a WSDL. See XML::Compile::WSDL11 if you have a WSDL.
@@ -290,6 +290,45 @@ sub compileMessage($@)
          , dir => $direction;
 }
 
+=ci_method messageStructure XML
+Returns a HASH with some collected information from a complete SOAP
+message (XML::LibXML::Document or XML::LibXML::Element).  Currenty,
+the HASH contains a C<header> and a C<body> key, with each an ARRAY
+of element names which where found in the header resp. body.
+=cut
+
+sub messageStructure($)
+{   my ($thing, $xml) = @_;
+    my $env = $xml->isa('XML::LibXML::Document') ? $xml->documentElement :$xml;
+
+    my (@header, @body);
+    if(my ($header) = $env->getChildrenByLocalName('Header'))
+    {   @header = map { $_->isa('XML::LibXML::Element') ? type_of_node($_) : ()}
+           $header->childNodes;
+    }
+
+    if(my ($body) = $env->getChildrenByLocalName('Body'))
+    {   @body = map { $_->isa('XML::LibXML::Element') ? type_of_node($_) : () }
+           $body->childNodes;
+    }
+
+    +{ header => \@header
+     , body   => \@body
+     };
+}
+
+=method importDefinitions XMLDATA, OPTIONS
+Add definitions to the schema.  Simply calls
+M<XML::Compile::Schema::importDefinitions()> for this SOAP object's
+schema with all the parameters provided.  XMLDATA can be everything
+accepted by M<XML::Compile::dataToXML()> plus an ARRAY of these things.
+=cut
+
+sub importDefinitions(@)
+{   my $schemas = shift->schemas;
+    $schemas->importDefinitions(@_);
+}
+
 #------------------------------------------------
 
 =section Sender (internals)
@@ -534,7 +573,7 @@ sub writerCreateRpcLiteral($)
     my $lit = sub
      { my ($doc, $def) = @_;
        UNIVERSAL::isa($def, 'ARRAY')
-           or error __x"rpc style requires compileClient with rpcin parameters";
+           or error __x"rpc style requires compileClient with rpcin parameters as array";
 
        my ($code, $data) = @$def;
        $code->($doc, $data);
@@ -730,6 +769,9 @@ sub readerParseHeader($)
 
     my $schema = $self->schemas;
     my @h      = @$header;
+    @h % 2
+       and error __x"reader header definition list has odd length";
+
     while(@h)
     {   my ($label, $element) = splice @h, 0, 2;
         my $code = UNIVERSAL::isa($element, 'CODE') ? $element
@@ -750,6 +792,9 @@ sub readerParseBody($)
 
     my $schema = $self->schemas;
     my @b      = @$body;
+    @b % 2
+       and error __x"reader body definition list has odd length";
+
     while(@b)
     {   my ($label, $element) = splice @b, 0, 2;
         my $code = UNIVERSAL::isa($element, 'CODE') ? $element

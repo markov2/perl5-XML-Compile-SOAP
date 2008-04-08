@@ -67,6 +67,8 @@ sub init($)
     $self;
 }
 
+#-----------------------------------
+
 =section Single messages
 
 =method compileMessage ('SENDER'|'RECEIVER'), OPTIONS
@@ -125,6 +127,11 @@ sub writerHeaderEnv($$$$)
     $ucode;
 }
 
+#------------------------------------------------
+
+=section Sender (internals)
+=cut
+
 sub sender($)
 {   my ($self, $args) = @_;
     my $envns = $self->envelopeNS;
@@ -142,6 +149,11 @@ sub sender($)
     $self->SUPER::sender($args);
 }
 
+#------------------------------------------------
+
+=section Receiver (internals)
+=cut
+
 sub receiver($)
 {   my ($self, $args) = @_;
     my $envns = $self->envelopeNS;
@@ -150,8 +162,6 @@ sub receiver($)
 
     $self->SUPER::receiver($args);
 }
-
-=section Receiver (internals)
 
 =method readerParseFaults FAULTSDEF
 The decoders for the possible "faults" are compiled.  Returned is a code
@@ -181,7 +191,7 @@ sub readerParseFaults($)
         {   my $report  = $reports->{$type} || [];
             if($rules{$type})
             {   ($label, my $do) = @{$rules{$type}};
-                $details = [ map { ($do->($_))[1] } @$report ];
+                $details = [ map { $do->($_) } @$report ];
             }
             else
             {   ($label, $details) = (body => $report);

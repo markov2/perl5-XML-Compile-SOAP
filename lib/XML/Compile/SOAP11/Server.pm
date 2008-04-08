@@ -5,7 +5,7 @@ package XML::Compile::SOAP11::Server;
 use base 'XML::Compile::SOAP11', 'XML::Compile::SOAP::Server';
 
 use Log::Report 'xml-compile-soap', syntax => 'SHORT';
-use XML::Compile::SOAP::Util qw/SOAP11ENV/;
+use XML::Compile::SOAP::Util qw/SOAP11ENV SOAP11NEXT/;
 use XML::Compile::Util  qw/pack_type unpack_type SCHEMA2001/;
 
 =chapter NAME
@@ -21,74 +21,68 @@ by M<XML::Compile::SOAP::Daemon>
 =chapter METHODS
 =cut
 
-# Compile-time
-sub faultNotImplemented($)
-{   my ($self, $name) = @_;
+sub init($)
+{   my ($self, $args) = @_;
+    $self->XML::Compile::SOAP11::init($args);
+    $self->XML::Compile::SOAP::Server::init($args);
+    $self;
+}
 
-    sub
-    {   my ($soap, $doc, $data) = @_;
-        +{ Fault =>
-           { faultcode   => pack_type(SOAP11ENV, 'Server.notImplemented')
-           , faultstring => "soap11 operation $name not implemented"
-           , faultactor  => $soap->role
-           }
-        }
+sub faultNotImplemented($)
+{   my ($thing, $message) = @_;
+
+    { Fault =>
+      { faultcode   => pack_type(SOAP11ENV, 'Server.notImplemented')
+      , faultstring => $message
+      , faultactor  => SOAP11NEXT
+      }
     };
 }
 
 sub faultValidationFailed($$$)
-{   my ($self, $doc, $name, $string) = @_;
+{   my ($self, $message, $exception) = @_;
+
     my $strtype = pack_type SCHEMA2001, 'string';
-    my $errors  = $doc->createElement('error');
-    $errors->appendText($string);
+    my $errors  = XML::LibXML::Element->new('error');
+    $errors->appendText($exception->message->toString);
 
-    +{ Fault =>
-         { faultcode   => pack_type(SOAP11ENV, 'Server.validationFailed')
-         , faultstring => "soap11 operation $name called with invalid data"
-         , faultactor  => $self->role
-         , details     => $errors
-         }
-     };
+    { Fault =>
+      { faultcode   => pack_type(SOAP11ENV, 'Server.validationFailed')
+      , faultstring => $message
+      , faultactor  => $self->role
+      , details     => $errors
+      }
+    };
 }
 
-sub faultUnsupportedSoapVersion($$)
-{   my ($self, $doc, $envns) = @_;
-    +{ Fault =>
-         { faultcode   => pack_type(SOAP11ENV, 'Server.versionNotSupported')
-         , faultstring => "server does not support version $envns"
-         , faultactor  => $self->role
-         }
-     };
+sub faultNoAnswerProduced($)
+{   my ($self, $message) = @_;
+    { Fault =>
+      { faultcode   => pack_type(SOAP11ENV, 'Server.noAnswer')
+      , faultstring => $message
+      , faultactor  => $self->role
+      }
+    };
 }
 
-sub faultNotSoapMessage($)
-{   my ($self, $doc, $nodetype) = @_;
-    +{ Fault =>
-         { faultcode   => pack_type(SOAP11ENV, 'Server.notSoapMessage')
-         , faultstring => "the message is not SOAP envelope but $nodetype"
-         , faultactor  => $self->role
-         }
-     };
-}
-
-sub faultMessageNotRecognized($$)
-{   my ($self, $doc, $name) = @_;
-   +{ Fault =>
-       { faultcode   => pack_type(SOAP11ENV, 'Server.notRecognized')
-       , faultstring => "soap11 message $name not recognized"
-       , faultactor  => $self->role
-       }
+sub faultMessageNotRecognized($)
+{   my ($thing, $message) = @_;
+    { Fault =>
+      { faultcode   => pack_type(SOAP11ENV, 'Server.notRecognized')
+      , faultstring => $message
+      , faultactor  => SOAP11NEXT
+      }
     };
 }
 
 sub faultTryOtherProtocol($$)
-{   my ($self, $doc, $version) = @_;
-    +{ Fault =>
-        { faultcode   => pack_type(SOAP11ENV, 'Server.tryUpgrade')
-        , faultstring => "message not found in soap11, try other soap version"
-        , faultactor  => $self->role
-        }
-     };
+{   my ($thing, $message) = @_;
+    { Fault =>
+      { faultcode   => pack_type(SOAP11ENV, 'Server.tryUpgrade')
+      , faultstring => $message
+      , faultactor  => SOAP11NEXT
+      }
+    };
 }
 
 1;

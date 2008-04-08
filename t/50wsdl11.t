@@ -188,7 +188,7 @@ ok(!$op->canTransport($http1, 'rpc'), 'cannot transport RPC (yet)');
 ok(!$op->canTransport('http://', 'document'), 'only transport HTTP');
 
 is($op->soapAction, 'http://example.com/GetLastTradePrice', 'action');
-ok(!defined $op->soapStyle, 'no explicit style');
+ok(!defined $op->soapStyle, 'no default soap style');
 
 #
 # test $wsdl->operations

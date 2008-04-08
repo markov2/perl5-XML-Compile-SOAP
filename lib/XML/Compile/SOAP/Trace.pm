@@ -109,7 +109,11 @@ sub printTimings()
     printf "     stringify: %7.2f ms\n", $self->elapse('stringify') *1000;
     printf "    connection: %7.2f ms\n", $self->elapse('connect')   *1000;
     printf "       parsing: %7.2f ms\n", $self->elapse('parse')     *1000;
-    printf "      decoding: %7.2f ms\n", $self->elapse('decode')    *1000;
+
+    my $dt = $self->elapse('decode');
+    if(defined $dt) { printf "      decoding: %7.2f ms\n", $dt *1000 }
+    else            { print  "      decoding:       -    (no xml answer)\n" }
+
     printf "    total time: %7.2f ms ",  $self->elapse              *1000;
     printf "= %.3f seconds\n\n", $self->elapse;
 }

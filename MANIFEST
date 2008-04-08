@@ -1,6 +1,7 @@
 ChangeLog
 MANIFEST
 Makefile.PL
+TODO
 examples/namesservice/README
 examples/namesservice/has_schema.pl
 examples/namesservice/has_schema2.pl

@@ -8,12 +8,14 @@ my @soap11 = qw/SOAP11ENV SOAP11ENC SOAP11NEXT SOAP11HTTP/;
 my @soap12 = qw/SOAP12ENV SOAP12ENC SOAP12RPC
   SOAP12NONE SOAP12NEXT SOAP12ULTIMATE/;
 my @wsdl11 = qw/WSDL11 WSDL11SOAP WSDL11HTTP WSDL11MIME WSDL11SOAP12/;
+my @daemon = qw/MSEXT/;
 
-our @EXPORT_OK = (@soap11, @soap12, @wsdl11);
+our @EXPORT_OK = (@soap11, @soap12, @wsdl11, @daemon);
 our %EXPORT_TAGS =
   ( soap11 => \@soap11
   , soap12 => \@soap12
   , wsdl11 => \@wsdl11
+  , daemon => \@daemon
   );
 
 =chapter NAME
@@ -74,4 +76,12 @@ use constant WSDL11HTTP     => WSDL11. 'http/';
 use constant WSDL11MIME     => WSDL11. 'mime/';
 use constant WSDL11SOAP12   => WSDL11. 'soap12/';
  
+=pod
+The export TAG C<:daemon> refers currently only to the constant C<MSEXT>,
+which refers to the MicroSoft Extension Framework namespace.
+
+=cut
+
+use constant MSEXT          => SOAP11ENV;
+
 1;
