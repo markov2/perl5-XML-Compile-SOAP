@@ -1,6 +1,13 @@
 
 === version history of XML::Compile::SOAP
 
+version 0.70: Wed Apr  9 15:09:43 CEST 2008
+
+	Fixes:
+
+	- Math::BigInt with GMP caused t/14dec11.t to fail
+	  [CPANTesters, Slaven Rezic]
+
 version 0.69: Tue Apr  8 23:48:31 CEST 2008
 
 	Fixes:
