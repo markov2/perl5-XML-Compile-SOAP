@@ -1,6 +1,22 @@
 
 === version history of XML::Compile::SOAP
 
+TODO:
+- fix test t/30charset.t
+
+version 0.71: Sat Apr 12 09:58:05 CEST 2008
+
+	Fixes:
+
+	- Support XML which uses a non-utf8 encoding. Patch by [Gert Doering]
+	  The related test needs to be updated (print cannot handle byte-
+	  streams)
+
+	- Client does not add Content-Length field. Patch [Drew Taylor]
+
+	- headers were missing, since XML::Compile "reader in list-context"
+	  fix.  Reported by [Gert Doering]
+
 version 0.70: Wed Apr  9 15:09:43 CEST 2008
 
 	Fixes:
