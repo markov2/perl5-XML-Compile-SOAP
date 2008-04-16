@@ -211,6 +211,10 @@ will return then answer, or C<undef> in case of failure.  An 'one-way'
 operation with return C<undef> in case of failure, and a true value
 when successfull.
 
+Besides the OPTIONS listed, you can also specify anything which is
+accepted by M<XML::Compile::Schema::compile()>, like
+C<< sloppy_integers => 1 >> or hooks.
+
 =option  style    'document'|'rpc'
 =default style    new(style)|'document'
 
@@ -252,7 +256,6 @@ Overrule the destination address.
 
 =cut
 
-my ($soap11_client, $soap12_client, %transporters);
 sub compileClient(@)
 {   my ($self, %args) = @_;
 
@@ -264,13 +267,13 @@ sub compileClient(@)
     my ($soap, $version);
     if($soapns eq WSDL11SOAP)
     {   require XML::Compile::SOAP11::Client;
-        $soap    = $soap11_client
+        $soap    = $self->{soap11_client}
                ||= XML::Compile::SOAP11::Client->new(schemas => $self->schemas);
         $version = 'SOAP11';
     }
     elsif($soapns eq WSDL11SOAP12)
     {   require XML::Compile::SOAP12::Client;
-        $soap    = $soap12_client
+        $soap    = $self->{soap12_client}
                ||= XML::Compile::SOAP12::Client->new(schemas => $self->schemas);
         $version = 'SOAP12';
     }
@@ -309,13 +312,13 @@ sub compileClient(@)
     ### prepare the transport
     #
 
-    $proto eq SOAP11HTTP
-       or error __x"SORRY: only transport of HTTP implemented, not {protocol}"
-               , protocol => $proto;
-
     my $send = $args{transport};
     unless($send)
     {   my $impl = 'XML::Compile::Transport::SOAPHTTP';
+ 
+        $proto eq SOAP11HTTP
+           or error __x"SORRY: only transport of HTTP implemented, not {protocol}"
+               , protocol => $proto;
 
         # this is an optimization thing: often, the client and server will
         # be forking daemons: you do not want to load the module in each
@@ -326,7 +329,7 @@ sub compileClient(@)
 
         my @endpoints = $args{endpoint_address} || $self->endPointAddresses;
         my $endpoints = join ';', @endpoints;
-        my $transport = $transporters{$impl}{$endpoints}
+        my $transport = $self->{transporters}{$impl}{$endpoints}
                     ||= $impl->new(address => \@endpoints);
 
         $send = $transport->compileClient
@@ -460,7 +463,6 @@ sub compileMessages($$$)
 Collect the components of the message which are actually being used.
 =cut
 
-my ($bind_body_reader, $bind_header_reader);
 sub collectMessageParts($$$)
 {   my ($self, $args, $portop, $bind) = @_;
 
@@ -477,9 +479,8 @@ sub collectMessageParts($$$)
     my $soapns   = $self->soapNameSpace;
 
     if(my $bind_body = $bind->{"{$soapns}body"})
-    {   $bind_body_reader
-               ||= $self->schemas->compile(READER => "{$soapns}body");
-        my $body = $bind_body_reader->($bind_body->[0]);
+    {   my $body_reader = $self->schemas->compile(READER => "{$soapns}body");
+        my $body = $body_reader->($bind_body->[0]);
 
         if(!defined $self->soapStyle || $self->soapStyle eq 'document')
         {   my $body_parts = $body->{parts} || [];
@@ -491,10 +492,8 @@ sub collectMessageParts($$$)
     }
 
     if(my $bind_headers = $bind->{"{$soapns}header"})
-    {   $bind_header_reader
-         ||= $self->schemas->compile(READER => "{$soapns}header");
-
-        my @headers = map {$bind_header_reader->($_)} @$bind_headers;
+    {   my $header_reader = $self->schemas->compile(READER=> "{$soapns}header");
+        my @headers = map {$header_reader->($_)} @$bind_headers;
 
         foreach my $header (@headers)
         {   my $use = $header->{use}
@@ -582,20 +581,19 @@ __FAKE_ELEMENT
 =method collectFaultParts ARGS, PORT-OP, BIND-OP
 =cut
 
-my $bind_fault_reader;
 sub collectFaultParts($$$)
 {   my ($self, $args, $portop, $bind) = @_;
     my (%parts, %encodings);
 
-    my $soapns      = $self->soapNameSpace;
-    my $bind_faults = $bind->{"{$soapns}fault"}
+    my $soapns       = $self->soapNameSpace;
+    my $bind_faults  = $bind->{"{$soapns}fault"}
         or return ({}, {});
 
-    my $port_faults = $portop->{fault} || [];
-    $bind_fault_reader ||= $self->schemas->compile(READER => "{$soapns}fault");
+    my $port_faults  = $portop->{fault} || [];
+    my $fault_reader = $self->schemas->compile(READER => "{$soapns}fault");
 
     foreach my $bind_fault (@$bind_faults)
-    {   my $fault = ($bind_fault_reader->($bind_fault))[1];
+    {   my $fault = ($fault_reader->($bind_fault))[1];
         my $name  = $fault->{name};
 
         my $port  = first {$_->{name} eq $name} @$port_faults;

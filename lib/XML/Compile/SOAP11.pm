@@ -61,9 +61,7 @@ sub init($)
 
     $self->SUPER::init($args);
 
-    my $schemas = $self->schemas;
-    $schemas->importDefinitions($env);
-    $schemas->importDefinitions($enc);
+    $self->schemas->importDefinitions( [$env, $enc] );
     $self;
 }
 

@@ -254,8 +254,8 @@ sub test_rw($$$$;$$)
 
 sub compare_xml($$;$)
 {   my ($tree, $expect, $msg) = @_;
-    my $dump = ref $tree ? $tree->toString : $tree;
 
+    my $dump = ref $tree ? $tree->toString : $tree;
     for($dump, $expect)
     {   defined $_ or next;
         s/\>\s+/>/gs;

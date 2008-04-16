@@ -50,11 +50,15 @@ XML::Compile::WSDL11 - create SOAP messages defined by WSDL 1.1
  my $server  = XML::Compile::SOAP::HTTPDaemon->new;
  $server->actionsFromWSDL($wsdl);
  
+ # For debug info, start your script with:
+ use Log::Report;
+ dispatcher PERL => 'default', mode => 3;
+
 =chapter DESCRIPTION
 
-This module is QUITE NEW, so needs more exposure to the outside world.
-It currently only supports WSDL 1.1 on SOAP 1.1, with HTTP-SOAP.  Missing
-are pure HTTP GET/POST bindings and multipart-mime transport protocols.
+This module currently supports WSDL 1.1 on SOAP 1.1, with HTTP-SOAP.
+B<Missing are> pure HTTP GET/POST bindings, multipart-mime transport
+protocols, WSDL2 and SOAP 1.2.
 
 An WSDL file defines a set of messages to be send and received over SOAP
 connections.  As end-user, you do not have to worry about the complex
@@ -85,13 +89,16 @@ M<XML::Compile::Schema::new()>
 Force to accept only WSDL descriptions which are in this namespace.  If
 not specified, the name-space  which is found in the first WSDL document
 is used.
+
+=option  schemas XML::Compile::Schema object
+=default schemas <created internally>
 =cut
 
 sub init($)
 {   my ($self, $args) = @_;
     $self->SUPER::init($args);
 
-    $self->{schemas} = XML::Compile::Schema->new(undef, %$args);
+    $self->{schemas} = $args->{schemas} || XML::Compile::Schema->new;
     $self->{index}   = {};
     $self->{wsdl_ns} = $args->{wsdl_namespace};
 
@@ -130,15 +137,24 @@ C<definition> root element.
 
 sub addWSDL($)
 {   my ($self, $data) = @_;
+
     defined $data or return;
     my ($node, %details) = $self->dataToXML($data)
         or return $self;
+
+    my $schemas = $self->schemas;
+
+    # Collect the user schema
 
     $node    = $node->documentElement
         if $node->isa('XML::LibXML::Document');
 
     $node->localName eq 'definitions'
         or error __x"root element for WSDL is not 'definitions'";
+
+    $schemas->importDefinitions($node, details => \%details);
+
+    # Collect the WSDL schemata
 
     my $wsdlns  = $node->namespaceURI;
     my $corens  = $self->wsdlNamespace || $self->wsdlNamespace($wsdlns);
@@ -147,14 +163,11 @@ sub addWSDL($)
         or error __x"wsdl in namespace {wsdlns}, where already using {ns}"
                , wsdlns => $wsdlns, ns => $corens;
 
-    my $schemas = $self->schemas;
-
-    # take all defintions from the WSDL, including the types
-    $schemas->importDefinitions($wsdlns, %details);
-
     $wsdlns eq WSDL11
         or error __x"don't known how to handle {wsdlns} WSDL files"
                , wsdlns => $wsdlns;
+
+    $schemas->importDefinitions($wsdlns, %details);
 
     my %hook_kind =
      ( type         => pack_type($wsdlns, 'tOperation')

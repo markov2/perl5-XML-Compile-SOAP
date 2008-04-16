@@ -7,3 +7,7 @@ Wishlist:
   - Jabber protocol for SOAP message exchange.
     http://www.xmpp.org/extensions/xep-0072.html
     Requires SOAP1.2 implementation.
+
+  - WS-Security extensions
+    http://docs.oasis-open.org/wss/2004/01/oasis-200401-wss-soap-message-security-1.0.pdf
+

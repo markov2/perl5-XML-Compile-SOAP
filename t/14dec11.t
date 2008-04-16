@@ -14,13 +14,9 @@ use XML::Compile::SOAP11::Client;
 use XML::Compile::SOAP::Util qw/:soap11/;
 use XML::Compile::Util       qw/SCHEMA2001 pack_type/;
 
-# This test-script does not use Test::Deeply::cmp_deeply to compare
-# structures, but Test::More::is_deeply() which is weaker.  This is
-# needed because Math::Big* with GMP library creates C objects which
-# need to be compared stringified.
-
 use Test::More tests => 98;
-use TestTools qw/compare_xml/;
+use TestTools    qw/compare_xml/;
+use Test::Deep   qw/cmp_deeply/;
 
 use Math::BigFloat;
 use XML::LibXML;
@@ -65,16 +61,16 @@ __XML
     my $h = $soap->dec(@elements);
 
 #warn "H: ",Dumper $h, $expect_data;
-    is_deeply($h, $expect_data, 'complex data');
+    cmp_deeply($h, $expect_data, 'complex data');
 
     my ($index, $hrefs) = ({}, []);
     $soap->_dec_find_ids_hrefs($index, $hrefs, \$h);
 #warn "I: ",Dumper $index;
-    is_deeply($index, $expect_index, 'index');
+    cmp_deeply($index, $expect_index, 'index');
 
     my $s = $soap->decSimplify($h);
 #warn "S: ", Dumper $s, $simple_data;
-    is_deeply($s, $simple_data, 'simplified data');
+    cmp_deeply($s, $simple_data, 'simplified data');
 }
 
 check_decode '<SOAP-ENC:int>41</SOAP-ENC:int>'

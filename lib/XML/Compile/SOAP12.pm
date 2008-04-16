@@ -71,10 +71,7 @@ sub init($)
 
     my $rpc = $self->{rpc} = $args->{rpc} || SOAP12RPC;
 
-    my $schemas = $self->schemas;
-    $schemas->importDefinitions($env);
-    $schemas->importDefinitions($enc);
-    $schemas->importDefinitions($rpc);
+    $self->schemas->importDefinitions( [$env, $enc, $rpc] );
     $self;
 }
 

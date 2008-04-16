@@ -91,6 +91,7 @@ sub fake_server(@)
     # Check the request
 
     isa_ok($request, 'HTTP::Request');
+
     compare_xml($request->decoded_content, <<__XML, 'request content');
 <?xml version="1.0" encoding="UTF-8"?>
 <SOAP-ENV:Envelope
@@ -113,7 +114,7 @@ __XML
 
     # Produce answer
 
-    HTTP::Response->new
+    my $response = HTTP::Response->new
       ( 200
       , 'standard response'
       , [ 'Content-Type' => 'text/xml' ]
@@ -129,6 +130,8 @@ __XML
   </SOAP-ENV:Body>
 </SOAP-ENV:Envelope>
 __XML
+
+   $response;
 }
 
 use XML::Compile::Transport::SOAPHTTP;

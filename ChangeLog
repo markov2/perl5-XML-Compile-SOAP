@@ -4,6 +4,31 @@
 TODO:
 - fix test t/30charset.t
 
+version 0.72: Wed Apr 16 13:03:26 CEST 2008
+
+	Fixes:
+
+	- WSDL schemata passed to new() got parsed twice.
+
+	- schema sources were offered for compilation twice, but ignored
+	  the last time.
+
+	- schema mix-up with more than one WSDL object. [Kaare Rasmussen]
+
+	- WSDL11->compileClient did not pass parameters to ::Schema::compile()
+	  as was documented [Allan Wind]
+
+	Changes:
+
+	- requires XML::Compile 0.73 -> 0.78
+
+	Improvements:
+
+	- new option WSDL11(schemas).
+
+	- only complain about limitation to SOAPHTTP protocol if no
+	  explicit transporter was defined. [Daniel Ruoso]
+
 version 0.71: Sat Apr 12 09:58:05 CEST 2008
 
 	Fixes:

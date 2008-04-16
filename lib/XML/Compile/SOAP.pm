@@ -212,6 +212,11 @@ the type where it belongs to.  The element of an entry (the value) is
 defined as an C<any> element in the schema, and therefore you will need
 to explicitly specify the element to be processed.
 
+As OPTIONS, you can specify any listed here, but also anything which is
+accepted by M<XML::Compile::Schema::compile()>, like
+C<< sloppy_integers => 1 >> and hooks.  These are applied to all header
+and body elements (not to the SOAP wrappers)
+
 =option  header ENTRIES
 =default header C<undef>
 ARRAY of PAIRS, defining a nice LABEL (free of choice but unique)
@@ -352,6 +357,7 @@ sub sender($)
     my ($header, $hlabels) = $self->writerCreateHeader
       ( $args->{header} || [], $allns
       , $args->{mustUnderstand}, $args->{destination}
+      , $args
       );
 
     # Translate body (3 options)
@@ -369,7 +375,7 @@ sub sender($)
     {   error __x"unknown soap message style `{style}'", style => $style;
     }
 
-    my ($body, $blabels) = $self->writerCreateBody($bodydef, $allns);
+    my ($body, $blabels) = $self->writerCreateBody($bodydef, $allns, $args);
 
     # Translate body faults
 
@@ -390,6 +396,7 @@ sub sender($)
 
     my $envelope = $self->schemas->compile
       ( WRITER => pack_type($envns, 'Envelope')
+      , %$args
       , hooks  => \@hooks
       , output_namespaces    => $allns
       , elements_qualified   => 1
@@ -496,11 +503,11 @@ sub writerEncstyleHook($)
    { before => $before, after => $after };
 }
 
-=method writerCreateHeader HEADER-DEFS, NS-TABLE, UNDERSTAND, DESTINATION
+=method writerCreateHeader HEADER-DEFS, NS-TABLE, UNDERSTAND, DESTINATION, OPTS
 =cut
 
 sub writerCreateHeader($$$$)
-{   my ($self, $header, $allns, $understand, $destination) = @_;
+{   my ($self, $header, $allns, $understand, $destination, $opts) = @_;
     my (@rules, @hlabels);
     my $schema      = $self->schemas;
     my %destination = ref $destination eq 'ARRAY' ? @$destination : ();
@@ -515,7 +522,7 @@ sub writerCreateHeader($$$$)
 
         my $code = UNIVERSAL::isa($element,'CODE') ? $element
          : $schema->compile
-           ( WRITER => $element
+           ( WRITER => $element, %$opts
            , output_namespaces  => $allns
            , include_namespaces => 0
            , elements_qualified => 'TOP'
@@ -538,11 +545,11 @@ sub writerCreateHeader($$$$)
     (\@rules, \@hlabels);
 }
 
-=method writerCreateBody BODY-DEFS, NAMESPACE-TABLE
+=method writerCreateBody BODY-DEFS, NAMESPACE-TABLE, OPTS
 =cut
 
 sub writerCreateBody($$)
-{   my ($self, $body, $allns) = @_;
+{   my ($self, $body, $allns, $opts) = @_;
     my (@rules, @blabels);
     my $schema = $self->schemas;
     my @b      = @$body;
@@ -551,7 +558,7 @@ sub writerCreateBody($$)
 
         my $code = UNIVERSAL::isa($element, 'CODE') ? $element
         : $schema->compile
-          ( WRITER => $element
+          ( WRITER => $element, %$opts
           , output_namespaces  => $allns
           , include_namespaces => 0
           , elements_qualified => 'TOP'
@@ -694,8 +701,8 @@ sub receiver($)
 #   my @roles  = ref $roles eq 'ARRAY' ? @$roles : $roles;
 
     my $faultdec = $self->readerParseFaults($args->{faults} || []);
-    my $header   = $self->readerParseHeader($args->{header} || []);
-    my $body     = $self->readerParseBody($bodydef);
+    my $header   = $self->readerParseHeader($args->{header} || [], $args);
+    my $body     = $self->readerParseBody($bodydef, $args);
 
     my $envns    = $self->envelopeNS;
     my @hooks    = 
@@ -760,11 +767,11 @@ sub readerHook($$$@)
     };
 }
 
-=method readerParseHeader HEADERDEF
+=method readerParseHeader HEADERDEF, OPTS
 =cut
 
-sub readerParseHeader($)
-{   my ($self, $header) = @_;
+sub readerParseHeader($$)
+{   my ($self, $header, $opts) = @_;
     my @rules;
 
     my $schema = $self->schemas;
@@ -775,7 +782,10 @@ sub readerParseHeader($)
     while(@h)
     {   my ($label, $element) = splice @h, 0, 2;
         my $code = UNIVERSAL::isa($element, 'CODE') ? $element
-          : $schema->compile(READER => $element, anyElement => 'TAKE_ALL');
+          : $schema->compile
+              ( READER => $element, %$opts
+              , anyElement => 'TAKE_ALL'
+              );
         push @rules, [$label, $element, $code];
 
     }
@@ -783,11 +793,11 @@ sub readerParseHeader($)
     \@rules;
 }
 
-=method readerParseBody BODYDEF
+=method readerParseBody BODYDEF, OPTS
 =cut
 
-sub readerParseBody($)
-{   my ($self, $body) = @_;
+sub readerParseBody($$$)
+{   my ($self, $body, $opts) = @_;
     my @rules;
 
     my $schema = $self->schemas;
@@ -798,7 +808,10 @@ sub readerParseBody($)
     while(@b)
     {   my ($label, $element) = splice @b, 0, 2;
         my $code = UNIVERSAL::isa($element, 'CODE') ? $element
-          : $schema->compile(READER => $element, anyElement => 'TAKE_ALL');
+          : $schema->compile
+              ( READER => $element, %$opts
+              , anyElement => 'TAKE_ALL'
+              );
         push @rules, [$label, $element, $code];
     }
 
