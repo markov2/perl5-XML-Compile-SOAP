@@ -858,13 +858,7 @@ sub readerEncstyleHook()
 }
 
 #------------------------------------------------
-
-=section Transcoding
-SOAP defines encodings, especially for SOAP-RPC.
-
-=subsection Encoding
-=subsection Decoding
-=cut
+# Implemented in XML::Compile::SOAP::Encoding;
 
 sub startEncoding(@)
 {   my ($self, %args) = @_;
