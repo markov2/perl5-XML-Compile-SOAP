@@ -96,9 +96,9 @@ exit 0;
 sub create_call($)
 {   my $name = shift;
     $client->compileClient
-     ( name      => $name
-     , encode    => $output, transport => $http, decode    => $input
-     , rpcout    => pack_type($myns, $name)
+     ( name   => $name
+     , encode => $output, transport => $http, decode => $input
+     , rpcout => pack_type($myns, $name)
      );
 }
 

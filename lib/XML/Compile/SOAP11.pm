@@ -265,6 +265,7 @@ The untranslated C<$faults> HASH looks like this:
    , faultactor => 'http://schemas.xmlsoap.org/soap/actor/next'
    , detail => { '{http://test-types}fault_one' => [ XMLNODES ] }
    , _NAME => 'fault1'
+(
    }
 
 The C<_NAME> originates from the M<compileMessage(faults)> option:

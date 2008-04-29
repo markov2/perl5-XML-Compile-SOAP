@@ -4,10 +4,11 @@ use 5.008;
 
 WriteMakefile
  ( NAME	 	=> 'XML::Compile::SOAP'
- , VERSION	=> '0.72'
+ , VERSION	=> '0.73'
  , PREREQ_PM    =>
-   { XML::Compile    => 0.78
-   , Log::Report     => 0.11
+   { XML::Compile    => 0.81
+   , XML::Compile::Tester => 0.01
+   , Log::Report     => 0.17
    , LWP             => 5.803
    , Time::HiRes     => 0
 
@@ -23,15 +24,17 @@ WriteMakefile
 ### used by oodist during production of distribution
 sub MY::postamble { <<'__POSTAMBLE' }
 
-EXTENDS		= ../XMLCompile:../XMLDaemon
+EXTENDS		= ../XMLCompile:../XMLDaemon:../XMLTester
 
 # for DIST
 RAWDIR          = ../public_html/xml-compile-soap/raw
 DISTDIR         = ../public_html/xml-compile-soap/source
 LICENSE         = artistic
+SKIP_LINKS	= XML::LibXML
 
 # for POD
 FIRST_YEAR      = 2007
 EMAIL           = perl@overmeer.net
 WEBSITE         = http://perl.overmeer.net/xml-compile/
+PODTAIL		= ../XML-shared-podtail
 __POSTAMBLE

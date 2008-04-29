@@ -4,6 +4,25 @@
 TODO:
 - fix test t/30charset.t
 
+version 0.73: Tue Apr 29 18:59:42 CEST 2008
+
+	Changes:
+
+	- require Log::Report 0.17, to fulfil promisses of the doc (was 0.11)
+
+	- require XML::Compile::Tester
+
+	- require XML::Compile 0.78 -> 0.81
+
+	Improvements:
+
+	- example how to use WS-Security, contributed by [Alan Wind]
+
+	- refer to mailinglist and IRC, set-up by [Matt S Trout]
+
+	- Test scripts converted to use XML::Compile::Tester.  Cleaned-out
+	  t/TestTools.t
+
 version 0.72: Wed Apr 16 13:03:26 CEST 2008
 
 	Fixes:

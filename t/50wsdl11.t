@@ -18,6 +18,7 @@ $Data::Dumper::Indent = 1;
 use XML::Compile::WSDL11;
 use XML::Compile::Transport::SOAPHTTP;
 use XML::Compile::SOAP::Util  qw/WSDL11/;
+use XML::Compile::Tester;
 
 use Test::More tests => 42;
 use Test::Deep;

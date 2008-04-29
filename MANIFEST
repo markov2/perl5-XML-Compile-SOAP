@@ -13,6 +13,8 @@ examples/namesservice/rpc-encoded.pl
 examples/namesservice/rpc-encoded2.pl
 examples/namesservice/rpc-literal.pl
 examples/namesservice/rpc-literal2.pl
+examples/wssecurity/README
+examples/wssecurity/security.pm
 lib/XML/Compile/SOAP.pm
 lib/XML/Compile/SOAP/Client.pm
 lib/XML/Compile/SOAP/Encoding.pm

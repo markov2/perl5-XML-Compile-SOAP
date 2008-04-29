@@ -12,6 +12,7 @@ use Data::Dumper;
 $Data::Dumper::Indent = 1;
 
 use XML::Compile::SOAP11::Client;
+use XML::Compile::Tester;
 
 use Test::More tests => 19;
 use XML::LibXML;

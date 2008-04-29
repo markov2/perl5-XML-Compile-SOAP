@@ -13,9 +13,10 @@ $Data::Dumper::Indent = 1;
 use XML::Compile::SOAP11::Client;
 use XML::Compile::SOAP::Util qw/:soap11/;
 use XML::Compile::Util       qw/SCHEMA2001 pack_type/;
+use XML::Compile::Tester;
 
 use Test::More tests => 98;
-use TestTools    qw/compare_xml/;
+use TestTools;
 use Test::Deep   qw/cmp_deeply/;
 
 use Math::BigFloat;

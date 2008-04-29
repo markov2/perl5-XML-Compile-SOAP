@@ -14,6 +14,7 @@ use XML::Compile::WSDL11;
 use XML::Compile::Transport::SOAPHTTP;
 use XML::Compile::Util       qw/SCHEMA2001/;
 use XML::Compile::SOAP::Util qw/WSDL11 WSDL11SOAP SOAP11HTTP/;
+use XML::Compile::Tester;
 
 use Test::More tests => 12;
 use Test::Deep;

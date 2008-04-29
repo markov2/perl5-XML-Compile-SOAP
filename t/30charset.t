@@ -13,6 +13,7 @@ $Data::Dumper::Indent = 1;
 
 use XML::Compile::Util qw/pack_type/;
 use XML::Compile::SOAP11::Client;
+use XML::Compile::Tester;
 
 #use Test::More tests => 12;
 use Test::More skip_all => 'test needs fixing';

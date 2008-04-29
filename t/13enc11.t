@@ -13,10 +13,11 @@ $Data::Dumper::Indent = 1;
 use XML::Compile::SOAP11::Client;
 use XML::Compile::SOAP::Util qw/:soap11/;
 use XML::Compile::Util       qw/SCHEMA2001 pack_type/;
+use XML::Compile::Tester;
 
 use Test::More tests => 65;
 use XML::LibXML;
-use TestTools qw/compare_xml/;
+use TestTools;
 
 my $TestNS = 'http://test-ns';
 

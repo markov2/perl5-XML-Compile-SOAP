@@ -32,7 +32,7 @@ XML::Compile::WSDL11 - create SOAP messages defined by WSDL 1.1
 =chapter SYNOPSIS
 
  # preparation
- my $wsdl    = XML::Compile::WSDL11->new($xml);
+ my $wsdl    = XML::Compile::WSDL11->new($wsdlfile);
  $wsdl->addWSDL(...additional WSDL file...);
  $wsdl->importDefinitions(...more schemas...);
 
@@ -51,8 +51,7 @@ XML::Compile::WSDL11 - create SOAP messages defined by WSDL 1.1
  $server->actionsFromWSDL($wsdl);
  
  # For debug info, start your script with:
- use Log::Report;
- dispatcher PERL => 'default', mode => 3;
+ use Log::Report mode => 'DEBUG';
 
 =chapter DESCRIPTION
 
@@ -341,7 +340,7 @@ M<XML::Compile::WSDL11::Operation::compileClient()> (a whole lot,
 for instance C<transport_hook>), plus
 =item .
 everything you can pass to M<XML::Compile::Schema::compile()>, for
-instance C<< check_values => 0 >>
+instance C<< check_values => 0 >>, hooks, and typemaps.
 =back
 
 =example

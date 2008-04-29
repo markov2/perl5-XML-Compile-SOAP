@@ -317,8 +317,8 @@ sub compileClient(@)
     {   my $impl = 'XML::Compile::Transport::SOAPHTTP';
  
         $proto eq SOAP11HTTP
-           or error __x"SORRY: only transport of HTTP implemented, not {protocol}"
-               , protocol => $proto;
+           or error __x"only transport of HTTP implemented, not {protocol}"
+                , protocol => $proto;
 
         # this is an optimization thing: often, the client and server will
         # be forking daemons: you do not want to load the module in each

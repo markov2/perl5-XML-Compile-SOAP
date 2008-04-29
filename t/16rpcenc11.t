@@ -15,12 +15,13 @@ $Data::Dumper::Indent = 1;
 use XML::Compile::SOAP11::Client;
 use XML::Compile::SOAP::Util qw/:soap11/;
 use XML::Compile::Util       qw/SCHEMA1999 pack_type unpack_type/;
+use XML::Compile::Tester;
 
 use Math::BigFloat;
 
 use Test::More tests => 8;
 use XML::LibXML;
-use TestTools qw/compare_xml/;
+use TestTools;
 
 my $TestNS = 'http://test-ns';
 
