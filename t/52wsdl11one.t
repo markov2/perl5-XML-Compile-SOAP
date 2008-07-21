@@ -41,20 +41,20 @@ my $xml_wsdl = <<"__WSDL";
    </types>
 
    <message name="SendInput">
-     <part name="body" element="tns:Send"/>
+     <part name="body" element="tns:Send" />
    </message>
 
    <portType name="MySender">
      <operation name="doSend">
-       <input message="tns:SendInput"/>
+       <input message="tns:SendInput" />
      </operation>
    </portType>
 
    <binding name="SendBinding" type="tns:MySender">
-     <soap:binding style="document" transport="$soap11http"/>
+     <soap:binding style="document" transport="$soap11http" />
      <operation name="doSend">
         <soap:operation soapAction="http://any-action" />
-        <input><soap:body use="literal"/></input>
+        <input><soap:body use="literal" /></input>
      </operation>
    </binding>
 

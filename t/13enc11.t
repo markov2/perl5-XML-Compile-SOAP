@@ -316,8 +316,8 @@ my $e7t = pack_type $TestNS, 'ArrayOfPhoneNumbers';
 my $pn  = $soap->schemas->compile
   ( WRITER => $e7t
   , elements_qualified => 'TOP'
-# , output_namespaces  => {$TestNS => { prefix => 'xyz', uri => $TestNS}}
-  , output_namespaces  => [ xyz => $TestNS ]     # same, shorter
+# , prefixes  => {$TestNS => { prefix => 'xyz', uri => $TestNS}}
+  , prefixes  => [ xyz => $TestNS ]     # same, shorter
   , include_namespaces => 0
   );
 

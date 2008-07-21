@@ -177,7 +177,7 @@ Returns the M<XML::Compile::Schema> object which contains the
 knowledge about the types.
 =cut
 
-sub schemas()    {shift->{schemas}}
+sub schemas() {shift->{schemas}}
 
 =method prefixPreferences TABLE, NEW, [USED]
 NEW is a HASH or ARRAY-of-PAIRS which define prefix-to-uri relations,
@@ -398,7 +398,7 @@ sub sender($)
       ( WRITER => pack_type($envns, 'Envelope')
       , %$args
       , hooks  => \@hooks
-      , output_namespaces    => $allns
+      , prefixes    => $allns
       , elements_qualified   => 1
       , attributes_qualified => 1
       );
@@ -481,7 +481,7 @@ sub writerEncstyleHook($)
     my $envns   = $self->envelopeNS;
     my $style_w = $self->schemas->compile
       ( WRITER => pack_type($envns, 'encodingStyle')
-      , output_namespaces    => $allns
+      , prefixes    => $allns
       , include_namespaces   => 0
       , attributes_qualified => 1
       );
@@ -523,7 +523,7 @@ sub writerCreateHeader($$$$)
         my $code = UNIVERSAL::isa($element,'CODE') ? $element
          : $schema->compile
            ( WRITER => $element, %$opts
-           , output_namespaces  => $allns
+           , prefixes  => $allns
            , include_namespaces => 0
            , elements_qualified => 'TOP'
            );
@@ -559,7 +559,7 @@ sub writerCreateBody($$)
         my $code = UNIVERSAL::isa($element, 'CODE') ? $element
         : $schema->compile
           ( WRITER => $element, %$opts
-          , output_namespaces  => $allns
+          , prefixes  => $allns
           , include_namespaces => 0
           , elements_qualified => 'TOP'
           );
@@ -624,7 +624,7 @@ sub writerCreateRpcEncoded($)
        # results there may be problems with multiple body elements.
        $top->setAttribute("xmlns:$_->{prefix}", $_->{uri})
            for sort {$a->{prefix} cmp $b->{prefix}}
-                   values %{$enc->{namespaces}};
+                   values %{$enc->{prefixes}};
 
        @body;
      };
@@ -641,8 +641,8 @@ sub writerCreateFault($$$)
 
     my $schema = $self->schemas;
     my $fault  = $schema->compile
-      ( WRITER => $faulttype
-      , output_namespaces  => $allns
+      ( WRITER   => $faulttype
+      , prefixes => $allns
       , include_namespaces => 0
       , elements_qualified => 'TOP'
       );
@@ -651,8 +651,8 @@ sub writerCreateFault($$$)
     while(@f)
     {   my ($label, $type) = splice @f, 0, 2;
         my $details = $schema->compile
-          ( WRITER => $type
-          , output_namespaces  => $allns
+          ( WRITER   => $type
+          , prefixes => $allns
           , include_namespaces => 0
           , elements_qualified => 'TOP'
           );
@@ -716,6 +716,7 @@ sub receiver($)
      , hooks  => \@hooks
      , anyElement   => 'TAKE_ALL'
      , anyAttribute => 'TAKE_ALL'
+     , elements_qualified => 'ALL'
      );
 
     sub
@@ -784,6 +785,7 @@ sub readerParseHeader($$)
         my $code = UNIVERSAL::isa($element, 'CODE') ? $element
           : $schema->compile
               ( READER => $element, %$opts
+              , elements_qualified => 'TOP'
               , anyElement => 'TAKE_ALL'
               );
         push @rules, [$label, $element, $code];
@@ -810,6 +812,7 @@ sub readerParseBody($$$)
         my $code = UNIVERSAL::isa($element, 'CODE') ? $element
           : $schema->compile
               ( READER => $element, %$opts
+              , elements_qualified => 'TOP'
               , anyElement => 'TAKE_ALL'
               );
         push @rules, [$label, $element, $code];

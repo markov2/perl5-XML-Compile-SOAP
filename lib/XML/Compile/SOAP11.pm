@@ -90,9 +90,9 @@ sub writerHeaderEnv($$$$)
     if($understand)
     {   my $u_w = $self->{soap11_u_w} ||=
           $schema->compile
-            ( WRITER => pack_type($envns, 'mustUnderstand')
-            , output_namespaces    => $allns
-            , include_namespaces   => 0
+            ( WRITER   => pack_type($envns, 'mustUnderstand')
+            , prefixes => $allns
+            , include_namespaces => 0
             );
 
         $ucode =
@@ -109,9 +109,9 @@ sub writerHeaderEnv($$$$)
 
         my $a_w = $self->{soap11_a_w} ||=
           $schema->compile
-            ( WRITER => pack_type($envns, 'actor')
-            , output_namespaces    => $allns
-            , include_namespaces   => 0
+            ( WRITER   => pack_type($envns, 'actor')
+            , prefixes => $allns
+            , include_namespaces => 0
             );
 
         return

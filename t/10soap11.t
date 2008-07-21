@@ -8,6 +8,8 @@ use lib 'lib','t';
 use TestTools;
 use Test::Deep   qw/cmp_deeply/;
 
+# use Log::Report mode => 3;  # debugging
+
 use Data::Dumper;
 $Data::Dumper::Indent = 1;
 

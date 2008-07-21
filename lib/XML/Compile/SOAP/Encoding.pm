@@ -70,18 +70,22 @@ called for you.
 
 =requires doc XML::LibXML::Document
 
+=option  prefixes HASH|ARRAY
+=default prefixes {}
+Like M<XML::Compile::Schema::compile(prefixes)>, this can
+be a HASH (see example) or an ARRAY with prefix-uri pairs.
+
 =option  namespaces HASH|ARRAY
 =default namespaces {}
-Like M<XML::Compile::Schema::compile(output_namespaces)>, this can
-be a HASH (see example) or an ARRAY with prefix-uri pairs.
+Pre release 0.74 name for option C<prefixes>.
 
 =example
  my %ns;
  $ns{$MYNS} = {uri => $MYNS, prefix => 'm'};
- $soap->startEncoding(doc => $doc, namespaces => \%ns);
+ $soap->startEncoding(doc => $doc, prefixes => \%ns);
 
  # or
- $soap->startEncoding(doc => $doc, namespaces => [ m => $MYNS ]);
+ $soap->startEncoding(doc => $doc, prefixes => [ m => $MYNS ]);
  
 =cut
 
@@ -93,7 +97,7 @@ sub _init_encoding($)
     $doc && UNIVERSAL::isa($doc, 'XML::LibXML::Document')
         or error __x"encoding required an XML document to work with";
 
-    my $ns = $args->{namespaces} || {};
+    my $ns = $args->{prefixes} || $args->{namespaces} || {};
     if(ref $ns eq 'ARRAY')
     {   my @ns = @$ns;
         $ns    = {};
@@ -103,7 +107,7 @@ sub _init_encoding($)
         }
     }
 
-    $args->{namespaces} = $ns;
+    $args->{prefixes} = $ns;
     $self->{enc} = $args;
 
     $self->encAddNamespaces
@@ -124,12 +128,12 @@ Convenience alternative for M<encAddNamespaces()>.
 =cut
 
 sub encAddNamespaces(@)
-{   my $ns = shift->{enc}{namespaces};
+{   my $prefs = shift->{enc}{prefixes};
     while(@_)
     {   my ($prefix, $uri) = (shift, shift);
-        $ns->{$uri} = {uri => $uri, prefix => $prefix};
+        $prefs->{$uri} = {uri => $uri, prefix => $prefix};
     }
-    $ns;
+    $prefs;
 }
 
 sub encAddNamespace(@) { shift->encAddNamespaces(@_) }
@@ -149,7 +153,7 @@ sub prefixed($;$)
     my ($ns, $local) = @_==2 ? @_ : unpack_type $_[0];
     length $ns or return $local;
 
-    my $def  =  $self->{enc}{namespaces}{$ns}
+    my $def  =  $self->{enc}{prefixes}{$ns}
         or error __x"namespace prefix for your {ns} not defined", ns => $ns;
 
     $def->{prefix}.':'.$local;
@@ -178,8 +182,8 @@ sub enc($$$)
     my $type  = pack_type $self->encodingNS, $local;
 
     my $write = $self->{writer}{$type} ||= $self->schemas->compile
-      ( WRITER => $type
-      , output_namespaces  => $enc->{namespaces}
+      ( WRITER   => $type
+      , prefixes => $enc->{prefixes}
       , elements_qualified => 1
       , include_namespaces => 0
       );
@@ -272,8 +276,8 @@ sub element($$$)
 
     my $el  = $doc->createElement($name);
     my $write = $self->{writer}{$type} ||= $self->schemas->compile
-      ( WRITER => $type
-      , output_namespaces  => $enc->{namespaces}
+      ( WRITER   => $type
+      , prefixes => $enc->{prefixes}
       , include_namespaces => 0
       );
 

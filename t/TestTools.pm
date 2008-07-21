@@ -2,7 +2,7 @@ use warnings;
 use strict;
 
 # test environment at home: unpublished XML::Compile
-use lib '../XMLCompile/lib', '../LogReport/lib';
+use lib '../XMLCompile/lib', '../LogReport/lib', '../XMLTester/lib';
 
 package TestTools;
 use base 'Exporter';
