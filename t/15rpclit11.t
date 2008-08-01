@@ -96,8 +96,8 @@ sub fake_server(@)
     compare_xml($request->decoded_content, <<__XML, 'request content');
 <?xml version="1.0" encoding="UTF-8"?>
 <SOAP-ENV:Envelope
-   xmlns:x0="http://test-types"
-   xmlns:SOAP-ENV="http://schemas.xmlsoap.org/soap/envelope/">
+   xmlns:SOAP-ENV="http://schemas.xmlsoap.org/soap/envelope/"
+   xmlns:x0="http://test-types">
   <SOAP-ENV:Header>
     <x0:Transaction
       mustUnderstand="1"

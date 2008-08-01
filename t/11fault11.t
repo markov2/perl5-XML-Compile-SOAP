@@ -72,8 +72,9 @@ is(ref $receiver, 'CODE', 'compiled a receiver');
 
 my $msg1_soap = <<__MSG1;
 <?xml version="1.0" encoding="UTF-8"?>
-<SOAP-ENV:Envelope xmlns:x0="$TestNS"
-   xmlns:SOAP-ENV="$soap11_env">
+<SOAP-ENV:Envelope
+   xmlns:SOAP-ENV="$soap11_env"
+   xmlns:x0="$TestNS">
   <SOAP-ENV:Body>
     <x0:good>3</x0:good>
    </SOAP-ENV:Body>
@@ -101,8 +102,9 @@ cmp_deeply($hash1, {request => 3}, "server parsed input");
 
 my $msg2_soap = <<__MSG2;
 <?xml version="1.0" encoding="UTF-8"?>
-<SOAP-ENV:Envelope xmlns:x0="$TestNS"
-   xmlns:SOAP-ENV="$soap11_env">
+<SOAP-ENV:Envelope
+   xmlns:SOAP-ENV="$soap11_env"
+   xmlns:x0="$TestNS">
   <SOAP-ENV:Body>
     <SOAP-ENV:Fault>
       <faultcode>SOAP-ENV:Server.first</faultcode>

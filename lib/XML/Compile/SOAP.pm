@@ -879,6 +879,8 @@ sub startDecoding(@)
 
 =section Helpers
 
+=section Transcoding
+
 =method roleURI URI|STRING
 Translates actor/role/destination abbreviations into URIs. Various
 SOAP protocol versions have different pre-defined STRINGs, which can

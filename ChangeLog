@@ -3,6 +3,16 @@
 
 TODO:
 - fix test t/30charset.t
+- use XML::Compile::Cache
+
+version 0.76: Fri Aug  1 13:18:21 CEST 2008
+
+	Fixes:
+
+	- Correcting fault handling. Code and tests(!) contributed
+	  by [Jamie Lentin]
+
+	- Requires XML::Compile 0.91, just because it is much better.
 
 version 0.75: Mon Jul 21 09:17:10 CEST 2008
 

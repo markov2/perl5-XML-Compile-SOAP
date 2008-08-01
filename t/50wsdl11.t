@@ -229,8 +229,8 @@ sub fake_server($$)
    compare_xml($content, <<__EXPECTED, 'fake server received');
 <?xml version="1.0" encoding="UTF-8"?>
 <SOAP-ENV:Envelope
-   xmlns:x0="http://example.com/stockquote/schemas"
-   xmlns:SOAP-ENV="http://schemas.xmlsoap.org/soap/envelope/">
+   xmlns:SOAP-ENV="http://schemas.xmlsoap.org/soap/envelope/"
+   xmlns:x0="http://example.com/stockquote/schemas">
   <SOAP-ENV:Body>
      <x0:TradePriceRequest>
         <tickerSymbol>IBM</tickerSymbol>
@@ -244,8 +244,8 @@ __EXPECTED
     , <<__ANSWER);
 <?xml version="1.0" encoding="UTF-8"?>
 <SOAP-ENV:Envelope
-   xmlns:x0="http://example.com/stockquote/schemas"
-   xmlns:SOAP-ENV="http://schemas.xmlsoap.org/soap/envelope/">
+   xmlns:SOAP-ENV="http://schemas.xmlsoap.org/soap/envelope/"
+   xmlns:x0="http://example.com/stockquote/schemas">
   <SOAP-ENV:Body>
      <x0:TradePrice>
          <price>3.14</price>

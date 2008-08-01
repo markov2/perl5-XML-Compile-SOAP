@@ -14,7 +14,6 @@ use XML::Compile::SOAP::Util qw/:wsdl11/;
 use XML::Compile::WSDL11::Operation ();
 
 use List::Util  qw/first/;
-use Data::Dumper;  # needs to go away
 
 XML::Compile->addSchemaDirs(__FILE__);
 XML::Compile->knownNamespace

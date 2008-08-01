@@ -586,14 +586,14 @@ sub collectFaultParts($$$)
     my (%parts, %encodings);
 
     my $soapns       = $self->soapNameSpace;
-    my $bind_faults  = $bind->{"{$soapns}fault"}
+    my $bind_faults  = [ map { $_->{"{$soapns}fault"} } @$bind ]
         or return ({}, {});
 
-    my $port_faults  = $portop->{fault} || [];
+    my $port_faults  = $portop || [];
     my $fault_reader = $self->schemas->compile(READER => "{$soapns}fault");
 
     foreach my $bind_fault (@$bind_faults)
-    {   my $fault = ($fault_reader->($bind_fault))[1];
+    {   my $fault = ($fault_reader->($bind_fault->[0]));
         my $name  = $fault->{name};
 
         my $port  = first {$_->{name} eq $name} @$port_faults;
@@ -606,12 +606,12 @@ sub collectFaultParts($$$)
         my $message = $self->wsdl->find(message => $msgname)
             or error __x"cannot find fault message {name}", name => $msgname;
 
-        defined $message->{parts} && @{$message->{parts}}==1
+        defined $message->{part} && @{$message->{part}}==1
             or error __x"fault message {name} must have one part exactly"
                   , name => $msgname;
-        my $part    = $message->{parts}[0];
+        my $part    = $message->{part}[0];
 
-        push @{$parts{fault}}, $name => $part;
+        push @{$parts{faults}}, $name => $part->{element};
         $encodings{$name} = $part;
     }
 
