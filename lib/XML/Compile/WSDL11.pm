@@ -185,7 +185,7 @@ sub addWSDL($)
 
     # WSDL 1.1 par 2.1.1 says: WSDL def types each in own name-space
     my $index     = $self->{index};
-    my $toplevels = $spec->{gr_import} || [];  # silly WSDL structure
+    my $toplevels = $spec->{gr_anyTopLevelOptionalElement} || []; # silly WSDL structure
     foreach my $toplevel (@$toplevels)
     {   my ($which, $def) = %$toplevel;        # always only one
         $index->{$which}{pack_type $tns, $def->{name}} = $def

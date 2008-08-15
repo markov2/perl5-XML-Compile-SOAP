@@ -5,6 +5,13 @@ TODO:
 - fix test t/30charset.t
 - use XML::Compile::Cache
 
+version 0.77: Fri Aug 15 07:48:22 CEST 2008
+
+	Fixes:
+
+	- Changes in XML::Compile 0.93 broke group processing in WSDL
+	  rt.cpan.org#38483 [John LoVerso]
+
 version 0.76: Fri Aug  1 13:18:21 CEST 2008
 
 	Fixes:
