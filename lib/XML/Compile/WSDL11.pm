@@ -29,6 +29,7 @@ XML::Compile->knownNamespace
 XML::Compile::WSDL11 - create SOAP messages defined by WSDL 1.1
 
 =chapter SYNOPSIS
+ ** SOAP-RPC style broken in this release.
 
  # preparation
  my $wsdl    = XML::Compile::WSDL11->new($wsdlfile);

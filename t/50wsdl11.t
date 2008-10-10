@@ -39,7 +39,7 @@ my $xml_xsd = <<__STOCKQUOTE_XSD;
     <element name="TradePrice">
         <complexType>
             <all>
-                <element name="price" type="float"/>
+                <element name="price" type="int"/>
             </all>
         </complexType>
     </element>
@@ -248,7 +248,7 @@ __EXPECTED
    xmlns:x0="http://example.com/stockquote/schemas">
   <SOAP-ENV:Body>
      <x0:TradePrice>
-         <price>3.14</price>
+         <price>314</price>
      </x0:TradePrice>
   </SOAP-ENV:Body>
 </SOAP-ENV:Envelope>
@@ -261,4 +261,4 @@ isa_ok($client, 'CODE');
 
 my $answer = $client->(tickerSymbol => 'IBM');
 ok(defined $answer, 'got answer');
-cmp_deeply($answer, {body => {price => 3.14}});  # body is the name of the part
+cmp_deeply($answer, {body => {price => 314}});  # body is the name of the part

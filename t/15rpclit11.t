@@ -38,7 +38,7 @@ my $schema = <<__HELPERS;
 <element name="GetLastTradePriceResponse">
   <complexType>
      <all>
-        <element name="price" type="float"/>
+        <element name="price" type="int"/>
      </all>
   </complexType>
 </element>
@@ -126,7 +126,7 @@ __XML
    xmlns:SOAP-ENV="http://schemas.xmlsoap.org/soap/envelope/">
   <SOAP-ENV:Body>
     <x0:GetLastTradePriceResponse xmlns:x0="http://test-types">
-      <x0:price>3.14</x0:price>
+      <x0:price>314</x0:price>
     </x0:GetLastTradePriceResponse>
   </SOAP-ENV:Body>
 </SOAP-ENV:Envelope>
@@ -158,4 +158,4 @@ is(ref $trade_price, 'CODE', 'rpc trade_price');
 my $answer = $trade_price->({symbol => 'IBM'}, transaction => 5);
 
 isa_ok($answer, 'HASH', 'answer received');
-cmp_deeply($answer, {GetLastTradePriceResponse => {price => 3.14}} );
+cmp_deeply($answer, {GetLastTradePriceResponse => {price => 314}} );

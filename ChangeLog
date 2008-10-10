@@ -5,6 +5,20 @@ TODO:
 - fix test t/30charset.t
 - use XML::Compile::Cache
 
+version 0.78: Fri Oct 10 15:55:39 CEST 2008
+
+	Fixes:
+
+	- improved understanding of top-level elements in XML::Compile 0.95
+	  broke this module:
+	  . Some schema lack    elementFormDefault="qualified"
+	    changed in soap-encoding.xsd, wsdl-soap.xsd
+	  . Some problems in the RPC encoder/decoder
+
+	Improvements:
+
+	- do not use (big)float in test of t/15rpclit11.t
+
 version 0.77: Fri Aug 15 07:48:22 CEST 2008
 
 	Fixes:

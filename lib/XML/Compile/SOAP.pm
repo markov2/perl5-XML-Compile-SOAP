@@ -14,6 +14,7 @@ use Time::HiRes          qw/time/;
 XML::Compile::SOAP - base-class for SOAP implementations
 
 =chapter SYNOPSIS
+ ** SOAP-RPC style broken in this release.
  ** Only use SOAP1.1 and WSDL1.1; SOAP1.2/WSDL1.2 not working!
  ** See TODO, at the end of this page
 
@@ -451,6 +452,7 @@ sub writerHook($$@)
     , replace =>
         sub
         {   my ($doc, $data, $path, $tag) = @_;
+$data || panic "@_";
             my %data = %$data;
             my @h = @do;
             my @childs;
@@ -746,7 +748,7 @@ sub readerHook($$$@)
         my %h;
         foreach my $child ($xml->childNodes)
         {   next unless $child->isa('XML::LibXML::Element');
-            my $type = pack_type $child->namespaceURI, $child->localName;
+            my $type = type_of_node $child;
             if(my $t = $trans{$type})
             {   my $v = $t->[1]->($child);
                 $h{$t->[0]} = $v if defined $v;

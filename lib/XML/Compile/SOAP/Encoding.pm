@@ -184,7 +184,6 @@ sub enc($$$)
     my $write = $self->{writer}{$type} ||= $self->schemas->compile
       ( WRITER   => $type
       , prefixes => $enc->{prefixes}
-      , elements_qualified => 1
       , include_namespaces => 0
       );
 
@@ -610,12 +609,13 @@ sub dec(@)
     ref $data eq 'ARRAY'
         or return $data;
 
-    # find the root element
+    # find the root element(s)
     my $encns = $self->encodingNS;
     my @roots;
     for(my $i = 0; $i < @_ && $i < @$data; $i++)
     {   my $root = $_[$i]->getAttributeNS($encns, 'root');
-        push @roots, $data->[$i] if !defined $root || $root!=0;
+        next if defined $root && $root==0;
+        push @roots, $data->[$i];
     }
 
     my $answer
@@ -645,7 +645,8 @@ __FAKE_SCHEMA
     }
 
     $self->{dec}{$type} ||= $self->schemas->compile
-      (READER => $type, @{$self->{dec}{reader_opts}}, @_);
+      ( READER => $type, @{$self->{dec}{reader_opts}}
+      , @_);
 }
 
 sub _dec($;$$$)
@@ -713,7 +714,7 @@ sub _dec_typed($$$)
     my $child = $read->($node);
     my $data  = ref $child eq 'HASH' ? $child : { _ => $child };
     $data->{_TYPE} = $full;
-    $data->{_NAME} = pack_type $node->namespaceURI, $node->localName;
+    $data->{_NAME} = type_of_node $node;
 
     my $id = $node->getAttribute('id');
     $data->{id} = $id if defined $id;
@@ -766,9 +767,9 @@ sub _dec_other($$)
 
 sub _dec_soapenc($$)
 {   my ($self, $node, $type) = @_;
-    my $read = $self->_dec_reader($type)
+    my $reader = $self->_dec_reader($type)
        or return $node;
-    my $data = $read->($node);
+    my $data = $reader->($node);
     $data = { _ => $data } if ref $data ne 'HASH';
     $data->{_TYPE} = $type;
     $data;

@@ -2,12 +2,26 @@ use ExtUtils::MakeMaker;
 
 use 5.008;
 
+warn <<_WARN;
+
+*
+**************************** WARNING *****************************
+* The SOAP-RPC implementation is currently broken. If you need it,
+* do use XML::Compile v0.94 with XML::Compile::SOAP v0.76.
+* A major rewrite of the code is in progress, which will hopefully
+* fix that soap variant.  Document-style is OK.
+********************^^^^^*** WARNING ***^^^^^*********************
+*
+
+_WARN
+sleep 10;
+
 WriteMakefile
  ( NAME	 	=> 'XML::Compile::SOAP'
- , VERSION	=> '0.77'
+ , VERSION	=> '0.78'
  , PREREQ_PM    =>
-   { XML::Compile    => 0.91
-   , XML::Compile::Tester => 0.01
+   { XML::Compile    => 0.96
+   , XML::Compile::Tester => 0.04
    , Log::Report     => 0.17
    , LWP             => 5.803
    , Time::HiRes     => 0
