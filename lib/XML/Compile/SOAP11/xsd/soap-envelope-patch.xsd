@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- the wsdl-soap schema is broken wrt namespaces.  The fault elements
+     are not namespace qualified, while everything else is.  This is
+     a work-around... -->
+
+<xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema"
+  xmlns:tns="http://schemas.xmlsoap.org/soap/envelope/"
+  targetNamespace="http://schemas.xmlsoap.org/soap/envelope/"
+  elementFormDefault="unqualified">
+
+  <xs:complexType name="Fault" final="extension">
+    <xs:sequence>
+      <xs:element name="faultcode"   type="xs:QName"  />
+      <xs:element name="faultstring" type="xs:string" />
+      <xs:element name="faultactor"  type="xs:anyURI"  minOccurs="0" />
+      <xs:element name="detail"      type="tns:detail" minOccurs="0" />
+    </xs:sequence>
+  </xs:complexType>
+
+</xs:schema>

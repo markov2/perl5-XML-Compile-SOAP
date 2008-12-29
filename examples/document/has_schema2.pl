@@ -14,10 +14,6 @@
 use warnings;
 use strict;
 
-use lib '../../lib';
-use lib '../../../XMLCompile/lib'   # my home test environment
-      , '../../../LogReport/lib';
-
 use XML::Compile::SOAP11::Client;
 use XML::Compile::Transport::SOAPHTTP;
 use XML::Compile::Util   qw/pack_type/;

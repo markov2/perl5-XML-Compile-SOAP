@@ -15,7 +15,7 @@ use XML::Compile::SOAP11::Client;
 use XML::Compile::SOAP::Util qw/SOAP11ENV/;
 use XML::Compile::Tester;
 
-use Test::More tests => 37;
+use Test::More tests => 35;
 use XML::LibXML;
 
 my $soap11_env = SOAP11ENV;
@@ -72,12 +72,10 @@ is(ref $receiver, 'CODE', 'compiled a receiver');
 
 my $msg1_soap = <<__MSG1;
 <?xml version="1.0" encoding="UTF-8"?>
-<SOAP-ENV:Envelope
-   xmlns:SOAP-ENV="$soap11_env"
-   xmlns:x0="$TestNS">
+<SOAP-ENV:Envelope xmlns:SOAP-ENV="$soap11_env">
   <SOAP-ENV:Body>
-    <x0:good>3</x0:good>
-   </SOAP-ENV:Body>
+    <x0:good xmlns:x0="$TestNS">3</x0:good>
+  </SOAP-ENV:Body>
 </SOAP-ENV:Envelope>
 __MSG1
 
@@ -102,16 +100,16 @@ cmp_deeply($hash1, {request => 3}, "server parsed input");
 
 my $msg2_soap = <<__MSG2;
 <?xml version="1.0" encoding="UTF-8"?>
-<SOAP-ENV:Envelope
-   xmlns:SOAP-ENV="$soap11_env"
-   xmlns:x0="$TestNS">
+<SOAP-ENV:Envelope xmlns:SOAP-ENV="$soap11_env">
   <SOAP-ENV:Body>
     <SOAP-ENV:Fault>
       <faultcode>SOAP-ENV:Server.first</faultcode>
       <faultstring>my mistake</faultstring>
       <faultactor>http://schemas.xmlsoap.org/soap/actor/next</faultactor>
       <detail>
-         <x0:fault_one><help>please ignore</help></x0:fault_one>
+         <x0:fault_one xmlns:x0="$TestNS">
+           <help>please ignore</help>
+         </x0:fault_one>
       </detail>
     </SOAP-ENV:Fault>
   </SOAP-ENV:Body>
@@ -144,15 +142,16 @@ like($fault->{faultactor}, qr/^http:/, 'faultactor');
 is($fault->{faultstring}, 'my mistake', 'faultstring');
 ok(defined $fault->{detail}, 'detail');
 is(ref $fault->{detail}, 'HASH');
+
 my @keys = keys %{$fault->{detail}};
 cmp_ok(scalar @keys, '==', 1);
 my $key = $keys[0];
-is($key, "{$TestNS}fault_one");
+is($key, "fault_one");
 my $one = $fault->{detail}{$key};
 ok(defined $one, 'has one');
-is(ref $one, 'ARRAY');
-cmp_ok(scalar @$one, '==', 1);
-isa_ok($one->[0], 'XML::LibXML::Element');
+is(ref $one, 'HASH');
+cmp_ok(keys(%$one), '==', 1);
+is($one->{help}, 'please ignore');
 
 ### test fault1
 
@@ -169,7 +168,4 @@ ok(defined $class, "class");
 is($class->[1], 'Receiver');
 is($class->[2], 'first');
 
-my $details = $fault1->{detail};
-ok(defined $details, 'detail');
-is(ref $details, 'HASH');
-ok(defined $details->{help});
+ok(defined $fault1->{help});

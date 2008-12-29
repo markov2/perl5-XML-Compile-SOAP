@@ -8,9 +8,10 @@ use List::Util qw/min first/;
 use XML::Compile::Util qw/odd_elements SCHEMA2001 unpack_type/;
 
 =chapter NAME
-XML::Compile::SOAP::Encoding - SOAP encoding
+XML::Compile::SOAP11::Encoding - SOAP encoding
 
 =chapter SYNOPSIS
+ ### FOR THE MOMENT UNUSABLE
  # see t/13enc11.t in the distribution for complex examples
 
  my $client = XML::Compile::SOAP11::Client->new();
@@ -645,8 +646,7 @@ __FAKE_SCHEMA
     }
 
     $self->{dec}{$type} ||= $self->schemas->compile
-      ( READER => $type, @{$self->{dec}{reader_opts}}
-      , @_);
+      (READER => $type, @{$self->{dec}{reader_opts}}, @_);
 }
 
 sub _dec($;$$$)

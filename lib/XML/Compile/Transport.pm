@@ -158,6 +158,22 @@ sub compileClient(@)
 
 sub _prepare_call($) { panic "not implemented" }
 
+#--------------------------------------
+
+=chapter Helpers
+
+=c_method register URI
+Declare an transporter type.
+=cut
+
+{   my %registered;
+    sub register($)   { my ($class, $uri) = @_; $registered{$uri} = $class }
+    sub plugin($)     { my ($class, $uri) = @_; $registered{$uri} }
+    sub registered($) { values %registered }
+}
+
+#--------------------------------------
+
 =chapter DETAILS
 
 =section Use of the transport hook

@@ -34,10 +34,7 @@ sub init($) { shift }
 =method compileClient OPTIONS
 
 =option  name STRING
-=default name <from rpcout> or "unnamed"
-Currently only used in some error messages, but may be used more intensively
-in the future.  When C<rpcout> is a TYPE, then the local name of that type
-is used as default.
+=default name <undef>
 
 =option  kind STRING
 =default kind C<request-response>
@@ -65,57 +62,13 @@ If you pass a M<XML::Compile::Transport::SOAPHTTP> object, the
 compileClient will be called for you.  This is possible in case you do
 not have any configuration options to pass with the compileClient().
 
-=option  rpcout TYPE|CODE
-=default rpcout C<undef>
-The TYPE of the RPC output message (RPC literal style) or a CODE reference
-which can be created to produce the RPC block (RPC encoded style).
-
-=option  rpcin TYPE|CODE
-=default rpcin <depends on type of rpcout>
-
-The TYPE of the RPC input message (RPC literal style) or a CODE reference
-which can be created to parse the RPC block (RPC encoded style).
-
-If this option is not specified, but there is an C<rpcout> with TYPE
-value, then the value for this options will default for that type name
-with C<Response> concatenated: a commonly used convension.
-
-If this option is not used, but there is an C<rpcout> with CODE
-reference, then a standard decode routine is called.  That routine
-does use M<XML::Compile::SOAP::Encoding::decSimplify()> to get an
-as simple as possible return structure.  This function tries hard, and
-does some validation as well, however many RPC schemas are horribly
-broken, and thereby the automatic decoding fails.
-
-As alternative, you can try C<XMLin> from M<XML::LibXML::Simple> or
-M<XML::Simple> (SAX based parser).
-
-    rpcin => sub { my $soap = shift; [ map { XMLin($_) } @_ ] }
-
-Each of the body parts now get decoded.  However, this does not resolve
-references and such: the output datastructure is far more verbose.
-
 =cut
-
-sub _rpcin_default($@)
-{   my ($soap, @msgs) = @_;
-    my $tree   = $soap->dec(@msgs) or return ();
-    $soap->decSimplify($tree);
-}
 
 my $rr = 'request-response';
 sub compileClient(@)
 {   my ($self, %args) = @_;
 
     my $name   = $args{name};
-    my $rpcout = $args{rpcout};
-
-    unless(defined $name)
-    {   (undef, $name) = unpack_type $rpcout
-            if $rpcout && ! ref $rpcout;
-        $name ||= 'unnamed';
-    }
-
     my $kind = $args{kind} || $rr;
     $kind eq $rr || $kind eq 'one-way'
         or error __x"operation direction `{kind}' not supported for {name}"
@@ -142,7 +95,11 @@ sub compileClient(@)
 
     my $core = sub
     {   my $start = time;
-        my ($data, $charset) = UNIVERSAL::isa($_[0], 'HASH') ? @_ : ({@_});
+        my ($data, $charset)
+          = UNIVERSAL::isa($_[0], 'HASH') ? @_
+          : @_%2==0 ? ({@_}, undef)
+          : error __x"client `{name}' called with odd length parameter list"
+              , name => $name;
         my $req   = $encode->($data, $charset);
 
         my %trace;
@@ -166,78 +123,6 @@ sub compileClient(@)
 
         ($ans, XML::Compile::SOAP::Trace->new(\%trace));
     };
-
-    # Outgoing messages
-
-    defined $rpcout
-        or return $core;
-
-    my $rpc_encoder
-      = UNIVERSAL::isa($rpcout, 'CODE') ? $rpcout
-      : $self->schemas->compile
-        ( WRITER => $rpcout
-        , include_namespaces => 1
-        , elements_qualified => 'TOP'
-        );
-
-    my $out = sub
-      {    @_ && @_ % 2  # auto-collect rpc parameters
-      ? ( rpc => [$rpc_encoder, shift], @_ ) # possible header blocks
-      : ( rpc => [$rpc_encoder, [@_] ]     ) # rpc body only
-      };
-
-    # Incoming messages
-
-    my $rpcin = $args{rpcin} ||
-      (UNIVERSAL::isa($rpcout, 'CODE') ? \&_rpcin_default : $rpcout.'Response');
-
-    # RPC intelligence wrapper
-
-    if(UNIVERSAL::isa($rpcin, 'CODE'))     # rpc-encoded
-    {   return sub
-        {   my ($dec, $trace) = $core->($out->(@_));
-            return wantarray ? ($dec, $trace) : $dec
-                if $dec->{Fault};
-
-            my @raw;
-            foreach my $k (keys %$dec)
-            {   my $node = $dec->{$k};
-                if(   ref $node eq 'ARRAY' && @$node
-                   && $node->[0]->isa('XML::LibXML::Element'))
-                {   push @raw, @$node;
-                    delete $dec->{$k};
-                }
-                elsif(ref $node && $node->isa('XML::LibXML::Element'))
-                {   push @raw, delete $dec->{$k};
-                }
-            }
-
-            if(@raw)
-            {   $self->startDecoding(simplify => 1);
-                my @parsed = $rpcin->($self, @raw);
-                if(@parsed==1) { $dec = $parsed[0] }
-                else
-                {   while(@parsed)
-                    {   my $n = shift @parsed;
-                        $dec->{$n} = shift @parsed;
-                    }
-                }
-            }
-
-            wantarray ? ($dec, $trace) : $dec;
-        };
-    }
-    else                                   # rpc-literal
-    {   my $rpc_decoder = $self->schemas->compile(READER => $rpcin);
-        (undef, my $rpcin_local) = unpack_type $rpcin;
-
-        return sub
-        {   my ($dec, $trace) = $core->($out->(@_));
-            $dec->{$rpcin_local} = $rpc_decoder->(delete $dec->{$rpcin})
-              if $dec->{$rpcin};
-            wantarray ? ($dec, $trace) : $dec;
-        };
-    }
 }
 
 #------------------------------------------------
@@ -290,6 +175,9 @@ which can be called multiple times.
     my $answer = $call->(%request);  # list of pairs
     my $answer = $call->(\%request); # same, but HASH
     my $answer = $call->(\%request, 'UTF-8');  # same
+
+    # or with trace details, see XML::Compile::SOAP::Trace
+    my ($answer, $trace) = $call->...
 
 But what is the structure of C<%request> and C<$answer>?  Well, there
 are various syntaxes possible: from structurally perfect, to user-friendly.
@@ -439,12 +327,10 @@ will be a little simpler, see M<XML::Compile::WSDL11::compileClient()>.
  # Literal style RPC
  my $outtype = pack_type $MYNS, 'myFunction';
  my $intype  = pack_type $MYNS, 'myFunctionResponse';
- my $style   = 'rpc-literal';
 
  # Encoded style RPC (see next section on these functions)
  my $outtype = \&my_pack_params;
  my $intype  = \&my_unpack_params;
- my $style   = 'rpc-encoded';
 
  # For all RPC calls, you need this only once (or have a WSDL):
  my $transp  = XML::Compile::Transport::SOAPHTTP->new(...);
@@ -457,7 +343,6 @@ will be a little simpler, see M<XML::Compile::WSDL11::compileClient()>.
  my $myproc = $soap->compileClient
    ( name   => 'MyProc'
    , encode => $send, decode => $get, transport => $http
-   , rpcout => $outtype, rpcin => $intype
    );
 
  my $answer = $myproc->(@parameters);   # as document style
@@ -465,16 +350,12 @@ will be a little simpler, see M<XML::Compile::WSDL11::compileClient()>.
 Actually, the C<< @paramers >> are slightly less flexible as in document
 style SOAP.  If you use header blocks, then the called CODE reference
 will not be able to distinguish between parameters for the RPC block and
-parameters for the header blocks.  Therefore, in that situation, you
-MUST separate the rpc data explicitly as one argument.
+parameters for the header blocks.
 
   my $answer = $trade_price
     ->( {symbol => 'IBM'}    # the RPC package implicit
       , transaction => 5     # in the header
       );
-
-  my $answer = $trade_price  # RPC very explicit
-    ->(rpc => {symbol => 'IBM'}, transaction => 5);
 
 When the number of arguments is odd, the first is indicating the RPC
 element, and the other pairs refer to header blocks.
@@ -503,7 +384,7 @@ So, using SOAP-RPC in M<XML::Compile::SOAP> will ask a little more
 effort from you: you have to state parameter types explicitly.  In
 the F<examples/namesservice/> directory, you find a detailed example.
 You have to create a CODE ref which produces the message, using
-methods defined provided by M<XML::Compile::SOAP::Encoding>.
+methods defined provided by M<XML::Compile::SOAP11::Encoding>.
 
 =subsection Faults (Document and RPC style)
 

@@ -15,14 +15,13 @@ use XML::Compile::Util qw/pack_type/;
 use XML::Compile::SOAP11::Client;
 use XML::Compile::Tester;
 
-#use Test::More tests => 12;
-use Test::More skip_all => 'test needs fixing';
+use Test::More tests => 12;
 
 use XML::LibXML;
 use Log::Report;
 
 use utf8;
-my $test_string = "\x{03b1}\x{03b2}";   # utf8 string
+my $test_string = "\x{03b1}\x{03b2}";   # utf8 string alpha beta
 
 my $schema = <<__HELPERS;
 <schema targetNamespace="$TestNS"
@@ -54,8 +53,8 @@ is(ref $output, 'CODE', 'got writer');
 # Receiver
 
 my $input = $client->compileMessage
- ('RECEIVER'
- , body => [ request => pack_type($TestNS, 'data') ]
+ ( 'RECEIVER'
+ ,  body => [ request => pack_type($TestNS, 'data') ]
  );
 is(ref $input, 'CODE', 'got reader');
 
@@ -75,10 +74,9 @@ sub fake_server(@)
     my $expect = <<__XML;
 <?xml version="1.0" encoding="UTF-8"?>
 <SOAP-ENV:Envelope
-   xmlns:x0="http://test-types"
    xmlns:SOAP-ENV="http://schemas.xmlsoap.org/soap/envelope/">
   <SOAP-ENV:Body>
-    <x0:data>$test_string</x0:data>
+    <x0:data xmlns:x0="http://test-types">$test_string</x0:data>
   </SOAP-ENV:Body>
 </SOAP-ENV:Envelope>
 __XML

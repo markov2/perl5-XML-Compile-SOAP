@@ -29,9 +29,7 @@ No other rights are granted by implication, estoppel or otherwise.
 
 
 -->
-<xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema" xmlns:wsdl="http://schemas.xmlsoap.org/wsdl/" xmlns:soap="http://schemas.xmlsoap.org/wsdl/soap/" targetNamespace="http://schemas.xmlsoap.org/wsdl/soap/"
-elementFormDefault="qualified"
->
+<xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema" xmlns:wsdl="http://schemas.xmlsoap.org/wsdl/" xmlns:soap="http://schemas.xmlsoap.org/wsdl/soap/" targetNamespace="http://schemas.xmlsoap.org/wsdl/soap/">
 
   <xs:import namespace="http://schemas.xmlsoap.org/wsdl/"/>
 

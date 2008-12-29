@@ -1,9 +1,42 @@
 
 === version history of XML::Compile::SOAP
 
-TODO:
-- fix test t/30charset.t
-- use XML::Compile::Cache
+version 2.00_01: Mon Dec 29 11:13:05 CET 2008
+
+	************** MAJOR REWRITE!!! *******************
+	. WSDL11 based on XML::Compile::Cache, with much simpler code
+	  as result.
+	. many classes and methods have been renamed or removed.
+	. split-off SOAP12 into distribution XML::Compile::SOAP12
+	. the "document" style soap interface unchanged.
+	. rpc-literal is much better now, like document style
+	. rpc-encoded not yet supported.
+	. pluggable back-ends for message structures (SOAP1.1, SOAP1.2,..)
+	  and transporters (SOAPHTTP, XMPP, ...)
+
+	Changes:
+
+	- Too many changes in internals to detail.
+
+	- you have to explicitly load XML::Compile::SOAP11 yourself, to
+	  have those definitions understood by the WSDL.
+
+	Fixes:
+
+	- fixed t/30charset.t, with double encode of utf-8.
+
+	Improvements:
+
+	- port to Perl pre-5.8.3, working around broken or non-existing
+	  encode() [Toby Corkindale]
+
+	- report cause on client error which is produced in LWP [Tom]
+
+	- removed the [new in 0.78] added elementFormDefault="qualified"
+	  in favor of the new XML::Compile::Schema::importDefinitions()
+	  options which do the same.
+
+	- better trace features.
 
 version 0.78: Fri Oct 10 15:55:39 CEST 2008
 
@@ -11,9 +44,10 @@ version 0.78: Fri Oct 10 15:55:39 CEST 2008
 
 	- improved understanding of top-level elements in XML::Compile 0.95
 	  broke this module:
-	  . Some schema lack    elementFormDefault="qualified"
+	  . some schema lack    elementFormDefault="qualified"
 	    changed in soap-encoding.xsd, wsdl-soap.xsd
-	  . Some problems in the RPC encoder/decoder
+	  . some problems in the RPC encoder/decoder
+	  . disable t/51wsdl11enc.t
 
 	Improvements:
 

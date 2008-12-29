@@ -8,7 +8,7 @@ use lib 'lib','t';
 use TestTools;
 use Test::Deep   qw/cmp_deeply/;
 
-#use Log::Report mode => 3;  # debugging
+# use Log::Report mode => 3;  # debugging
 
 use Data::Dumper;
 $Data::Dumper::Indent = 1;
@@ -69,17 +69,17 @@ my $msg1_data =
 my $msg1_soap = <<__MESSAGE1;
 <?xml version="1.0" encoding="UTF-8"?>
 <SOAP-ENV:Envelope
-   xmlns:SOAP-ENV="http://schemas.xmlsoap.org/soap/envelope/"
-   xmlns:x0="http://test-types">
+   xmlns:SOAP-ENV="http://schemas.xmlsoap.org/soap/envelope/">
   <SOAP-ENV:Header>
     <x0:Transaction
-      mustUnderstand="1"
-      actor="http://schemas.xmlsoap.org/soap/actor/next http://actor">
+      xmlns:x0="http://test-types"
+      SOAP-ENV:mustUnderstand="1"
+      SOAP-ENV:actor="http://schemas.xmlsoap.org/soap/actor/next http://actor">
         5
     </x0:Transaction>
   </SOAP-ENV:Header>
   <SOAP-ENV:Body>
-    <x0:GetLastTradePrice>
+    <x0:GetLastTradePrice xmlns:x0="http://test-types">
       <symbol>DIS</symbol>
     </x0:GetLastTradePrice>
   </SOAP-ENV:Body>

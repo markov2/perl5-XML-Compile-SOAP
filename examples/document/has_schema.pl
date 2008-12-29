@@ -1,6 +1,5 @@
 #!/usr/bin/perl
-# Example of RPC-literal style SOAP, where the WSDL does not
-# tell the structure of the messages: there's only one.
+# Example of Document style SOAP, but without WSDL file
 # Thanks to Thomas Bayer, for providing this service
 #    See http://www.thomas-bayer.com/names-service/
 
@@ -13,11 +12,6 @@
 # Of course, all Perl programs start like this!
 use warnings;
 use strict;
-
-# To make Perl find the modules without the package being installed.
-use lib '../../lib';
-use lib '../../../XMLCompile/lib'   # my home test environment
-      , '../../../LogReport/lib';
 
 use XML::Compile::SOAP11::Client;
 use XML::Compile::Transport::SOAPHTTP;
@@ -56,17 +50,6 @@ my $myns    = 'http://namesservice.thomas_bayer.com/';
 my $address = 'http://www.thomas-bayer.com:80/names-service/soap';
 
 #
-# In RPC-literal, all messages share the same definition.
-#
-
-my $http   = XML::Compile::Transport::SOAPHTTP
-               ->new(address => $address)
-               ->compileClient;
-
-my $output = $client->compileMessage(SENDER   => style => 'rpc-literal');
-my $input  = $client->compileMessage(RECEIVER => style => 'rpc-literal');
-
-#
 # Pick one of these tests
 #
 
@@ -98,19 +81,57 @@ __SELECTOR
 
 exit 0;
 
-sub create_get_countries
-{
+#
+# First example
+# This one is explained in most detail
+#
+
+my $transporter;
+sub get_transporter
+{   return $transporter   # reuse the transporter
+        if defined $transporter;
+
+    # This is the place to add connection intelligence, like SSL
+    $transporter
+      = XML::Compile::Transport::SOAPHTTP->new(address => $address);
+}
+
+sub create_get_countries()
+{   # construct the 'getCountries' call.  With a WSDL file, you do
+    # not have to worry about these details, but when you haven't one,
+    # ... well someone has to be explicit...
+
+    # Here, you can specify SOAP version, transport METHOD, action URI,
+    # and such, for the transport protocol part of SOAP.
+
+    my $http = get_transporter->compileClient;
+
+    # The message which is sent to the server
+    # The 'parameters' is a constant you can pick yourself: you may need
+    # it when calling the method.  Better use a descriptional name here.
+    # Where this is document-style SOAP, the type is defined by a schema.
+    # 'pack_type' will create a string "{$myns}getCountries".
+
+    my $output = $client->compileMessage
+     ( SENDER    =>
+     , body => [ selection => pack_type($myns, 'getCountries') ]
+     );
+
+    # The returned message
+    # Expected fault returns are automatically compiled in.  You may
+    # add own fault and headerfault details.
+
+    my $input = $client->compileMessage
+     ( RECEIVER  =>
+     , body => [ countries => pack_type($myns, 'getCountriesResponse') ]
+     );
+
+    # Connect everything together
     my $getCountries = $client->compileClient
      ( name      => 'getCountries'
-
-       # shared information
      , encode    => $output
      , transport => $http
      , decode    => $input
-
-       # the RPC intelligence wrapper
-     , rpcout    => pack_type($myns, 'getCountries')
-     , rpcin     => pack_type($myns, 'getCountriesResponse')
      );
 
     $getCountries;    # return the code reference
@@ -123,45 +144,32 @@ sub get_countries($)
 
     my $getCountries = create_get_countries;
 
-    # the calling features are a little different, because the message
-    # content has no clear name.  The message requires an empty sequence,
-    # so we need to specify the empty HASH: {}
+    #
+    ## From here on, just like the WSDL version
+    #
 
-    my ($answer, $trace) = $getCountries->({});
+    #
+    # Call the produced method to list the supported countries
+    #
+
+    my ($answer, $trace)
+    #   = $getCountries->(Body => {selection => {}});
+    #   = $getCountries->(selection => {});
+        = $getCountries->();    # is code-ref, so still needs ->()
+
+    # In above examples, the first explicitly addresses the 'selection'
+    # part in the Body.  There is also a Header.
+    # The second version can be used when all header and body parts have
+    # difference names.  The last version can be used if there is only one
+    # body part defined.
 
     # If you do not need the trace, simply say:
-    # my $answer = $getCountries->({});
-
-    #
-    # Some ways of debugging
-    #
+    # my $answer = $getCountries->();
 
     if($show_trace)
-    {
-        printf "Call initiated at: $trace->{date}\n";
-        print  "SOAP call timing:\n";
-        printf "      encoding: %7.2f ms\n", $trace->{encode_elapse}    *1000;
-        printf "     transport: %7.2f ms\n", $trace->{transport_elapse} *1000;
-        printf "      decoding: %7.2f ms\n", $trace->{decode_elapse}    *1000;
-        printf "    total time: %7.2f ms ",  $trace->{elapse}           *1000;
-        printf "= %.3f seconds\n\n", $trace->{elapse};
-
-        print  "transport time components:\n";
-        printf "     stringify: %7.2f ms\n", $trace->{stringify_elapse} *1000;
-        printf "    connection: %7.2f ms\n", $trace->{connect_elapse}   *1000;
-        printf "       parsing: %7.2f ms\n", $trace->{parse_elapse}     *1000;
-
-        if(my $request = $trace->{http_request})   # a HTTP::Request object
-        {   my $req = $request->as_string;
-            $req =~ s/^/  /gm;
-            print "\nRequest:\n", $req;
-        }
-
-        if(my $response = $trace->{http_response}) # a HTTP::Response object
-        {   my $resp = $response->as_string;
-            $resp =~ s/^/  /gm;
-            print "\nResponse:\n", $resp;
-        }
+    {   $trace->printTimings;
+        $trace->printRequest;
+        $trace->printResponse;
     }
 
     # And now?  What do I get back?  I love Data::Dumper.
@@ -173,14 +181,31 @@ sub get_countries($)
 
     if(my $fault_raw = $answer->{Fault})
     {   my $fault_nice = $answer->{$fault_raw->{_NAME}};
+
+        # fault_raw points to the fault structure, which contains fields
+        # faultcode, faultstring, and unprocessed "detail" information.
+        # fault_nice points to the same information, but translated to
+        # something what is equivalent in SOAP1.1 and SOAP1.2.
+
         die "Cannot get list of countries: $fault_nice->{reason}\n";
+
+        # Have a look at Log::Report for cleaner (translatable) die:
+        #   error __x"Cannot get list of countries: {reason}",
+        #      reason => $fault_nice->{reason};
     }
 
     #
     # Collecting the country names
     #
 
-    my $countries = $answer->{getCountriesResponse}{country};
+    # The contents returned is a getCountriesResponse element of type
+    # complexType getCountriesResponse, both defined in the xsd file.
+    # The only data field is named 'country', and has a maxCount > 1 so
+    # will be translated by XML::Compile into an ARRAY.
+    # The received message is validated, so we do not need to check the
+    # structure ourselves again.
+
+    my $countries = $answer->{countries}{country};
 
     print "getCountries() lists ".scalar(@$countries)." countries:\n";
     foreach my $country (sort @$countries)
@@ -193,44 +218,17 @@ sub get_countries($)
 #
 
 sub create_get_name_info()
-{
-    $client->compileClient
-      ( encode => $output, transport => $http, decode => $input
-      , rpcout => pack_type($myns, 'getNameInfo')
+{   my $http = get_transporter->compileClient;
 
-# the default name is the local name of rpcout
-#     , name => 'getNameInfo'
+    my $output = $client->compileMessage(SENDER   =>
+     , body => [ whose => pack_type($myns, 'getNameInfo') ] );
 
-# the default is rpcout.'Response'
-#     , rpcin  => pack_type($myns, 'getNameInfoResponse')
-      );
+    my $input  = $client->compileMessage(RECEIVER =>
+     , body => [ info  => pack_type($myns, 'getNameInfoResponse') ] );
+
+    $client->compileClient(name => 'getNameInfo'
+     , encode => $output, transport => $http, decode => $input);
 }
-
-# As you see, we start repeating ourselves a little.  It might
-# therefore, be convinient to define a "macro" like wrapper:
-#   sub newRPC($@)
-#   {   my $local = shift;
-#       $client->compileClient
-#         ( encode => $output, transport => $http, decode => $input
-#         , rpcout => pack_type($myns, $local)
-#         , @_     # additional options
-#         );
-#   }
-#   my $get_name_info = newRpc('getNameInfo');
-#
-# or
-#   my $newRpc = sub
-#     { my $local = shift;
-#       $client->compileClient
-#         ( encode => $output, transport => $http, decode => $input
-#         , rpcout => pack_type($myns, $local)
-#         , @_     # additional options
-#         );
-#     };
-#   my $get_name_info = $newRpc->('getNameInfo');
-#
-# The $output, $http, and $input are needed only once, so this whole
-# creation process could be hidden in a single sub-routine.
 
 sub get_name_info()
 {
@@ -245,13 +243,13 @@ sub get_name_info()
     chomp $name;
     length $name or return;
 
-    my ($answer, $trace2) = $getNameInfo->( {name => $name} );
+    my ($answer, $trace2) = $getNameInfo->(name => $name);
     #print Dumper $answer, $trace2;
 
     die "Lookup for '$name' failed: $answer->{Fault}{faultstring}\n"
         if $answer->{Fault};
 
-    my $nameinfo = $answer->{getNameInfoResponse}{nameinfo};
+    my $nameinfo = $answer->{info}{nameinfo};
     print "The name '$nameinfo->{name}' is\n";
     print "    male: ", ($nameinfo->{male}   ? 'yes' : 'no'), "\n";
     print "  female: ", ($nameinfo->{female} ? 'yes' : 'no'), "\n";
@@ -266,27 +264,33 @@ sub get_name_info()
 # Third example
 #
 
+sub create_get_names_in_country()
+{   my $http = get_transporter->compileClient;
+
+    my $output = $client->compileMessage(SENDER   =>
+     , body => [ which => pack_type($myns, 'getNamesInCountry') ] );
+
+    my $input  = $client->compileMessage(RECEIVER =>
+     , body => [ info  => pack_type($myns, 'getNamesInCountryResponse') ] );
+
+    $client->compileClient(name => 'getNameInfo'
+     , encode => $output, transport => $http, decode => $input);
+}
+
 sub get_names_in_country()
 {   # usually in the top of your script: reusable
     my $getCountries      = create_get_countries;
-
-    # creating calls is quite simple, so let's in-line this time.
-    my $getNamesInCountry = $client->compileClient
-      ( encode => $output, transport => $http, decode => $input
-      , rpcout => pack_type($myns, 'getNamesInCountry')
-      );
+    my $getNamesInCountry = create_get_names_in_country;
 
     #
     ## From here on the same as the WSDL version
     #
 
-    my $answer1 = $getCountries->( {} );
+    my $answer1 = $getCountries->();
     die "Cannot get countries: $answer1->{Fault}{faultstring}\n"
         if $answer1->{Fault};
 
-    #print Dumper $answer1;
-
-    my $countries = $answer1->{getCountriesResponse}{country};
+    my $countries = $answer1->{countries}{country};
 
     my $country;
     while(1)
@@ -308,13 +312,11 @@ sub get_names_in_country()
     }
 
     print "Most common names in $name:\n";
-    my $answer2 = $getNamesInCountry->( {country => $name} );
+    my $answer2 = $getNamesInCountry->(country => $name);
     die "Cannot get names in country: $answer2->{Fault}{faultstring}\n"
         if $answer2->{Fault};
 
-    #print Dumper $answer2;
-
-    my $names    = $answer2->{getNamesInCountryResponse}{name};
+    my $names    = $answer2->{info}{name};
     $names
         or die "No data available for country `$name'\n";
 

@@ -30,10 +30,8 @@ COPYRIGHT HOLDERS WILL NOT BE LIABLE FOR ANY DIRECT, INDIRECT, SPECIAL OR CONSEQ
 The name and trademarks of copyright holders may NOT be used in advertising or publicity pertaining to the software without specific, written prior permission. Title to copyright in this software and any associated documentation will at all times remain with copyright holders.
 
 -->
-<xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema" xmlns:tns="http://schemas.xmlsoap.org/soap/encoding/" targetNamespace="http://schemas.xmlsoap.org/soap/encoding/"
-elementFormDefault="qualified"
->
-        
+<xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema" xmlns:tns="http://schemas.xmlsoap.org/soap/encoding/" targetNamespace="http://schemas.xmlsoap.org/soap/encoding/">
+
  <xs:attribute name="root">
    <xs:annotation>
      <xs:documentation>

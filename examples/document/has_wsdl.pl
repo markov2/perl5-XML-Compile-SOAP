@@ -13,13 +13,9 @@
 use warnings;
 use strict;
 
-# To make Perl find the modules without the package being installed.
-use lib '../../lib';
-use lib '../../../XMLCompile/lib'   # my home test environment
-      , '../../../LogReport/lib';
-
 # All the other XML modules should be automatically included.
 use XML::Compile::WSDL11;
+use XML::Compile::SOAP11;
 use XML::Compile::Transport::SOAPHTTP;
 
 # Other useful modules
@@ -49,7 +45,7 @@ my $term = Term::ReadLine->new('namesservice');
 #
 
 my $wsdl = XML::Compile::WSDL11->new('namesservice.wsdl');
-$wsdl->schemas->importDefinitions('namesservice.xsd');
+$wsdl->importDefinitions('namesservice.xsd');
 
 #
 # Pick one of these tests

@@ -15,9 +15,11 @@ use XML::Compile::Transport::SOAPHTTP;
 use XML::Compile::Util       qw/SCHEMA2001/;
 use XML::Compile::SOAP::Util qw/WSDL11 WSDL11SOAP SOAP11HTTP/;
 use XML::Compile::Tester;
+use XML::Compile::SOAP11;
 
 use Test::More tests => 12;
 use Test::Deep;
+#use Log::Report mode => 'DEBUG';
 
 my $testNS     = 'http://any-ns';
 my $schema2001 = SCHEMA2001;
@@ -73,7 +75,9 @@ my $xml_wsdl = <<"__WSDL";
         <soap:operation soapAction="http://any-action" />
         <input><soap:body use="literal"/></input>
         <output><soap:body use="literal"/></output>
-        <fault name="WentWrong"><soap:fault name="WentWrong" use="literal"/></fault>
+        <fault name="WentWrong">
+          <soap:fault name="WentWrong" use="literal"/>
+        </fault>
      </operation>
    </binding>
 
@@ -94,13 +98,13 @@ my $wsdl = XML::Compile::WSDL11->new($xml_wsdl);
 
 ok(defined $wsdl, "created object");
 isa_ok($wsdl, 'XML::Compile::WSDL11');
-is($wsdl->wsdlNamespace, WSDL11);
 
 my $op = eval { $wsdl->operation('doSend') };
 my $err = $@ || '';
 ok(defined $op, 'existing operation');
 is($@, '', 'no errors');
-isa_ok($op, 'XML::Compile::WSDL11::Operation');
+isa_ok($op, 'XML::Compile::Operation');
+isa_ok($op, 'XML::Compile::SOAP11::Operation');
 is($op->kind, 'request-response');
 
 my $client = $op->compileClient(transport_hook => \&fake_server);
@@ -111,22 +115,20 @@ my ($answer, $trace) = $client->(body => 999);
 
 ok(defined $answer, 'got answer');
 is($answer->{Fault}->{faultstring}, 'any-ns.WentWrong', 'got fault string');
-is($answer->{WentWrong}->{detail}->{message}, 'Oh noes', 'parsed response XML');
+is($answer->{WentWrong}{message}, 'Oh noes', 'parsed response XML');
 
 sub fake_server($$)
 {  my ($request, $trace) = @_;
    my $content = $request->decoded_content;
 
-   if($content =~ m!<x0:Send>999</x0:Send>!) {
+   if($content =~ m!<tns:Send[^>]*>999</tns:Send>!) {
       return HTTP::Response->new(500, 'Internal Server Error'
       , [ 'Content-Type' => 'text/xml;charset=utf-8' ], <<__RESPONSE);
 <?xml version="1.0" encoding="UTF-8"?>
 <env:Envelope xmlns:env="http://schemas.xmlsoap.org/soap/envelope/"
-              xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-              xmlns:ns0="$testNS"
-              >
+              xmlns:ns0="$testNS" >
   <env:Body>
-    <env:Fault xsi:type="env:Fault">
+    <env:Fault>
       <faultcode>env:Server</faultcode>
       <faultstring>any-ns.WentWrong</faultstring>
       <detail><ns0:Broken><ns0:message>Oh noes</ns0:message></ns0:Broken></detail>

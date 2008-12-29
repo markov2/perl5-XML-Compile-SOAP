@@ -15,8 +15,9 @@ use XML::Compile::Transport::SOAPHTTP;
 use XML::Compile::Util       qw/SCHEMA2001/;
 use XML::Compile::SOAP::Util qw/WSDL11 WSDL11SOAP SOAP11HTTP/;
 use XML::Compile::Tester;
+use XML::Compile::SOAP11;
 
-use Test::More tests => 12;
+use Test::More tests => 11;
 use Test::Deep;
 
 my $testNS     = 'http://any-ns';
@@ -75,13 +76,12 @@ my $wsdl = XML::Compile::WSDL11->new($xml_wsdl);
 
 ok(defined $wsdl, "created object");
 isa_ok($wsdl, 'XML::Compile::WSDL11');
-is($wsdl->wsdlNamespace, WSDL11);
 
 my $op = eval { $wsdl->operation('doSend') };
 my $err = $@ || '';
 ok(defined $op, 'existing operation');
 is($@, '', 'no errors');
-isa_ok($op, 'XML::Compile::WSDL11::Operation');
+isa_ok($op, 'XML::Compile::SOAP11::Operation');
 is($op->kind, 'one-way');
 
 sub fake_server($$)
@@ -90,10 +90,9 @@ sub fake_server($$)
    compare_xml($content, <<__EXPECTED, 'fake server received');
 <?xml version="1.0" encoding="UTF-8"?>
 <SOAP-ENV:Envelope
-    xmlns:SOAP-ENV="http://schemas.xmlsoap.org/soap/envelope/"
-    xmlns:x0="http://any-ns">
+    xmlns:SOAP-ENV="http://schemas.xmlsoap.org/soap/envelope/">
   <SOAP-ENV:Body>
-     <x0:Send>42</x0:Send>
+     <tns:Send xmlns:tns="http://any-ns">42</tns:Send>
   </SOAP-ENV:Body>
 </SOAP-ENV:Envelope>
 __EXPECTED

@@ -14,8 +14,9 @@ $Data::Dumper::Indent = 1;
 use XML::Compile::SOAP11::Client;
 use XML::Compile::Tester;
 
-use Test::More tests => 19;
+use Test::More tests => 18;
 use XML::LibXML;
+#use Log::Report mode => 'DEBUG';
 
 # elementFormDefault="qualified">
 my $schema = <<__HELPERS;
@@ -51,11 +52,9 @@ is(ref $receiver, 'CODE', 'compiled a receiver');
 
 my $msg1_soap = <<__MSG1;
 <?xml version="1.0" encoding="UTF-8"?>
-<SOAP-ENV:Envelope
-   xmlns:SOAP-ENV="http://schemas.xmlsoap.org/soap/envelope/"
-   xmlns:x0="$TestNS">
+<SOAP-ENV:Envelope xmlns:SOAP-ENV="http://schemas.xmlsoap.org/soap/envelope/">
   <SOAP-ENV:Header>
-    <x0:good mustUnderstand="1">
+    <x0:good xmlns:x0="$TestNS" SOAP-ENV:mustUnderstand="1">
       3
     </x0:good>
   </SOAP-ENV:Header>
@@ -88,13 +87,13 @@ my $receiver2 = $soap->compileMessage('RECEIVER');
 is(ref $receiver2, 'CODE', 'compiled unknowing receiver');
 
 my $hash2 = $receiver2->($msg1_soap);
+
 ok(defined $hash2, 'received2 works');
 is(ref $hash2, 'HASH', 'produced HASH');
 
 ok(defined $hash2->{Fault},              'fault');
 ok(defined $hash2->{Fault}{faultcode},   'faultcode');
 ok(defined $hash2->{Fault}{faultstring}, 'faultstring');
-ok(defined $hash2->{header},             'header');
 
 #
 # any sender must accept faults
@@ -103,15 +102,13 @@ ok(defined $hash2->{header},             'header');
 my $msg2_soap = <<__FAULT;
 <?xml version="1.0" encoding="UTF-8"?>
 <SOAP-ENV:Envelope
-   xmlns:SOAP-ENV="http://schemas.xmlsoap.org/soap/envelope/"
-   xmlns:x0="http://test-types">
+   xmlns:SOAP-ENV="http://schemas.xmlsoap.org/soap/envelope/">
    <SOAP-ENV:Body>
      <SOAP-ENV:Fault>
        <faultcode>SOAP-ENV:MustUnderstand</faultcode>
        <faultstring>
           SOAP mustUnderstand {http://test-types}good
        </faultstring>
-       <detail/>
      </SOAP-ENV:Fault>
    </SOAP-ENV:Body>
 </SOAP-ENV:Envelope>

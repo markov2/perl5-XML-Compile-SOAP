@@ -5,7 +5,7 @@ package XML::Compile::Transport::SOAPHTTP;
 use base 'XML::Compile::Transport';
 
 use Log::Report 'xml-compile-soap', syntax => 'SHORT';
-use XML::Compile::SOAP::Util qw/SOAP11ENV/;
+use XML::Compile::SOAP::Util qw/:http/;
 
 use LWP            ();
 use LWP::UserAgent ();
@@ -13,12 +13,22 @@ use HTTP::Request  ();
 use HTTP::Headers  ();
 
 use XML::LibXML   ();
-use Encode;
+
+if($] >= 5.008003)
+{   use Encode;
+    Encode->import;
+}
+else
+{   *encode = sub { $_[1] };
+}
 
 my $parser = XML::LibXML->new;
 
 # (Microsofts HTTP Extension Framework)
 my $http_ext_id = SOAP11ENV;
+
+XML::Compile->knownNamespace(&WSDL11HTTP => 'wsdl-http.xsd');
+__PACKAGE__->register(SOAP11HTTP);
 
 =chapter NAME
 XML::Compile::Transport::SOAPHTTP - exchange XML via HTTP
@@ -80,6 +90,15 @@ sub init($)
      , timeout => ($args->{timeout} || 180)
      );
     $self;
+}
+
+sub _initWSDL11($)
+{   my ($class, $wsdl) = @_;
+    trace "initialize SOAPHTTP transporter for WSDL11";
+
+    $wsdl->importDefinitions(WSDL11HTTP, elementFormDefault => 'qualified');
+    $wsdl->prefixes(http => WSDL11HTTP);
+    $class->register('HTTP');   # register alias
 }
 
 #-------------------------------------------
@@ -224,9 +243,9 @@ sub _prepare_call($)
       $hook
     ? sub  # hooked code
       { my $trace = $_[1];
-        my $u = encode($charset, $_[0]);
-        $request->content($u);
-        { use bytes; $request->header('Content-Length' => length $u); }
+        $request->content($_[0]);   # already bytes (not utf-8)
+
+        { use bytes; $request->header('Content-Length' => length $_[0]); }
  
         $trace->{http_request}  = $request;
         $trace->{action}        = $action;
@@ -240,16 +259,16 @@ sub _prepare_call($)
 
         $trace->{http_response} = $response;
 
+        # HTTP::Message::decoded_content() does not work for old Perls
           defined $response && $response->content_type =~ m![/+]xml$!i
-        ? $response->decoded_content
+        ? ($] >= 5.008 ? $response->decoded_content : $response->content)
         : undef;
       }
 
     : sub  # normal code
       { my $trace = $_[1];
-        my $u = encode($charset, $_[0]);
-        $request->content($u);
-        { use bytes; $request->header('Content-Length' => length $u); }
+        $request->content($_[0]);
+        { use bytes; $request->header('Content-Length' => length $_[0]); }
 
         $trace->{http_request}  = $request;
 
@@ -257,6 +276,11 @@ sub _prepare_call($)
             or return undef;
 
         $trace->{http_response} = $response;
+        if($response->is_error)
+        {   error   $response->message if $response->header('Client-Warning');
+            warning $response->message;
+            return undef;
+        }
 
           $response->content_type =~ m![/+]xml$!i
         ? $response->decoded_content

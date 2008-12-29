@@ -17,11 +17,14 @@ $Data::Dumper::Indent = 1;
 
 use XML::Compile::WSDL11;
 use XML::Compile::Transport::SOAPHTTP;
-use XML::Compile::SOAP::Util  qw/WSDL11/;
+use XML::Compile::SOAP::Util  qw/WSDL11 SOAP11HTTP/;
 use XML::Compile::Tester;
+use XML::Compile::SOAP11;
 
-use Test::More tests => 42;
+use Test::More tests => 34;
 use Test::Deep;
+
+#use Log::Report mode => 'DEBUG';
 
 my $xml_xsd = <<__STOCKQUOTE_XSD;
 <?xml version="1.0"?>
@@ -39,7 +42,7 @@ my $xml_xsd = <<__STOCKQUOTE_XSD;
     <element name="TradePrice">
         <complexType>
             <all>
-                <element name="price" type="int"/>
+                <element name="price" type="float"/>
             </all>
         </complexType>
     </element>
@@ -118,20 +121,17 @@ __STOCKQUOTESERVICE_WSDL
 ### BEGIN OF TESTS
 ###
 
-my $wsdl = XML::Compile::WSDL11->new
- ( $xml_service
- , schema_dirs => 'xsd'
- );
+my $wsdl = XML::Compile::WSDL11->new($xml_service);
 
 ok(defined $wsdl, "created object");
 isa_ok($wsdl, 'XML::Compile::WSDL11');
-is($wsdl->wsdlNamespace, WSDL11);
+is($wsdl->findName('wsdl:'), WSDL11);
 
-my @services = $wsdl->find('service');
+my @services = $wsdl->findDef('service');
 cmp_ok(scalar(@services), '==', 1, 'find service list context');
 is($services[0]->{name}, $servlocal);
 
-my $s   = eval { $wsdl->find(service => 'aap') };
+my $s   = eval { $wsdl->findDef(service => 'aap') };
 my $err = $@; $err =~ s! at t/80.*\n$!!;
 ok(!defined $s, 'find non-existing service');
 
@@ -140,13 +140,13 @@ error: no definition for `aap' as service, pick from:
     {http://example.com/stockquote/service}StockQuoteService
 __ERR
 
-$s = eval { $wsdl->find(service => $servname) };
+$s = eval { $wsdl->findDef(service => $servname) };
 $err = $@;
 ok(defined $s, "request existing service $servlocal");
 is($@, '', 'no errors');
 ok(UNIVERSAL::isa($s, 'HASH'));
 
-my $s2 = eval { $wsdl->find('service') };
+my $s2 = eval { $wsdl->findDef('service') };
 $err = $@;
 ok(defined $s, "request only service, not by name");
 is($@, '', 'no errors');
@@ -169,7 +169,7 @@ $op = eval { $wsdl->operation('GetLastTradePrice') };
 $err = $@ || '';
 ok(defined $op, 'existing operation');
 is($@, '', 'no errors');
-isa_ok($op, 'XML::Compile::WSDL11::Operation');
+isa_ok($op, 'XML::Compile::SOAP11::Operation');
 is($op->kind, 'request-response');
 
 #delete $op->{schemas};   # far too much to dump
@@ -179,17 +179,15 @@ is($op->kind, 'request-response');
 # collect some basic facts
 #
 
-my @addrs = $op->endPointAddresses;
+my @addrs = $op->endPoints;
 cmp_ok(scalar @addrs, '==', 1, 'get endpoint address');
 is($addrs[0], 'http://example.com/stockquote');
 
 my $http1 = 'http://schemas.xmlsoap.org/soap/http';
-ok($op->canTransport($http1, 'document'), 'can transport HTTP document');
-ok(!$op->canTransport($http1, 'rpc'), 'cannot transport RPC (yet)');
-ok(!$op->canTransport('http://', 'document'), 'only transport HTTP');
 
-is($op->soapAction, 'http://example.com/GetLastTradePrice', 'action');
-ok(!defined $op->soapStyle, 'no default soap style');
+is($op->action, 'http://example.com/GetLastTradePrice', 'action');
+is($op->style, 'document');
+is($op->transport, SOAP11HTTP);
 
 #
 # test $wsdl->operations
@@ -198,67 +196,61 @@ ok(!defined $op->soapStyle, 'no default soap style');
 my @ops = $wsdl->operations;
 cmp_ok(scalar @ops, '==', 1, 'one op hash listed');
 $op = shift @ops;
-is(ref $op, 'HASH');
-cmp_deeply($op,
- +{ service   => 'StockQuoteService'
-  , port      => 'StockQuotePort'
-  , binding   => '{http://example.com/stockquote/service}StockQuoteSoapBinding'
-  , portType  => 'StockQuotePortType'
-  , operation => 'GetLastTradePrice'
-  }
-);
 
-@ops = $wsdl->operations(produce => 'OBJECTS');
-cmp_ok(scalar @ops, '==', 1, 'one op object listed');
-$op = shift @ops;
-isa_ok($op, 'XML::Compile::WSDL11::Operation');
-is($op->name, 'GetLastTradePrice');
-is($op->service->{name}, 'StockQuoteService');
-is($op->port->{name}, 'StockQuotePort');
-is($op->portType->{name}, 'StockQuotePortType');
-is($op->soapAction, 'http://example.com/GetLastTradePrice');
-is($op->soapVersion, 'SOAP11');
+isa_ok($op, 'XML::Compile::Operation');
+isa_ok($op, 'XML::Compile::SOAP11::Operation');
+
+is($op->name, 'GetLastTradePrice', 'got name');
+is($op->action, 'http://example.com/GetLastTradePrice', 'got action');
+
+### HELPER
+my ($server_expects, $server_answers);
+sub fake_server($$)
+{  my ($request, $trace) = @_;
+   my $content = $request->decoded_content;
+   compare_xml($content, $server_expects, 'fake server received');
+
+   HTTP::Response->new(200, 'answer manually created'
+    , [ 'Content-Type' => 'text/xml' ], $server_answers);
+}
 
 #
 # create client
 #
 
-sub fake_server($$)
-{  my ($request, $trace) = @_;
-   my $content = $request->decoded_content;
-   compare_xml($content, <<__EXPECTED, 'fake server received');
+my $client = $op->compileClient
+  ( transport_hook => \&fake_server
+  , sloppy_floats  => 1
+  );
+
+ok(defined $client, 'compiled client');
+isa_ok($client, 'CODE');
+
+$server_expects = <<__EXPECTED;
 <?xml version="1.0" encoding="UTF-8"?>
 <SOAP-ENV:Envelope
-   xmlns:SOAP-ENV="http://schemas.xmlsoap.org/soap/envelope/"
-   xmlns:x0="http://example.com/stockquote/schemas">
+   xmlns:SOAP-ENV="http://schemas.xmlsoap.org/soap/envelope/">
   <SOAP-ENV:Body>
-     <x0:TradePriceRequest>
+     <xsd1:TradePriceRequest xmlns:xsd1="http://example.com/stockquote/schemas">
         <tickerSymbol>IBM</tickerSymbol>
-     </x0:TradePriceRequest>
+     </xsd1:TradePriceRequest>
   </SOAP-ENV:Body>
 </SOAP-ENV:Envelope>
 __EXPECTED
 
-   HTTP::Response->new(200, 'answer manually created'
-    , [ 'Content-Type' => 'text/xml' ]
-    , <<__ANSWER);
+$server_answers = <<__ANSWER;
 <?xml version="1.0" encoding="UTF-8"?>
 <SOAP-ENV:Envelope
    xmlns:SOAP-ENV="http://schemas.xmlsoap.org/soap/envelope/"
    xmlns:x0="http://example.com/stockquote/schemas">
   <SOAP-ENV:Body>
      <x0:TradePrice>
-         <price>314</price>
+         <price>3.14</price>
      </x0:TradePrice>
   </SOAP-ENV:Body>
 </SOAP-ENV:Envelope>
 __ANSWER
-}
-
-my $client = $op->compileClient(transport_hook => \&fake_server);
-ok(defined $client, 'compiled client');
-isa_ok($client, 'CODE');
 
 my $answer = $client->(tickerSymbol => 'IBM');
 ok(defined $answer, 'got answer');
-cmp_deeply($answer, {body => {price => 314}});  # body is the name of the part
+cmp_deeply($answer, {body => {price => 3.14}});  # body is the name of the part

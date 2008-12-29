@@ -14,11 +14,8 @@
 use warnings;
 use strict;
 
-use lib '../../lib';
-use lib '../../../XMLCompile/lib'   # my home test environment
-      , '../../../LogReport/lib';
-
 use XML::Compile::WSDL11;
+use XML::Compile::SOAP11;
 use XML::Compile::Transport::SOAPHTTP;
 
 # Other useful modules
@@ -48,7 +45,7 @@ my $term = Term::ReadLine->new('namesservice');
 #
 
 my $wsdl = XML::Compile::WSDL11->new('namesservice.wsdl');
-$wsdl->schemas->importDefinitions('namesservice.xsd');
+$wsdl->importDefinitions('namesservice.xsd');
 
 #
 # Pick one of these tests

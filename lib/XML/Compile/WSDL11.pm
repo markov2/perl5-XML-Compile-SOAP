@@ -2,49 +2,52 @@ use warnings;
 use strict;
 
 package XML::Compile::WSDL11;
-use base 'XML::Compile';
+use base 'XML::Compile::Cache';
 
 use Log::Report 'xml-compile-soap', syntax => 'SHORT';
 
-use XML::Compile::Schema  ();
-use XML::Compile::SOAP    ();
-use XML::Compile::Util    qw/pack_type unpack_type/;
-use XML::Compile::SOAP::Util qw/:wsdl11/;
+use XML::Compile::Util       qw/pack_type unpack_type/;
+use XML::Compile::SOAP::Util qw/:wsdl11 SOAP11ENV/;
 
-use XML::Compile::WSDL11::Operation ();
+#use XML::Compile::SOAP11::Operation   ();
+#use XML::Compile::Transport::SOAPHTTP ();
+use XML::Compile::Operation  ();
+use XML::Compile::Transport  ();
 
 use List::Util  qw/first/;
 
 XML::Compile->addSchemaDirs(__FILE__);
 XML::Compile->knownNamespace
- ( &WSDL11       => 'wsdl.xsd'
- , &WSDL11SOAP   => 'wsdl-soap.xsd'
- , &WSDL11HTTP   => 'wsdl-http.xsd'
- , &WSDL11MIME   => 'wsdl-mime.xsd'
- , &WSDL11SOAP12 => 'wsdl-soap12.xsd'
- );
+  ( &WSDL11       => 'wsdl.xsd'
+  , &WSDL11HTTP   => 'wsdl-http.xsd'
+  );
 
 =chapter NAME
 
 XML::Compile::WSDL11 - create SOAP messages defined by WSDL 1.1
 
 =chapter SYNOPSIS
- ** SOAP-RPC style broken in this release.
 
  # preparation
+ use XML::Compile::WSDL11;      # use WSDL version 1.1
+ use XML::Compile::SOAP11;      # use SOAP version 1.1
+ use XML::Compile::Transport::SOAPHTTP;
+
  my $wsdl    = XML::Compile::WSDL11->new($wsdlfile);
- $wsdl->addWSDL(...additional WSDL file...);
+ $wsdl->addWSDL(...more WSDL files...);
  $wsdl->importDefinitions(...more schemas...);
 
- my $call    = $wsdl->compileClient('GetStockPrice');
+ # during initiation, for each used call (slow)
+ my $call    = $wsdl->compileClient('GetStockPrice', ...);
 
- my $op      = $wsdl->operation('GetStockPrice');
- my $call    = $op->compileClient;
-
+ # at "run-time", call as often as you want (fast)
  my $answer  = $call->(%request);
+
+ # capture useful trace information
  my ($answer, $trace) = $call->(%request);
 
- my @op_defs = $wsdl->operations;
+ # when you like, get all operation definitions
+ my @all_ops = $wsdl->operations;
 
  # Install XML::Compile::SOAP::Daemon
  my $server  = XML::Compile::SOAP::HTTPDaemon->new;
@@ -55,18 +58,15 @@ XML::Compile::WSDL11 - create SOAP messages defined by WSDL 1.1
 
 =chapter DESCRIPTION
 
-This module currently supports WSDL 1.1 on SOAP 1.1, with HTTP-SOAP.
-B<Missing are> pure HTTP GET/POST bindings, multipart-mime transport
-protocols, WSDL2 and SOAP 1.2.
+This module implements WSDL version 1.1.
+An WSDL file defines a set of messages to be send and received over
+(SOAP) connections.
 
-An WSDL file defines a set of messages to be send and received over SOAP
-connections.  As end-user, you do not have to worry about the complex
-details of the messages and the exchange of them: it's all Perl to you.
-Also faults are handled automatically.
-
-The only complication you have to worry about, is to shape
-a nested HASH structure to the sending message structure.
-M<XML::Compile::Schema::template()> may help you.
+As end-user, you do not have to worry about the complex details of the
+messages and the way to exchange of them: it's all simple Perl for you.
+Also faults are handled automatically.  The only complication you have
+to worry about, is to shape a nested HASH structure to the sending
+message structure.  M<XML::Compile::Schema::template()> may help you.
 
 When the definitions are spread over multiple files, you will need to
 use M<addWSDL()> (wsdl), or M<importDefinitions()> (additional schema's)
@@ -82,48 +82,46 @@ The XML is the WSDL file, which is anything accepted by
 M<XML::Compile::dataToXML()>.  All options are also passed
 to create an internal M<XML::Compile::Schema> object.  See
 M<XML::Compile::Schema::new()>
-
-=option  wsdl_namespace IRI
-=default wsdl_namespace C<undef>
-Force to accept only WSDL descriptions which are in this namespace.  If
-not specified, the name-space  which is found in the first WSDL document
-is used.
-
-=option  schemas XML::Compile::Schema object
-=default schemas <created internally>
 =cut
 
 sub init($)
 {   my ($self, $args) = @_;
+    $args->{schemas} and panic "new(schemas) option removed in 0.78";
+    my $wsdl = delete $args->{top};
+
+    local $args->{any_element}      = 'ATTEMPT';
+    local $args->{any_attribute}    = 'ATTEMPT';
+    local $args->{allow_undeclared} = 1;
+
     $self->SUPER::init($args);
 
-    $self->{schemas} = $args->{schemas} || XML::Compile::Schema->new;
     $self->{index}   = {};
-    $self->{wsdl_ns} = $args->{wsdl_namespace};
 
-    $self->addWSDL($args->{top});
+    $self->prefixes(wsdl => WSDL11, soap => WSDL11SOAP, http => WSDL11HTTP);
+    $self->importDefinitions(WSDL11);
+
+    $_->can('_initWSDL11') && $_->_initWSDL11($self)
+        for XML::Compile::Operation->registered
+          , XML::Compile::Transport->registered;
+
+    $self->declare
+     ( READER       => 'wsdl:definitions'
+     , key_rewrite  => 'PREFIXED'
+     , hook         =>
+        { type =>  'wsdl:tOperation'
+        , after => 'ELEMENT_ORDER'
+        }
+     );
+
+    $self->addWSDL($wsdl);
     $self;
 }
 
+sub schemas(@) { panic "schemas() removed in v2.00, not needed anymore" }
+
+#--------------------------
+
 =section Accessors
-
-=method schemas
-Returns the M<XML::Compile::Schema> object which collects all type
-information.
-=cut
-
-sub schemas() { shift->{schemas} }
-
-=method wsdlNamespace [NAMESPACE]
-Returns (optionally after setting) the namespace used by the WSDL
-specification.  This is the namespace in which the C<definition>
-document root element is defined.
-=cut
-
-sub wsdlNamespace(;$)
-{   my $self = shift;
-    @_ ? ($self->{wsdl_ns} = shift) : $self->{wsdl_ns};
-}
 
 =section Extension
 
@@ -134,80 +132,73 @@ The specification can be spread over multiple files, which each have a
 C<definition> root element.
 =cut
 
+sub _learn_prefixes($)
+{   my ($self, $node) = @_;
+
+    my $namespaces = $self->prefixes;
+  PREFIX:
+    foreach my $ns ($node->getNamespaces)  # learn preferred ns
+    {   my ($prefix, $uri) = ($ns->getLocalName, $ns->getData);
+        next if !defined $prefix || $namespaces->{$uri};
+
+        if(my $def = $self->prefix($prefix))
+        {   next PREFIX if $def->{uri} eq $uri;
+        }
+        else
+        {   $self->prefixes($prefix => $uri);
+            next PREFIX;
+        }
+
+        $prefix =~ s/0?$/0/;
+        while(my $def = $self->prefix($prefix))
+        {   next PREFIX if $def->{uri} eq $uri;
+            $prefix++;
+        }
+        $self->prefixes($prefix => $uri);
+    }
+}
+
 sub addWSDL($)
 {   my ($self, $data) = @_;
+    defined $data or return ();
 
     defined $data or return;
-    my ($node, %details) = $self->dataToXML($data)
-        or return $self;
+    my ($node, %details) = $self->dataToXML($data);
+    defined $node or return $self;
 
-    my $schemas = $self->schemas;
+    $node->localName eq 'definitions' && $node->namespaceURI eq WSDL11
+        or error __x"root element for WSDL is not 'wsdl:definitions'";
 
-    # Collect the user schema
+    $self->importDefinitions($node, details => \%details);
+    $self->_learn_prefixes($node);
 
-    $node    = $node->documentElement
-        if $node->isa('XML::LibXML::Document');
-
-    $node->localName eq 'definitions'
-        or error __x"root element for WSDL is not 'definitions'";
-
-    $schemas->importDefinitions($node, details => \%details);
-
-    # Collect the WSDL schemata
-
-    my $wsdlns  = $node->namespaceURI;
-    my $corens  = $self->wsdlNamespace || $self->wsdlNamespace($wsdlns);
-
-    $corens eq $wsdlns
-        or error __x"wsdl in namespace {wsdlns}, where already using {ns}"
-               , wsdlns => $wsdlns, ns => $corens;
-
-    $wsdlns eq WSDL11
-        or error __x"don't known how to handle {wsdlns} WSDL files"
-               , wsdlns => $wsdlns;
-
-    $schemas->importDefinitions($wsdlns, %details);
-
-    my %hook_kind =
-     ( type         => pack_type($wsdlns, 'tOperation')
-     , after        => 'ELEMENT_ORDER'
-     );
-
-    my $reader    = $schemas->compile        # to parse the WSDL
-     ( READER       => pack_type($wsdlns, 'definitions')
-     , anyElement   => 'TAKE_ALL'
-     , anyAttribute => 'TAKE_ALL'
-     , hook         => \%hook_kind
-     );
-
-    my $spec = $reader->($node);
+    my $spec = $self->reader('wsdl:definitions')->($node);
     my $tns  = $spec->{targetNamespace}
         or error __x"WSDL sets no targetNamespace";
 
     # WSDL 1.1 par 2.1.1 says: WSDL def types each in own name-space
     my $index     = $self->{index};
-    my $toplevels = $spec->{gr_anyTopLevelOptionalElement} || []; # silly WSDL structure
+
+    # silly WSDL structure
+    my $toplevels = $spec->{gr_wsdl_anyTopLevelOptionalElement} || [];
+
     foreach my $toplevel (@$toplevels)
     {   my ($which, $def) = %$toplevel;        # always only one
-        $index->{$which}{pack_type $tns, $def->{name}} = $def
-            if $which =~ m/^(?:service|message|binding|portType)$/;
-    }
+        $which =~ s/^wsdl_(service|message|binding|portType)$/$1/
+            or next;
 
-    foreach my $service ( @{$spec->{service} || []} )
-    {   foreach my $port ( @{$service->{port} || []} )
-        {   $index->{port}{pack_type $tns, $port->{name}} = $port;
+        $index->{$which}{pack_type $tns, $def->{name}} = $def;
+
+        if($which eq 'service')
+        {   foreach my $port ( @{$def->{port} || []} )
+            {   $index->{port}{pack_type $tns, $port->{name}} = $port;
+            }
         }
     }
 
+#warn "INDEX: ",Dumper $index;
     $self;
 }
-
-=method importDefinitions XMLDATA, OPTIONS
-Add schema information to the WSDL interface knowledge.  This should
-not be needed, because WSDL definitions must be self-contained.
-=cut
-
-sub importDefinitions($@) { shift->schemas->importDefinitions(@_) }
 
 =method namesFor CLASS
 Returns the list of names available for a certain definition
@@ -221,11 +212,11 @@ sub namesFor($)
 
 =method operation [NAME], OPTIONS
 Collect all information for a certain operation.  Returned is an
-M<XML::Compile::WSDL11::Operation> object.
+M<XML::Compile::Operation> object.
 
 An operation is defined by a service name, a port, some bindings,
-and an operation name, which can be specified explicitly or sometimes
-left-out.
+and an operation name, which can be specified explicitly and often
+left-out (in any situation where there are no alternative choices).
 
 When not specified explicitly via OPTIONS, each of the CLASSes are only
 permitted to have exactly one definition.  Otherwise, you must make a
@@ -253,12 +244,16 @@ one operation defined within the portType.
 sub operation(@)
 {   my $self = shift;
     my $name = @_ % 2 ? shift : undef;
-    my %args = @_;
+    my %args = (name => $name, @_);
 
-    my $service   = $self->find(service => delete $args{service});
+    #
+    ## Service structure
+    #
+
+    my $service   = $self->findDef(service => delete $args{service});
 
     my $port;
-    my @ports     = @{$service->{port} || []};
+    my @ports     = @{$service->{wsdl_port} || []};
     my @portnames = map {$_->{name}} @ports;
     if(my $portname = delete $args{port})
     {   $port = first {$_->{name} eq $portname} @ports;
@@ -274,18 +269,42 @@ sub operation(@)
             , portnames => join("\n    ", '', @portnames);
     }
 
+    # get plugin for operation
+
+    my $address   = first { $_ =~ m/[_}]address$/ } keys %$port
+        or error __x"no address provided in service port";
+
+    if($address =~ m/^{/)
+    {   my ($ns)  = unpack_type $address;
+
+        warning __"Since v2.00 you have to require XML::Compile::SOAP11 explicitly"
+            if $ns eq WSDL11SOAP;
+
+        error __x"ports of type {ns} not supported (not loaded?)", ns => $ns;
+    }
+
+    my ($prefix)  = $address =~ m/(\w+)_address$/;
+    my $opns      = $self->findName("$prefix:");
+    my $opclass   = XML::Compile::Operation->plugin($opns);
+    $opclass->can('_fromWSDL11')
+        or error __x"WSDL11 not supported by {class}", class => $opclass;
+
+    #
+    ## Binding
+    #
+
     my $bindname  = $port->{binding}
         or error __x"no binding defined in port '{name}'"
                , name => $port->{name};
 
-    my $binding   = $self->find(binding => $bindname);
+    my $binding   = $self->findDef(binding => $bindname);
 
     my $type      = $binding->{type}
         or error __x"no type defined with binding `{name}'"
                , name => $bindname;
 
-    my $portType  = $self->find(portType => $type);
-    my $types     = $portType->{operation}
+    my $portType  = $self->findDef(portType => $type);
+    my $types     = $portType->{wsdl_operation}
         or error __x"no operations defined for portType `{name}'"
                , name => $type;
 
@@ -295,48 +314,72 @@ sub operation(@)
     my $port_op;
     if(defined $name)
     {   $port_op = first {$_->{name} eq $name} @$types;
-        error __x"no operation `{operation}' for portType {porttype}, pick from{ops}"
-            , operation => $name
-            , porttype => $type
-            , ops => join("\n    ", '', @port_ops)
+        error __x"no operation `{op}' for portType {pt}, pick from{ops}"
+          , op => $name, pt => $type, ops => join("\n    ", '', @port_ops)
             unless $port_op;
     }
     elsif(@port_ops==1)
     {   $port_op = shift @port_ops;
     }
     else
-    {   error __x"multiple operations in portType `{porttype}', pick from {ops}"
-            , porttype => $type
-            , ops => join("\n    ", '', @port_ops)
+    {   error __x"multiple operations in portType `{pt}', pick from {ops}"
+            , pt => $type, ops => join("\n    ", '', @port_ops)
     }
 
-    my @bindops = @{$binding->{operation} || []};
-    my $bind_op = first {$_->{name} eq $name} @bindops;
+    my @bindops   = @{$binding->{wsdl_operation} || []};
+    my $bind_op   = first {$_->{name} eq $name} @bindops;
 
-    my $operation = XML::Compile::WSDL11::Operation->new
-     ( service  => $service
-     , port     => $port
-     , binding  => $binding
-     , portType => $portType
-     , wsdl     => $self
-     , port_op  => $port_op
-     , bind_op  => $bind_op
-     , name     => $name
+    # This should be detected while parsing the WSDL because the order of
+    # input and output is significant (and lost), but WSDL 1.1 simplifies
+    # our life by saying that only 2 out-of 4 predefined types can actually
+    # be used at present.
+
+    my @order = map { (unpack_type $_)[1] } @{$port_op->{_ELEMENT_ORDER}};
+
+    my ($first_in, $first_out);
+    for(my $i = 0; $i<@order; $i++)
+    {   $first_in  = $i if !defined $first_in  && $order[$i] eq 'input';
+        $first_out = $i if !defined $first_out && $order[$i] eq 'output';
+    }
+
+    my $kind
+      = !defined $first_in     ? 'notification-operation'
+      : !defined $first_out    ? 'one-way'
+      : $first_in < $first_out ? 'request-response'
+      :                          'solicit-response';
+
+    #
+    ### message components
+    #
+
+    my $operation = $opclass->_fromWSDL11
+     ( name      => $name,
+     , kind      => $kind
+
+     , service   => $service
+     , serv_port => $port
+     , binding   => $binding
+     , bind_op   => $bind_op
+     , portType  => $portType
+     , port_op   => $port_op
+
+     , wsdl      => $self
      );
 
     $operation;
 }
 
 =method compileClient [NAME], OPTIONS
-Creates temporarily an M<XML::Compile::WSDL11::Operation> with M<operation()>,
-and then calls C<compileClient()> on that; an usual combination.
+Creates temporarily an M<XML::Compile::Operation> object with
+M<operation()>, and then calls C<compileClient()> on that; an usual
+combination.
 
 As OPTIONS are available the combination of all possibilities for
 =over 4
 =item .
 M<operation()> (i.e. C<service> and C<port>), and all of
 =item .
-M<XML::Compile::WSDL11::Operation::compileClient()> (a whole lot,
+M<XML::Compile::Operation::compileClient()> (a whole lot,
 for instance C<transport_hook>), plus
 =item .
 everything you can pass to M<XML::Compile::Schema::compile()>, for
@@ -347,7 +390,7 @@ instance C<< check_values => 0 >>, hooks, and typemaps.
   $wsdl->compileClient
     ( operation => 'HelloWorld'
     , port      => 'PrefillSoap' # only needed when multiple ports
-    , sloppy_integers => 1
+    , sloppy_integers => 1       # X::C::compile() option
     );
 =cut
 
@@ -360,7 +403,7 @@ sub compileClient(@)
 
 #---------------------
 
-=section Inspection
+=section Introspection
 
 All of the following methods are usually NOT meant for end-users. End-users
 should stick to the M<operation()> and M<compileClient()> methods.
@@ -381,9 +424,10 @@ sub index(;$$)
     @_ ? $class->{ (shift) } : $class;
 }
 
-=method find CLASS, [QNAME]
+=method findDef CLASS, [QNAME|NAME]
 With a QNAME, the HASH which contains the parsed XML information
 from the WSDL template for that CLASS-NAME combination is returned.
+Otherwise, NAME is considered to be the localName in that class.
 When the NAME is not found, an error is produced.
 
 Without QNAME in SCALAR context, there may only be one such name
@@ -391,16 +435,21 @@ defined otherwise an error is produced.  In LIST context, all definitions
 in CLASS are returned.
 =cut
 
-sub find($;$)
+sub findDef($;$)
 {   my ($self, $class, $name) = @_;
     my $group = $self->index($class)
         or error __x"no definitions for `{class}' found", class => $class;
 
     if(defined $name)
     {   return $group->{$name} if exists $group->{$name};
+
+        if(my $q = first { (unpack_type $_)[1] eq $name } keys %$group)
+        {   return $group->{$q};
+        }
+
         error __x"no definition for `{name}' as {class}, pick from:{groups}"
-            , name => $name, class => $class
-            , groups => join("\n    ", '', sort keys %$group);
+          , name => $name, class => $class
+          , groups => join("\n    ", '', sort keys %$group);
     }
 
     return values %$group
@@ -410,71 +459,38 @@ sub find($;$)
         if keys %$group==1;
 
     error __x"explicit selection required: pick one {class} from {groups}"
-        , class => $class, groups => join("\n    ", '', sort keys %$group);
+      , class => $class, groups => join("\n    ", '', sort keys %$group);
 }
 
 =method operations OPTIONS
 Return a list with all operations defined in the WSDL.
-
-=option  produce   'OBJECTS'|'HASHES'
-=default produce   'HASHES'
-By default, this function will return a list of HASHes, each representing
-one defined operation.  When this option is set, those HASHes are
-immediately used to create M<XML::Compile::WSDL11::Operation> objects
-per operation.
 =cut
 
 sub operations(@)
 {   my ($self, %args) = @_;
     my @ops;
-    my $produce = delete $args{produce} || 'HASHES';
+    $args{produce} and die "produce option removed in 0.81";
 
-  SERVICE:
-    foreach my $service ($self->find('service'))
+    foreach my $service ($self->findDef('service'))
     {
-      PORT:
-        foreach my $port (@{$service->{port} || []})
+        foreach my $port (@{$service->{wsdl_port} || []})
         {
             my $bindname = $port->{binding}
                 or error __x"no binding defined in port '{name}'"
                       , name => $port->{name};
-            my $binding  = $self->find(binding => $bindname);
+            my $binding  = $self->findDef(binding => $bindname);
 
             my $type     = $binding->{type}
                 or error __x"no type defined with binding `{name}'"
                     , name => $bindname;
-            my $portType = $self->find(portType => $type);
-            my $types    = $portType->{operation}
-                or error __x"no operations defined for portType `{name}'"
-                     , name => $type;
 
-            if($produce ne 'OBJECTS')
-            {   foreach my $operation (@$types)
-                {   push @ops
-                      , { service   => $service->{name}
-                        , port      => $port->{name}
-                        , portType  => $portType->{name}
-                        , binding   => $bindname
-                        , operation => $operation->{name}
-                        };
-                }
-                next PORT;
-            }
- 
-            foreach my $operation (@$types)
-            {   my @bindops = @{$binding->{operation} || []};
-                my $op_name = $operation->{name};
-                my $bind_op = first {$_->{name} eq $op_name} @bindops;
-
-                push @ops, XML::Compile::WSDL11::Operation->new
-                  ( name      => $operation->{name}
-                  , service   => $service
-                  , port      => $port
-                  , portType  => $portType
-                  , binding   => $binding
-                  , wsdl      => $self
-                  , port_op   => $operation
-                  , bind_op   => $bind_op
+            foreach my $operation ( @{$binding->{wsdl_operation}||[]} )
+            {   push @ops, $self->operation
+                  ( service   => $service->{name}
+                  , port      => $port->{name}
+                  , binding   => $bindname
+                  , operation => $operation->{name}
+                  , portType  => $type
                   );
             }
         }
