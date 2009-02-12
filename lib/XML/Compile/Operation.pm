@@ -53,10 +53,7 @@ protocols, this defines the soapAction header.
 =requires schemas XML::Compile::Cache
 =cut
 
-sub new(@)
-{   my $class = shift;
-    (bless {}, $class)->init( {@_} );
-}
+sub new(@) { my $class = shift; (bless {}, $class)->init( {@_} ) }
 
 sub init($)
 {   my ($self, $args) = @_;
@@ -79,6 +76,7 @@ sub init($)
 =method name
 =method schemas
 =method action
+=method version
 =cut
 
 sub schemas()   {shift->{schemas}}
@@ -87,6 +85,16 @@ sub name()      {shift->{name}}
 sub action()    {shift->{action}}
 sub style()     {shift->{style}}
 sub transport() {shift->{transport}}
+sub version()   {panic}
+
+=method serverClass
+Returns the class name which implements the Server side for this protocol.
+=method clientClass
+Returns the class name which implements the Client side for this protocol.
+=cut
+
+sub serverClass {panic}
+sub clientClass {panic}
 
 =method endPoints
 Returns the list of alternative URLs for the end-point, which should
@@ -124,7 +132,7 @@ Overrule the destination address.
 sub compileTransporter(@)
 {   my ($self, %args) = @_;
 
-    my $send      = $args{transporter};
+    my $send      = $args{transporter} || $args{transport};
     return $send if $send;
 
     my $proto     = $self->transport;
@@ -167,14 +175,19 @@ sub compileHandler(@) { panic "not implemented" }
 
 =section Helpers
 
-=c_method register URI
-Declare an operation type.
+=c_method register URI, ENVNS
+Declare an operation type, but WSDL specific URI and envelope namespace.
 =cut
 
-{   my %registered;
-    sub register($)   { my ($class, $uri) = @_; $registered{$uri} = $class }
-    sub plugin($)     { my ($class, $uri) = @_; $registered{$uri} }
-    sub registered($) { values %registered }
+{   my (%registered, %envelope);
+    sub register($)
+    { my ($class, $uri, $env) = @_;
+      $registered{$uri} = $class;
+      $envelope{$env}   = $class;
+    }
+    sub plugin($)       { $registered{$_[1]} }
+    sub fromEnvelope($) { $envelope{$_[1]} }
+    sub registered($)   { values %registered }
 }
 
 1;

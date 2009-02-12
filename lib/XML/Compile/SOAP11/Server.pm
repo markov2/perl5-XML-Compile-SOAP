@@ -28,61 +28,70 @@ sub init($)
     $self;
 }
 
+sub makeError()
+{   my $self = shift;
+    $self->faultWriter->(Fault => { @_ } );
+}
+
 sub faultNotImplemented($)
-{   my ($thing, $message) = @_;
+{   my ($self, $name) = @_;
 
-    { Fault =>
-      { faultcode   => pack_type(SOAP11ENV, 'Server.notImplemented')
+    my $message =
+      __x"procedure {name} for {version} is not yet implemented"
+        , name => $name, version => 'SOAP11';
+
+    $self->makeError
+      ( faultcode   => pack_type(SOAP11ENV, 'Server.notImplemented')
       , faultstring => $message
       , faultactor  => SOAP11NEXT
-      }
-    };
+      );
 }
 
-sub faultValidationFailed($$$)
-{   my ($self, $message, $exception) = @_;
-
-    my $strtype = pack_type SCHEMA2001, 'string';
-    my $errors  = XML::LibXML::Element->new('error');
-    $errors->appendText($exception->message->toString);
-
-    { Fault =>
-      { faultcode   => pack_type(SOAP11ENV, 'Server.validationFailed')
+sub faultNoAnswerProduced()
+{   my ($self) = @_;
+    
+    my $message;
+    $self->makeError
+      ( faultcode   => pack_type(SOAP11ENV, 'Server.noAnswer')
       , faultstring => $message
       , faultactor  => $self->role
-      , details     => $errors
-      }
-    };
+      );
 }
 
-sub faultNoAnswerProduced($)
-{   my ($self, $message) = @_;
-    { Fault =>
-      { faultcode   => pack_type(SOAP11ENV, 'Server.noAnswer')
-      , faultstring => $message
-      , faultactor  => $self->role
-      }
-    };
-}
+sub faultMessageNotRecognized($$)
+{   my ($self, $name, $handlers) = @_;
 
-sub faultMessageNotRecognized($)
-{   my ($thing, $message) = @_;
-    { Fault =>
-      { faultcode   => pack_type(SOAP11ENV, 'Server.notRecognized')
+    my $message;
+    if($handlers && @$handlers)
+    {   $message =
+       __x "{version} body element {name} not recognized, available are {def}"
+        , version => 'SOAP11', name => $name, def => $handlers;
+    }
+    else
+    {   $message =
+          __x "{version} there are no handlers available, so also not {name}"
+            , version => 'SOAP11', name => $name;
+    }
+
+    $self->makeError
+      ( faultcode   => pack_type(SOAP11ENV, 'Server.notRecognized')
       , faultstring => $message
       , faultactor  => SOAP11NEXT
-      }
-    };
+      );
 }
 
 sub faultTryOtherProtocol($$)
-{   my ($thing, $message) = @_;
-    { Fault =>
-      { faultcode   => pack_type(SOAP11ENV, 'Server.tryUpgrade')
+{   my ($self, $name, $other) = @_;
+
+    my $message =
+      __x"body element {name} not available in {version}, try {other}"
+        , name => $name, version => 'SOAP11', other => $other;
+
+    $self->makeError
+      ( faultcode   => pack_type(SOAP11ENV, 'Server.tryUpgrade')
       , faultstring => $message
       , faultactor  => SOAP11NEXT
-      }
-    };
+      );
 }
 
 1;

@@ -19,7 +19,6 @@ use XML::Compile::Tester;
 use Test::More tests => 10;
 use XML::LibXML;
 
-# elementFormDefault="qualified">
 my $schema = <<__HELPERS;
 <schema targetNamespace="$TestNS"
   xmlns="$SchemaNS">

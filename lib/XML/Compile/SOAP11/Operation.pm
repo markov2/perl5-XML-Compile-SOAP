@@ -13,8 +13,10 @@ use XML::Compile::SOAP11::Client;
 use XML::Compile::SOAP11::Server;
 
 XML::Compile->knownNamespace(&WSDL11SOAP => 'wsdl-soap.xsd');
-__PACKAGE__->register(WSDL11SOAP);
+__PACKAGE__->register(WSDL11SOAP, SOAP11ENV);
 
+# client/server object per schema class, because initiation options
+# can be different.  Class reference is key.
 my (%soap11_client, %soap11_server);
 
 =chapter NAME
@@ -71,7 +73,7 @@ sub _initWSDL11($)
 
     trace "initialize SOAP11 operations for WSDL11";
 
-    $wsdl->importDefinitions(WSDL11SOAP, elementFormDefault => 'qualified');
+    $wsdl->importDefinitions(WSDL11SOAP, element_form_default => 'qualified');
     $wsdl->prefixes
       ( soap => WSDL11SOAP
       );
@@ -107,6 +109,9 @@ sub _fromWSDL11(@)
 
     $args{fault_def}
       = $class->_fault_parts($wsdl, $p_op->{wsdl_fault}, $b_op->{wsdl_fault});
+
+#use Data::Dumper;
+#warn Dumper $args{input_def}, $args{output_def}, $p_op, $b_op;
 
     $class->SUPER::new(%args);
 }
@@ -210,7 +215,10 @@ sub _fault_parts($$$)
 =method style
 =cut
 
-sub style()    {shift->{style}}
+sub style()     {shift->{style}}
+sub version()   { 'SOAP11' }
+sub serverClass { 'XML::Compile::SOAP11::Server' }
+sub clientClass { 'XML::Compile::SOAP11::Client' }
 
 #-------------------------------------------
 

@@ -9,8 +9,6 @@ use Log::Report 'xml-compile-soap', syntax => 'SHORT';
 use XML::Compile::Util       qw/pack_type unpack_type/;
 use XML::Compile::SOAP::Util qw/:wsdl11 SOAP11ENV/;
 
-#use XML::Compile::SOAP11::Operation   ();
-#use XML::Compile::Transport::SOAPHTTP ();
 use XML::Compile::Operation  ();
 use XML::Compile::Transport  ();
 
@@ -105,13 +103,10 @@ sub init($)
           , XML::Compile::Transport->registered;
 
     $self->declare
-     ( READER       => 'wsdl:definitions'
-     , key_rewrite  => 'PREFIXED'
-     , hook         =>
-        { type =>  'wsdl:tOperation'
-        , after => 'ELEMENT_ORDER'
-        }
-     );
+      ( READER      => 'wsdl:definitions'
+      , key_rewrite => 'PREFIXED(wsdl,soap,http)'
+      , hook        => {type => 'wsdl:tOperation', after => 'ELEMENT_ORDER'}
+      );
 
     $self->addWSDL($wsdl);
     $self;
@@ -269,12 +264,12 @@ sub operation(@)
             , portnames => join("\n    ", '', @portnames);
     }
 
-    # get plugin for operation
+    # get plugin for operation # {
 
     my $address   = first { $_ =~ m/[_}]address$/ } keys %$port
         or error __x"no address provided in service port";
 
-    if($address =~ m/^{/)
+    if($address =~ m/^{/)      # }
     {   my ($ns)  = unpack_type $address;
 
         warning __"Since v2.00 you have to require XML::Compile::SOAP11 explicitly"

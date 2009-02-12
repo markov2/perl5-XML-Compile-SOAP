@@ -125,9 +125,6 @@ you can add schemas later with C<< $soap->schemas->importDefinitions() >>
 The Cache object must have C<any_element> and C<any_attribute> set to
 C<'ATTEMPT'>
 
-=requires version    STRING
-The simple string representation of the protocol.
-
 =cut
 
 sub new($@)
@@ -142,7 +139,6 @@ sub new($@)
 sub init($)
 {   my ($self, $args) = @_;
     $self->{mimens}  = $args->{media_type} || 'application/soap+xml';
-    $self->{version} = $args->{version}    || panic "no version string";
 
     my $schemas = $self->{schemas} = $args->{schemas}
         || XML::Compile::Cache->new(allow_undeclared => 1
@@ -154,12 +150,12 @@ sub init($)
 }
 
 =section Accessors
-=method version
 =method name
+=method version
 =cut
 
-sub version() {shift->{version}}
 sub name()    {shift->{name}}
+sub version() {panic "not implemented"}
 
 =method schemas
 Returns the M<XML::Compile::Cache> object which contains the

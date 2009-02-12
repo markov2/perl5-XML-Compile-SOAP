@@ -45,5 +45,5 @@ t/50wsdl.t
 t/51wsdloneway.t
 t/52wsdlfault.t
 t/53wsdlrpclit.t
+t/99pod.t
 t/TestTools.pm
-t/pod.t

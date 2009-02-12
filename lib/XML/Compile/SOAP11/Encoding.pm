@@ -146,7 +146,7 @@ a packed TYPE) into a prefixed notation.
 The complication is that the NAMESPACE may not naturally have a prefixed
 assigned to it: the produced SOAP message is the result of compilation,
 and only the namespaces which are registered to be used during compile-time
-are added to the list on the top-level.  See M<compileMessage(prefixes)>.
+are added to the list on the top-level.
 =cut
 
 sub prefixed($;$)
@@ -200,7 +200,7 @@ When VALUE already is an M<XML::LibXML::Element>, then no processing
 nor value checking will be performed.  The NAME will be ignored.
 
 If the TYPE is not qualified, then it is interpreted as basic type, as
-defined by the selected schema (see M<new(schema_ns)>).  If you explicitly
+defined by the selected schema.  If you explicitly
 need a non-namespace typed item, then use an empty namespace.  In any
 case, the type must be defined and the value is validated.
 

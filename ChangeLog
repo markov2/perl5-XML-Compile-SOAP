@@ -1,6 +1,33 @@
 
 === version history of XML::Compile::SOAP
 
+version 2.01: Thu Feb 12 09:48:17 CET 2009
+
+	Changes:
+
+	- require XML::Compile v1.00 for element_form_default parameter
+	  rename.
+
+	- SOAP::version not configurable, but class constant.
+
+	Fixes:
+
+	- crash on server errors, when throw() is called.
+	  rt.cpan.org#42528 [Piotr Roszatycki]
+
+	- do not use /bin/pwd in t/99pod.t
+
+	- do not prefix the user's keys without explicit user request
+	  via key_rewrite => 'PREFIXED'.  Requires XML::Compile 1.01
+
+	Improvements:
+
+	- lookup SOAP protocol via envelope namespace as well.
+
+        - also *::Operation now shows protocol version().
+
+	- added serverClass() and clientClass() for ::Operation.
+
 version 2.00_01: Mon Dec 29 11:13:05 CET 2008
 
 	************** MAJOR REWRITE!!! *******************
@@ -36,7 +63,9 @@ version 2.00_01: Mon Dec 29 11:13:05 CET 2008
 	  in favor of the new XML::Compile::Schema::importDefinitions()
 	  options which do the same.
 
-	- better trace features.
+	- more trace messages.
+
+	- new examples for rpc-literal, based on Daniel Ruoso's example.
 
 version 0.78: Fri Oct 10 15:55:39 CEST 2008
 

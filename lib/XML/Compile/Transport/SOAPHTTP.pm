@@ -96,7 +96,7 @@ sub _initWSDL11($)
 {   my ($class, $wsdl) = @_;
     trace "initialize SOAPHTTP transporter for WSDL11";
 
-    $wsdl->importDefinitions(WSDL11HTTP, elementFormDefault => 'qualified');
+    $wsdl->importDefinitions(WSDL11HTTP, element_form_default => 'qualified');
     $wsdl->prefixes(http => WSDL11HTTP);
     $class->register('HTTP');   # register alias
 }
@@ -186,19 +186,18 @@ added to simplify bug reports.
 # SUPER::compileClient() calls this method to do the real work
 sub _prepare_call($)
 {   my ($self, $args) = @_;
-    my $method   = $args->{method}       || 'POST';
-    my $soap     = $args->{soap}         || 'SOAP11';
+    my $method   = $args->{method}   || 'POST';
+    my $soap     = $args->{soap}     || 'SOAP11';
     my $version  = ref $soap ? $soap->version : $soap;
-    my $mpost_id = $args->{mpost_id}     || 42;
+    my $mpost_id = $args->{mpost_id} || 42;
+    my $action   = $args->{action}   || '';
     my $mime     = $args->{mime};
-    my $action   = $args->{action}       || '';
 
     my $charset  = $self->charset;
     my $ua       = $self->userAgent;
 
     # Prepare header
-
-    my $header   = $args->{header}       || HTTP::Headers->new;
+    my $header   = $args->{header}   || HTTP::Headers->new;
     $self->headerAddVersions($header);
 
     if($version eq 'SOAP11')

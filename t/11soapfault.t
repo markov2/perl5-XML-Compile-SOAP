@@ -20,7 +20,6 @@ use XML::LibXML;
 
 my $soap11_env = SOAP11ENV;
 
-# elementFormDefault="qualified">
 my $schema = <<__HELPERS;
 <schema targetNamespace="$TestNS"
   xmlns="$SchemaNS">

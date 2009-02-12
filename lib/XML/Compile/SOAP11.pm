@@ -55,7 +55,6 @@ sub new($@)
 
 sub init($)
 {   my ($self, $args) = @_;
-    $args->{version} ||= 'SOAP11';
     $self->SUPER::init($args);
 
     $self->_initSOAP11($self->schemas);
@@ -68,8 +67,8 @@ sub _initSOAP11($)
 
     $schemas->importDefinitions
       ( [SOAP11ENC, SOAP11ENV]
-      , elementFormDefault   => 'qualified'
-      , attributeFormDefault => 'qualified'
+      , element_form_default   => 'qualified'
+      , attribute_form_default => 'qualified'
       );
     $schemas->importDefinitions('soap-envelope-patch.xsd');
 
@@ -80,6 +79,9 @@ sub _initSOAP11($)
 
     $self;
 }
+
+sub version    { 'SOAP11' }
+sub envelopeNS { SOAP11ENV }
 
 #-----------------------------------
 

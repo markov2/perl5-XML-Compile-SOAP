@@ -11,8 +11,7 @@ use XML::Compile::SOAP::Util qw/:soap11/;
 XML::Compile::SOAP::Server - server-side SOAP message processing
 
 =chapter SYNOPSIS
-  # THIS CANNOT BE USED YET: Preparations for new module
-  # named XML::Compile::SOAP::Daemon
+  # used by distribution XML::Compile::SOAP::Daemon
 
   my $soap   = XML::Compile::SOAP11::Server->new;
   my $input  = $soap->compileMessage('RECEIVER', ...);
@@ -58,6 +57,8 @@ sub init($)
    $self;
 }
 
+#---------------------------------
+
 =section Accessors
 
 =method role
@@ -65,6 +66,8 @@ Returns the URI of the role (actor) of this server.
 =cut
 
 sub role() {shift->{role}}
+
+#---------------------------------
 
 =section Actions
 
@@ -140,7 +143,7 @@ sub compileHandler(@)
         {   $data = try { $decode->($xmlin) };
             if($@)
             {   my $exception = $@->wasFatal;
-                $exception->throw(reason => 'info');
+                $exception->throw(reason => 'INFO');
                 info __x"callback {name} validation failed", name => $name;
                 $answer = $self->faultValidationFailed($invalid, $exception);
             }
@@ -181,7 +184,11 @@ On the moment, only the first C<body> element is used to determine that.
 
 sub compileFilter(@)
 {   my ($self, %args) = @_;
-    my $nodetype = ($args{body} || [])->[1];
+    my $nodetype;
+    if(my $first    = $args{body}{parts}[0])
+    {   $nodetype = $first->{element}
+            or panic "cannot handle type parameter in server filter";
+    }
 
     # called with (XML, INFO)
       defined $nodetype

@@ -18,7 +18,6 @@ use Test::More tests => 18;
 use XML::LibXML;
 #use Log::Report mode => 'DEBUG';
 
-# elementFormDefault="qualified">
 my $schema = <<__HELPERS;
 <schema targetNamespace="$TestNS"
   xmlns="$SchemaNS">
