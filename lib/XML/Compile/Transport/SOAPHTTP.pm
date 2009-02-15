@@ -276,7 +276,8 @@ sub _prepare_call($)
 
         $trace->{http_response} = $response;
         if($response->is_error)
-        {   error   $response->message if $response->header('Client-Warning');
+        {   error   $response->message
+                if $response->header('Client-Warning');
             warning $response->message;
             return undef;
         }
@@ -295,7 +296,7 @@ is being created.
 
 sub headerAddVersions($)
 {   my ($thing, $h) = @_;
-    foreach my $pkg ( qw/XML::Compile XML::Compile::SOAP LWP/ )
+    foreach my $pkg (qw/XML::Compile XML::Compile::SOAP XML::LibXML LWP/)
     {   no strict 'refs';
         my $version = ${"${pkg}::VERSION"} || 'undef';
         (my $field = "X-$pkg-Version") =~ s/\:\:/-/g;

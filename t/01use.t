@@ -15,6 +15,7 @@ my @show_versions =
     Test::Deep
     XML::Compile
     XML::Compile::Tester
+    XML::Compile::Cache
     XML::LibXML
     Math::BigInt
    /;

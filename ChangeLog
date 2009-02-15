@@ -1,6 +1,29 @@
 
 === version history of XML::Compile::SOAP
 
+version 2.02: Sun Feb 15 23:24:14 CET 2009
+
+	Changes:
+
+	- ::Server::compileHandler() now returns a pair: contains
+	  a status code as well.
+
+	Fixes:
+
+	- restore accidentally removed ::Server::faultValidationFailed()
+
+	- repair handling of server processing errors.
+
+	- add clean handling of ::Server::faultResponseInvalid()
+
+	- reuse created Server::faultWriter()
+
+	- required XML::Compile::Cache 0.91 [cpantesters]
+
+	Improvements:
+
+	- trace the returned faults
+
 version 2.01: Thu Feb 12 09:48:17 CET 2009
 
 	Changes:
