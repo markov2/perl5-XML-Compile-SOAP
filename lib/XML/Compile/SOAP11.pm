@@ -56,7 +56,6 @@ sub new($@)
 sub init($)
 {   my ($self, $args) = @_;
     $self->SUPER::init($args);
-
     $self->_initSOAP11($self->schemas);
 }
 

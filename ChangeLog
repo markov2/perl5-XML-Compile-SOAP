@@ -1,6 +1,29 @@
 
 === version history of XML::Compile::SOAP
 
+version 2.03: Wed Mar 25 15:44:10 CET 2009
+
+	Fixes:
+
+	- auto-generate service block when missing and only one portType
+	  and binding defined. Used by Exchange. Reported by [Anton Berezin]
+
+	- fix wsdl11 when "parts" is used.  [Anton Berezin]
+
+	- do not enforce an endpoint parameter.
+
+	- do not let HTTP error codes confuse the transporter: sometimes
+	  they are produced by the SOAP handler. [Gert Doering]
+
+	Improvements:
+
+	- namespace work-around for unqualified Fault structure in SOAP11
+	  envelope was implemented twice.  Removed one.
+
+	- accept 'server' option to compileClient, which does only replace
+	  the server name in the WSDL service location string, not the
+	  whole endpoint.
+
 version 2.02: Sun Feb 15 23:24:14 CET 2009
 
 	Changes:

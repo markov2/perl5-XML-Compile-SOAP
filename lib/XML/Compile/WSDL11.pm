@@ -32,15 +32,15 @@ XML::Compile::WSDL11 - create SOAP messages defined by WSDL 1.1
  use XML::Compile::SOAP11;      # use SOAP version 1.1
  use XML::Compile::Transport::SOAPHTTP;
 
- my $wsdl    = XML::Compile::WSDL11->new($wsdlfile);
+ my $wsdl = XML::Compile::WSDL11->new($wsdlfile);
  $wsdl->addWSDL(...more WSDL files...);
  $wsdl->importDefinitions(...more schemas...);
 
  # during initiation, for each used call (slow)
- my $call    = $wsdl->compileClient('GetStockPrice', ...);
+ my $call = $wsdl->compileClient('GetStockPrice', ...);
 
  # at "run-time", call as often as you want (fast)
- my $answer  = $call->(%request);
+ my $answer = $call->(%request);
 
  # capture useful trace information
  my ($answer, $trace) = $call->(%request);
@@ -192,6 +192,32 @@ sub addWSDL($)
         }
     }
 
+    # no service block when only one port
+    unless($index->{service})
+    {   # only from this WSDL, cannot use collective $index
+        my @portTypes = map { $_->{wsdl_portType} || () } @$toplevels;
+        @portTypes==1
+            or error __x"no service definition so needs 1 portType, found {nr}"
+                 , nr => scalar @portTypes;
+
+        my @bindings = map { $_->{wsdl_binding} || () } @$toplevels;
+        @bindings==1
+            or error __x"no service definition so needs 1 binding, found {nr}"
+                 , nr => scalar @bindings;
+
+        my $binding  = pack_type $tns, $bindings[0]->{name};
+        my $portname = $portTypes[0]->{name};
+        my $servname = $portname;
+        $servname =~ s/Service$|(?:Service)?Port(?:Type)?$/Service/i
+             or $servname .= 'Service';
+
+        my %port = (name => $portname, binding => $binding
+           , soap_address => {location => 'http://localhost'} );
+
+        $index->{service}{pack_type $tns, $servname}
+            = { name => $servname, wsdl_port => [ \%port ] };
+        $index->{port}{pack_type $tns, $portname} = \%port;
+    }
 #warn "INDEX: ",Dumper $index;
     $self;
 }
@@ -376,7 +402,7 @@ As OPTIONS are available the combination of all possibilities for
 M<operation()> (i.e. C<service> and C<port>), and all of
 =item .
 M<XML::Compile::Operation::compileClient()> (a whole lot,
-for instance C<transport_hook>), plus
+for instance C<transport_hook> and C<server>), plus
 =item .
 everything you can pass to M<XML::Compile::Schema::compile()>, for
 instance C<< check_values => 0 >>, hooks, and typemaps.

@@ -36,7 +36,7 @@ M<XML::Compile::Transport::SOAPHTTP>.
 =default charset 'utf-8'
 
 =option  address URI|ARRAY-of-URI
-=default address 'localhost'
+=default address 'http://localhost'
 One or more URI which represents the servers.
 
 =cut
@@ -50,7 +50,7 @@ sub init($)
 {   my ($self, $args) = @_;
     $self->{charset} = $args->{charset} || 'utf-8';
 
-    my $addr  = $args->{address} || 'localhost';
+    my $addr  = $args->{address} || 'http://localhost';
     my @addrs = ref $addr eq 'ARRAY' ? @$addr : $addr;
 
     $self->{addrs} = \@addrs;

@@ -99,10 +99,10 @@ The name and trademarks of copyright holders may NOT be used in advertising or p
 	  </xs:documentation>
 	</xs:annotation>
     <xs:sequence>
-      <xs:element name="faultcode" type="xs:QName" form="unqualified"/>
-      <xs:element name="faultstring" type="xs:string" form="unqualified"/>
-      <xs:element name="faultactor" type="xs:anyURI" minOccurs="0" form="unqualified"/>
-      <xs:element name="detail" type="tns:detail" minOccurs="0" form="unqualified"/>
+      <xs:element name="faultcode" type="xs:QName" />
+      <xs:element name="faultstring" type="xs:string" />
+      <xs:element name="faultactor" type="xs:anyURI" minOccurs="0" />
+      <xs:element name="detail" type="tns:detail" minOccurs="0" />
     </xs:sequence>
   </xs:complexType>
 

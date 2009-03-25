@@ -183,7 +183,8 @@ sub compileFilter(@)
     my $nodetype;
     if(my $first    = $args{body}{parts}[0])
     {   $nodetype = $first->{element}
-            or panic "cannot handle type parameter in server filter";
+#           or panic "cannot handle type parameter in server filter";
+            || $args{body}{procedure};  # rpc-literal "type"
     }
 
     # called with (XML, INFO)

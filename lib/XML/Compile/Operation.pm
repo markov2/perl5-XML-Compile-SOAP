@@ -127,6 +127,11 @@ DETAILs chapter in the M<XML::Compile::Transport> manual page.
 =default endpoint <from WSDL>
 Overrule the destination address.
 
+=option  server URI-HOST
+=default server undef
+Overrule only the server part in the endpoint, not the whole endpoint.
+This could be a string like C<username:password@myhost:4711>.  Only
+used when no explicit C<endpoint> is provided.
 =cut
 
 sub compileTransporter(@)
@@ -136,7 +141,14 @@ sub compileTransporter(@)
     return $send if $send;
 
     my $proto     = $self->transport;
-    my @endpoints = $args{endpoint} || $self->endPoints;
+    my @endpoints = $args{endpoint} ? $args{endpoint} : ();
+    unless(@endpoints)
+    {   @endpoints = $self->endPoints;
+        if(my $s = $args{server})
+        {   s#^(\w+)://([^/]+)#$1://$s# for @endpoints;
+        }
+    }
+
     my $id        = join ';', sort @endpoints;
     $send         = $self->{transp_cache}{$proto}{$id};
     return $send if $send;
