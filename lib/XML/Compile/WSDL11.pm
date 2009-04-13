@@ -315,15 +315,15 @@ sub operation(@)
     ## Binding
     #
 
-    my $bindname  = $port->{binding}
+    my $bindtype  = $port->{binding}
         or error __x"no binding defined in port '{name}'"
                , name => $port->{name};
 
-    my $binding   = $self->findDef(binding => $bindname);
+    my $binding   = $self->findDef(binding => $bindtype);
 
-    my $type      = $binding->{type}
+    my $type      = $binding->{type}  # get portTypeType
         or error __x"no type defined with binding `{name}'"
-               , name => $bindname;
+               , name => $bindtype;
 
     my $portType  = $self->findDef(portType => $type);
     my $types     = $portType->{wsdl_operation}
@@ -341,7 +341,8 @@ sub operation(@)
             unless $port_op;
     }
     elsif(@port_ops==1)
-    {   $port_op = shift @port_ops;
+    {   $port_op = shift @$types;
+        $name    = $port_op->{name};
     }
     else
     {   error __x"multiple operations in portType `{pt}', pick from {ops}"
@@ -387,7 +388,7 @@ sub operation(@)
 
      , wsdl      => $self
      );
-
+ 
     $operation;
 }
 
@@ -486,6 +487,20 @@ sub findDef($;$)
 
 =method operations OPTIONS
 Return a list with all operations defined in the WSDL.
+
+=option  service NAME
+=default service <undef>
+Only return operations related to the NAMEd service, by default all services.
+
+=option  port NAME
+=default port <undef>
+Return only operations related to the specified port NAME.
+By default operations from all ports.
+
+=option  binding NAME
+=default binding <undef>
+Only return operations which use the binding with the specified NAME.
+By default, all bindings are accepted.
 =cut
 
 sub operations(@)
@@ -495,22 +510,28 @@ sub operations(@)
 
     foreach my $service ($self->findDef('service'))
     {
+        next if $args{service} && $args{service} ne $service->{name};
+
         foreach my $port (@{$service->{wsdl_port} || []})
         {
-            my $bindname = $port->{binding}
+            next if $args{port} && $args{port} ne $port->{name};
+
+            my $bindtype = $port->{binding}
                 or error __x"no binding defined in port '{name}'"
                       , name => $port->{name};
-            my $binding  = $self->findDef(binding => $bindname);
+            my $binding  = $self->findDef(binding => $bindtype);
+
+            next if $args{binding} && $args{binding} ne $binding->{name};
 
             my $type     = $binding->{type}
                 or error __x"no type defined with binding `{name}'"
-                    , name => $bindname;
+                    , name => $bindtype;
 
             foreach my $operation ( @{$binding->{wsdl_operation}||[]} )
             {   push @ops, $self->operation
                   ( service   => $service->{name}
                   , port      => $port->{name}
-                  , binding   => $bindname
+                  , binding   => $bindtype
                   , operation => $operation->{name}
                   , portType  => $type
                   );
@@ -519,6 +540,34 @@ sub operations(@)
     }
 
     @ops;
+}
+
+=method printIndex [FILEHANDLE], OPTIONS
+For available OPTIONS, see M<operations()>.  This method is useful to
+understand the structure of your WSDL: it shows a nested list of
+services, bindings, ports and portTypes.
+=cut
+
+sub printIndex(@)
+{   my $self = shift;
+    my $fh   = @_ % 2 ? shift : select;
+    my @args = @_;
+
+    my %tree;
+    $tree{'service '.$_->serviceName}
+         {'port '.$_->portName . ' (binding '.$_->bindingName.')'}
+         {$_->name} = $_
+         for $self->operations(@args);
+
+    foreach my $service (sort keys %tree)
+    {   $fh->print("$service\n");
+        foreach my $port (sort keys %{$tree{$service}})
+        {   $fh->print("    $port\n");
+            foreach my $op (sort keys %{$tree{$service}{$port}})
+            {   $fh->print("        $op\n");
+            }
+        }
+    }
 }
 
 #--------------------------------

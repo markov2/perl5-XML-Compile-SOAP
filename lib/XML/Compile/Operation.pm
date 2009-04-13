@@ -68,6 +68,12 @@ sub init($)
     my @ep = ref $ep eq 'ARRAY' ? @$ep : $ep;
     $self->{endpoints} = \@ep;
 
+    # undocumented, because not for end-user
+    if(my $binding = $args->{binding})  { $self->{bindname} = $binding->{name} }
+    if(my $service = $args->{service})  { $self->{servname} = $service->{name} }
+    if(my $port    = $args->{serv_port}){ $self->{portname} = $port->{name} }
+    if(my $port_type= $args->{portType}){ $self->{porttypename} = $port_type->{name} }
+
     $self;
 }
 
@@ -77,6 +83,9 @@ sub init($)
 =method schemas
 =method action
 =method version
+=method serviceName
+=method bindingName
+=method portName
 =cut
 
 sub schemas()   {shift->{schemas}}
@@ -86,6 +95,11 @@ sub action()    {shift->{action}}
 sub style()     {shift->{style}}
 sub transport() {shift->{transport}}
 sub version()   {panic}
+
+sub bindingName() {shift->{bindname}}
+sub serviceName() {shift->{servname}}
+sub portName()    {shift->{portname}}
+sub portTypeName(){shift->{porttypename}}
 
 =method serverClass
 Returns the class name which implements the Server side for this protocol.

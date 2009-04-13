@@ -21,7 +21,7 @@ use XML::Compile::SOAP::Util  qw/WSDL11 SOAP11HTTP/;
 use XML::Compile::Tester;
 use XML::Compile::SOAP11;
 
-use Test::More tests => 34;
+use Test::More tests => 39;
 use Test::Deep;
 
 #use Log::Report mode => 'DEBUG';
@@ -121,6 +121,8 @@ __STOCKQUOTESERVICE_WSDL
 ### BEGIN OF TESTS
 ###
 
+#use Log::Report mode => 3;
+#my $xx = XML::Compile::WSDL11->new($xml_service);
 my $wsdl = XML::Compile::WSDL11->new($xml_service);
 
 ok(defined $wsdl, "created object");
@@ -202,6 +204,25 @@ isa_ok($op, 'XML::Compile::SOAP11::Operation');
 
 is($op->name, 'GetLastTradePrice', 'got name');
 is($op->action, 'http://example.com/GetLastTradePrice', 'got action');
+
+is($op->serviceName, 'StockQuoteService');
+is($op->bindingName, 'StockQuoteSoapBinding');
+is($op->portName,    'StockQuotePort');
+is($op->portTypeName, 'StockQuotePortType');
+
+#
+# test $wsdl->printIndex
+#
+
+my $x = '';
+open my($out), '>', \$x;
+$wsdl->printIndex($out);
+close $out;
+is($x, <<_INDEX);
+service StockQuoteService
+    port StockQuotePort (binding StockQuoteSoapBinding)
+        GetLastTradePrice
+_INDEX
 
 ### HELPER
 my ($server_expects, $server_answers);

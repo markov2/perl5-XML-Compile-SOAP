@@ -159,13 +159,13 @@ $server_expects = <<_EXPECTS;
 <?xml version="1.0" encoding="UTF-8"?>
 <SOAP-ENV:Envelope xmlns:SOAP-ENV="$soapenv">
   <SOAP-ENV:Body>
-    <request_via_element>
+    <using_element>
       <exp:list xmlns:exp="$NS">
         <item><id>1</id><name>aap</name></item>
         <item><id>2</id><name>noot</name></item>
         <item><id>3</id><name>mies</name></item>
       </exp:list>
-    </request_via_element>
+    </using_element>
   </SOAP-ENV:Body>
 </SOAP-ENV:Envelope>
 _EXPECTS
@@ -174,9 +174,9 @@ $server_answers = <<_ANSWER;
 <?xml version="1.0" encoding="UTF-8"?>
 <SOAP-ENV:Envelope xmlns:SOAP-ENV="$soapenv">
   <SOAP-ENV:Body>
-    <answer_via_element>
+    <using_element>
       <exp:result xmlns:exp="$NS">3</exp:result>
-    </answer_via_element>
+    </using_element>
   </SOAP-ENV:Body>
 </SOAP-ENV:Envelope>
 _ANSWER
@@ -188,9 +188,9 @@ my %data = ( item =>
 
 my $ea = $er->(\%data);
 ok(defined $ea, 'got element answer');
-isa_ok($ea->{answer_via_element}, 'HASH');
-cmp_ok(keys %{$ea->{answer_via_element}}, '==', 1);
-is($ea->{answer_via_element}{result}, '3');
+isa_ok($ea->{using_element}, 'HASH');
+cmp_ok(keys %{$ea->{using_element}}, '==', 1);
+is($ea->{using_element}{result}, '3');
 
 #
 # Type part
@@ -209,13 +209,13 @@ $server_expects = <<_REQUEST;
 <?xml version="1.0" encoding="UTF-8"?>
 <SOAP-ENV:Envelope xmlns:SOAP-ENV="http://schemas.xmlsoap.org/soap/envelope/">
  <SOAP-ENV:Body>
-  <x0:request_via_type xmlns:x0="urn:example:wsdl">
+  <using_type>
     <list>
       <item><id>1</id><name>aap</name></item>
       <item><id>2</id><name>noot</name></item>
       <item><id>3</id><name>mies</name></item>
     </list>
-  </x0:request_via_type>
+  </using_type>
  </SOAP-ENV:Body>
 </SOAP-ENV:Envelope>
 _REQUEST
@@ -223,15 +223,15 @@ _REQUEST
 $server_answers = <<_ANSWER;
 <SOAP-ENV:Envelope xmlns:SOAP-ENV="http://schemas.xmlsoap.org/soap/envelope/">
  <SOAP-ENV:Body>
-  <x0:answer_via_type xmlns:x0="urn:example:wsdl">
+  <using_type>
     <result>5</result>
-  </x0:answer_via_type>
+  </using_type>
  </SOAP-ENV:Body>
 </SOAP-ENV:Envelope>
 _ANSWER
 
 my $ta = $tr->(list => \%data);
 ok(defined $ta, 'got type answer');
-isa_ok($ta->{answer_via_type}, 'HASH');
-cmp_ok(keys %{$ta->{answer_via_type}}, '==', 1);
-is($ta->{answer_via_type}{result}, '5');
+isa_ok($ta->{using_type}, 'HASH');
+cmp_ok(keys %{$ta->{using_type}}, '==', 1);
+is($ta->{using_type}{result}, '5');

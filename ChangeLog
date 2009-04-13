@@ -1,6 +1,27 @@
 
 === version history of XML::Compile::SOAP
 
+version 2.04: Mon Apr 13 19:01:15 CEST 2009
+
+	Fixes:
+
+	- RPC/literal was seriously broken.
+	  Extended example by [Daniel Ruoso].
+
+	- address operation by port-name [Georg Oechsler]
+
+	Improvements:
+
+	- add filters on operations(), proposed by [Georg Oechsler]
+
+	- added to ::Operation the accessors serviceName(), portName()
+	  bindingName(), portTypeName().
+
+	- added ::WSDL11::printIndex()
+
+	- require LWP to be at least 5.825, because Perl 5.10 comes with a
+	  version which breaks on unicode [Anton Berezin]
+
 version 2.03: Wed Mar 25 15:44:10 CET 2009
 
 	Fixes:
