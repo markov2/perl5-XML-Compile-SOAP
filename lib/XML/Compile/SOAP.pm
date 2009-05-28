@@ -7,8 +7,10 @@ use Log::Report 'xml-compile-soap', syntax => 'SHORT';
 use XML::Compile         ();
 use XML::Compile::Util   qw/pack_type unpack_type type_of_node/;
 use XML::Compile::Cache  ();
+use XML::Compile::SOAP::Util qw/:xop10/;
 
 use Time::HiRes          qw/time/;
+use MIME::Base64         qw/decode_base64/;
 
 =chapter NAME
 XML::Compile::SOAP - base-class for SOAP implementations
@@ -290,24 +292,28 @@ sub _sender(@)
     error __"option 'role' only for readers"  if $args{role};
     error __"option 'roles' only for readers" if $args{roles};
 
-    my @hooks = @{$args{hooks} || []};
-    my ($header,$hlabels) = $self->_writer_header(\%args);
-    push @hooks, $self->_writer_hook('SOAP-ENV:Header', @$header);
+    my $hooks = $args{hooks}   # make copy of calling hook-list
+      = $args{hooks} ? [ @{$args{hooks}} ] : [];
 
+    my @mtom;
+    push @$hooks, $self->_writer_xop_hook(\@mtom);
     my ($body,  $blabels) = $self->_writer_body  (\%args);
     my ($faults,$flabels) = $self->_writer_faults(\%args, $args{faults});
 
+    my ($header,$hlabels) = $self->_writer_header(\%args);
+    push @$hooks, $self->_writer_hook('SOAP-ENV:Header', @$header);
+
     my $style = $args{style} || 'none';
     if($style eq 'document')
-    {   push @hooks, $self->_writer_hook('SOAP-ENV:Body', @$body, @$faults);
+    {   push @$hooks, $self->_writer_hook('SOAP-ENV:Body', @$body, @$faults);
     }
     elsif($style eq 'rpc' && @{$args{body}{parts}} && $args{body}{parts}[0]{type})
-    {   push @hooks, $self->_writer_hook('SOAP-ENV:Body', @$body, @$faults);
+    {   push @$hooks, $self->_writer_hook('SOAP-ENV:Body', @$body, @$faults);
     }
     elsif($style eq 'rpc')
     {   my $procedure = $args{body}{procedure}
             or error __x"operation requires procedure name with RPC";
-        push @hooks, $self->_writer_rpc_hook('SOAP-ENV:Body'
+        push @$hooks, $self->_writer_rpc_hook('SOAP-ENV:Body'
           , $procedure, $body, $faults);
     }
     else
@@ -318,8 +324,7 @@ sub _sender(@)
     # Pack everything together in one procedure
     #
 
-    my $envelope = $self->_writer('SOAP-ENV:Envelope', %args
-      , hooks  => \@hooks);
+    my $envelope = $self->_writer('SOAP-ENV:Envelope', %args);
 
     sub
     {   my ($values, $charset) = ref $_[0] eq 'HASH' ? @_ : ( {@_}, undef);
@@ -350,9 +355,17 @@ sub _sender(@)
             error __x"call data not used: {blocks}", blocks => [keys %copy];
         }
 
+        @mtom = ();   # filled via hook
         my $root = $envelope->($doc, \%data)
             or return;
         $doc->setDocumentElement($root);
+
+        return ($doc, \@mtom)
+            if wantarray;
+
+        @mtom == 0
+            or error __x"{nr} XOP objects lost in sender"
+                 , nr => scalar @mtom;
         $doc;
     };
 }
@@ -387,6 +400,7 @@ sub _writer_rpc_hook($$$$$)
 {   my ($self, $type, $procedure, $params, $faults) = @_;
     my @params = @$params;
     my @faults = @$faults;
+    my $proc   = $self->schemas->prefixed($procedure);
 
     my $code   = sub
      {  my ($doc, $data, $path, $tag) = @_;
@@ -407,7 +421,7 @@ sub _writer_rpc_hook($$$$$)
 
         my $node = $doc->createElement($tag);
         if(@pchilds)
-        {    my $proc = $doc->createElement($procedure);
+        {    my $proc = $doc->createElement($proc);
              $proc->appendChild($_) for @pchilds;
              $node->appendChild($proc);
         }
@@ -478,6 +492,7 @@ sub _writer_body_element($$)
 {   my ($self, $args, $part) = @_;
     my $element = $part->{element};
     my $soapenv = $self->_envNS;
+
     $part->{writer}
        ||= $self->_writer($element, %$args, elements_qualified => 'TOP'
             , include_namespaces => sub {$_[0] ne $soapenv});
@@ -505,6 +520,22 @@ sub _writer_body_type($$)
 
 sub _writer_faults($) { ([], []) }
 
+sub _writer_xop_hook($)
+{   my ($self, $xop_objects) = @_;
+
+    my $collect_objects = sub {
+        my ($doc, $val, $path, $tag, $r) = @_;
+        return $r->($doc, $val)
+            unless UNIVERSAL::isa($val, 'XML::Compile::XOP::Include');
+
+        my $node = $val->xmlNode($doc, $path, $tag); 
+        push @$xop_objects, $val;
+        $node;
+      };
+
+   +{ type => 'xsd:base64Binary', replace => $collect_objects };
+}
+
 #------------------------------------------------
 # Receiver
 
@@ -522,7 +553,9 @@ sub _receiver($)
 #   my @roles  = ref $roles eq 'ARRAY' ? @$roles : $roles;
 
     my $header = $self->_reader_header(\%args);
-    my $body   = $self->_reader_body  (\%args);
+
+    my $xops;  # forward backwards pass-on
+    my $body   = $self->_reader_body(\%args, \$xops);
 
     my $style  = $args{style};
     if($style eq 'rpc')
@@ -540,7 +573,7 @@ sub _receiver($)
     my @hooks  = @{$self->{hooks} || []};
     push @hooks
       , $self->_reader_hook('SOAP-ENV:Header', $header)
-      , $self->_reader_hook('SOAP-ENV:Body',   $body);
+      , $self->_reader_hook('SOAP-ENV:Body',   $body  );
 
     #
     # Pack everything together in one procedure
@@ -553,7 +586,7 @@ sub _receiver($)
     my $faultdec = $self->_reader_faults(\%args, $args{faults});
 
     sub
-    {   my $xml   = shift;
+    {   (my $xml, $xops) = @_;
         my $data  = $envelope->($xml);
         my @pairs = ( %{delete $data->{Header} || {}}
                     , %{delete $data->{Body}   || {}});
@@ -583,6 +616,11 @@ sub _reader_hook($$)
                 $h{$t->[0]} = $v if defined $v;
                 next;
             }
+            else
+            {   trace __x"node {type} ignored, expect from {has}",
+                    type => $type, has => [sort keys %trans];
+            }
+
             return ($label => $self->replyMustUnderstandFault($type))
                 if $child->getAttributeNS($envns, 'mustUnderstand') || 0;
         }
@@ -603,7 +641,7 @@ sub _reader_body_rpc_wrapper($$)
     my $label = (unpack_type $procedure)[1];
 
     my $code = sub
-      { my $xml = shift or return ();
+      { my $xml = shift or return {};
         my %h;
         foreach my $child ($xml->childNodes)
         {   next unless $child->isa('XML::LibXML::Element');
@@ -635,10 +673,14 @@ sub _reader_header($)
     \@rules;
 }
 
-sub _reader_body($)
-{   my ($self, $args) = @_;
+sub _reader_body($$)
+{   my ($self, $args, $refxops) = @_;
     my $body  = $args->{body};
     my $parts = $body->{parts} || [];
+    my @hooks = @{$args->{hooks} || []};
+    push @hooks, $self->_reader_xop_hook($refxops);
+    local $args->{hooks} = \@hooks;
+
     my @rules;
     foreach my $part (@$parts)
     {   my $label   = $part->{name};
@@ -694,6 +736,28 @@ sub _reader_body_type($$)
 sub _reader_faults($)
 {   my ($self, $args) = @_;
     sub { shift };
+}
+
+sub _reader_xop_hook($)
+{   my ($self, $refxops) = @_;
+
+    my $xop_merge = sub
+      { my ($xml, $args, $path, $type, $r) = @_;
+        if(my $incls = $xml->getElementsByTagNameNS(XOP10, 'Include'))
+        {   my $href = $incls->shift->getAttribute('href') || ''
+                or return ($type => $xml);
+
+            $href =~ s/^cid://;
+            my $xop  = $$refxops->{$href}
+                or return ($type => $xml);
+
+            return ($type => $xop);
+        }
+
+        ($type => decode_base64 $xml->textContent);
+      };
+
+   +{ type => 'xsd:base64Binary', replace => $xop_merge };
 }
 
 sub _reader(@) { my $self = shift; $self->{schemas}->reader(@_) }

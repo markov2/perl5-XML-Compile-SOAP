@@ -18,7 +18,6 @@ lib/XML/Compile/Operation.pm
 lib/XML/Compile/SOAP.pm
 lib/XML/Compile/SOAP/Client.pm
 lib/XML/Compile/SOAP/Server.pm
-lib/XML/Compile/SOAP/Tester.pm
 lib/XML/Compile/SOAP/Trace.pm
 lib/XML/Compile/SOAP/Util.pm
 lib/XML/Compile/SOAP11.pm
@@ -36,6 +35,10 @@ lib/XML/Compile/WSDL11/xsd/wsdl-http.xsd
 lib/XML/Compile/WSDL11/xsd/wsdl-mime.xsd
 lib/XML/Compile/WSDL11/xsd/wsdl-soap.xsd
 lib/XML/Compile/WSDL11/xsd/wsdl.xsd
+lib/XML/Compile/XOP.pm
+lib/XML/Compile/XOP/Include.pm
+lib/XML/Compile/XOP/xsd/200411-xmlmime.xsd
+lib/XML/Compile/XOP/xsd/200505-xmlmime.xsd
 t/01use.t
 t/10soap.t
 t/11soapfault.t
@@ -46,5 +49,6 @@ t/51wsdloneway.t
 t/52wsdlfault.t
 t/53wsdlrpclit.t
 t/54wsdlrpclit.t
+t/60xop.t
 t/99pod.t
 t/TestTools.pm

@@ -100,10 +100,10 @@ sub compileClient(@)
           : @_%2==0 ? ({@_}, undef)
           : error __x"client `{name}' called with odd length parameter list"
               , name => $name;
-        my $req   = $encode->($data, $charset);
+        my ($req, $mtom) = $encode->($data, $charset);
 
         my %trace;
-        my $ans   = $transport->($req, \%trace);
+        my $ans   = $transport->($req, \%trace, $mtom);
 
         wantarray or return
             UNIVERSAL::isa($ans, 'XML::LibXML::Node') ? $decode->($ans) : $ans;

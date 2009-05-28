@@ -165,6 +165,14 @@ to be grouped.
 Versions of M<XML::Compile>, M<XML::Compile::SOAP>, and M<LWP> will be
 added to simplify bug reports.
 
+=option  kind    DIRECTION
+=default kind    'request-response'
+What kind of interactie, based on the four types defined by WSDL(1):
+C<notification-operation> (server initiated, no answer required),
+C<one-way> (client initiated, no answer required), C<request-response>
+(client initiated, the usual in both directions), C<solicit-response> (server
+initiated "challenge").
+
 =example create a client
  my $trans = XML::Compile::Transport::SOAPHTTP->new
    ( address => 'http://www.stockquoteserver.com/StockQuote'
@@ -192,6 +200,8 @@ sub _prepare_call($)
     my $mpost_id = $args->{mpost_id} || 42;
     my $action   = $args->{action}   || '';
     my $mime     = $args->{mime};
+    my $kind     = $args->{kind}     || 'request-response';
+    my $expect   = $kind ne 'one-way' && $kind ne 'notification-operation';
 
     my $charset  = $self->charset;
     my $ua       = $self->userAgent;
@@ -200,14 +210,15 @@ sub _prepare_call($)
     my $header   = $args->{header}   || HTTP::Headers->new;
     $self->headerAddVersions($header);
 
+    my $content_type;
     if($version eq 'SOAP11')
     {   $mime  ||= 'text/xml';
-        $header->header(Content_Type => qq{$mime; charset="$charset"});
+        $content_type = qq{$mime; charset="$charset"};
     }
     elsif($version eq 'SOAP12')
     {   $mime  ||= 'application/soap+xml';
         my $sa   = defined $action ? qq{; action="$action"} : '';
-        $header->header(Content_Type => qq{$mime; charset="$charset"$action});
+        $content_type = qq{$mime; charset="$charset"$action};
     }
     else
     {   error "SOAP version {version} not implemented", version => $version;
@@ -237,14 +248,19 @@ sub _prepare_call($)
 
     # Create handler
 
-    my $hook = $args->{hook};
+    my ($create_message, $parse_message)
+      = exists $INC{'XML/Compile/XOP.pm'}
+      ? $self->_prepare_xop_call($content_type)
+      : $self->_prepare_simple_call($content_type);
 
+    $parse_message = $self->_prepare_for_no_answer($parse_message)
+        unless $expect;
+
+    my $hook = $args->{hook};
       $hook
     ? sub  # hooked code
       { my $trace = $_[1];
-        $request->content($_[0]);   # already bytes (not utf-8)
-
-        { use bytes; $request->header('Content-Length' => length $_[0]); }
+        $create_message->($request, $_[0], $_[2]);
  
         $trace->{http_request}  = $request;
         $trace->{action}        = $action;
@@ -258,16 +274,12 @@ sub _prepare_call($)
 
         $trace->{http_response} = $response;
 
-        # HTTP::Message::decoded_content() does not work for old Perls
-          defined $response && $response->content_type =~ m![/+]xml$!i
-        ? ($] >= 5.008 ? $response->decoded_content : $response->content)
-        : undef;
+        $parse_message->($response);
       }
 
-    : sub  # normal code
+    : sub  # real call
       { my $trace = $_[1];
-        $request->content($_[0]);
-        { use bytes; $request->header('Content-Length' => length $_[0]); }
+        $create_message->($_[0], $_[2]);
 
         $trace->{http_request}  = $request;
 
@@ -276,20 +288,137 @@ sub _prepare_call($)
 
         $trace->{http_response} = $response;
 
-        if($response->content_type =~ m![/+]xml$!i)
-        {   info "fault ".$response->status_line;
-            return $response->decoded_content;
-        }
-
         if($response->is_error)
         {   error $response->message
                 if $response->header('Client-Warning');
+
             warning $response->message;
+            return undef;
         }
 
-        undef;
+        $parse_message->($response);
       };
 }
+
+sub _prepare_simple_call($)
+{   my ($self, $content_type) = @_;
+
+    my $create = sub
+      { my ($request, $content) = @_;
+        $request->header(Content_Type => $content_type);
+        $request->content_ref($content);   # already bytes (not utf-8)
+        use bytes; $request->header('Content-Length' => length $$content);
+      };
+
+    my $parse  = sub
+      { my $response = shift;
+        my $ct       = $response->content_type || '';
+
+        lc($ct) ne 'multipart/related'
+            or error __x"remote system uses XOP, use XML::Compile::XOP";
+        
+        info "received ".$response->status_line;
+
+        $ct =~ m![/+]xml$!i
+            or error __x"answer is not xml but `{type}'", type => $ct;
+
+        # HTTP::Message::decoded_content() does not work for old Perls
+        my $content = $] >= 5.008 ? $response->decoded_content(ref => 1)
+          : $response->content(ref => 1);
+
+        ($content, {});
+      };
+
+    ($create, $parse);
+}
+
+sub _prepare_xop_call($)
+{   my ($self, $content_type) = @_;
+    my ($simple_create, $simple_parse)
+      = $self->_prepare_simple_call($content_type);
+
+    my $charset = $self->charset;
+    my $create  = sub
+      { my ($request, $content, $mtom) = @_;
+        $mtom ||= [];
+        @$mtom or return $simple_create->($request, $content);
+
+        my $bound     = "MIME-boundary-".int rand 10000;
+        (my $start_cid = $mtom->[0]->cid) =~ s/^.*\@/xml@/;
+
+        $request->header(Content_Type => <<_CT);
+multipart/related;
+ boundary="$bound";
+ type="application/xop+xml"
+ start="<$start_cid>";
+ start-info="text/xml"
+_CT
+
+        my $base = HTTP::Message->new
+          ( [ Content_Type => <<_CT
+application/xop+xml;
+ charset="$charset"; type="text/xml"
+_CT
+            , Content_Transfer_Encoding => '8bit'
+            , Content_ID  => '<'.$start_cid.'>'
+            ] );
+        $base->content_ref($content);   # already bytes (not utf-8)
+
+        my @parts = ($base, map { $_->mimePart } @$mtom);
+        $request->parts(@parts); #$base, map { $_->mimePart } @$mtom);
+        $request;
+      };
+
+    my $parse  = sub
+      { my ($response, $mtom) = @_;
+        my $ct       = $response->header('Content-Type') || '';
+
+        $ct =~ m!^\s*multipart/related\s*\;!
+             or return $simple_parse->($response);
+
+        my %parts;
+        foreach my $part ($response->parts)
+        {   my $include = XML::Compile::XOP::Include->fromMime($part)
+               or next;
+            $parts{$include->cid} = $include;
+        }
+
+        if($ct !~ m!start\=(["']?)\<([^"']*)\>\1!)
+        {   warning __x"cannot find root node in `{ct}'", ct => $ct;
+            return ();
+        }
+
+        my $startid = $2;
+        my $root = delete $parts{$startid};
+        unless(defined $root)
+        {   warning __x"cannot find root node id `{id}'", id => $startid;
+            return ();
+        }
+
+        ($root->content(1), \%parts);
+      };
+
+    ($create, $parse);
+}
+
+sub _prepare_for_no_answer($)
+{   my $self = shift;
+    sub
+      { my $response = shift;
+        my $ct       = $response->content_type || '';
+
+        info "received ".$response->status_line;
+
+        my $content = '';
+        if($ct =~ m![/+]xml$!i)
+        {   # HTTP::Message::decoded_content() does not work for old Perls
+            $content = $] >= 5.008 ? $response->decoded_content(ref => 1)
+              : $response->content(ref => 1);
+        }
+        ($content, {});
+      };
+}
+
 
 =ci_method headerAddVersions HEADER
 Adds some lines about module versions, which may help debugging

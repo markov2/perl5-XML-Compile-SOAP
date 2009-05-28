@@ -4,7 +4,7 @@ use warnings;
 use strict;
 
 use lib 'lib', 't';
-use Test::More tests => 15;
+use Test::More tests => 17;
 use TestTools;
 
 # The versions of the following packages are reported to help understanding
@@ -49,3 +49,5 @@ use_ok('XML::Compile::SOAP::Util');
 use_ok('XML::Compile::Transport');
 use_ok('XML::Compile::Transport::SOAPHTTP');
 use_ok('XML::Compile::WSDL11');
+use_ok('XML::Compile::XOP');
+use_ok('XML::Compile::XOP::Include');

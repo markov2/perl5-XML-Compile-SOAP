@@ -18,11 +18,10 @@ XML::Compile->knownNamespace
  );
 
 =chapter NAME
-XML::Compile::SOAP11 - base class for SOAP1.1 implementation
+XML::Compile::SOAP11 - base for SOAP1.1 implementation
 
 =chapter SYNOPSIS
  # use either XML::Compile::SOAP11::Client or ::Server
-
  # See XML::Compile::SOAP for global usage examples.
 
 =chapter DESCRIPTION
@@ -74,6 +73,7 @@ sub _initSOAP11($)
     $schemas->prefixes
       ( 'SOAP-ENV' => SOAP11ENV  # preferred names by spec
       , 'SOAP-ENC' => SOAP11ENC
+      , xsd        => SCHEMA2001
       );
 
     $self;

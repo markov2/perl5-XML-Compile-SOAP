@@ -121,8 +121,6 @@ __STOCKQUOTESERVICE_WSDL
 ### BEGIN OF TESTS
 ###
 
-#use Log::Report mode => 3;
-#my $xx = XML::Compile::WSDL11->new($xml_service);
 my $wsdl = XML::Compile::WSDL11->new($xml_service);
 
 ok(defined $wsdl, "created object");

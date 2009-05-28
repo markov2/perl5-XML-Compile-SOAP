@@ -120,19 +120,19 @@ sub compileClient(@)
     my $kind  = $args{kind} || 'request-response';
 
     sub
-    {   my ($xmlout, $trace) = @_;
+    {   my ($xmlout, $trace, $mtom) = @_;
         my $start     = time;
         my $textout   = ref $xmlout ? $xmlout->toString : $xmlout;
 
         my $stringify = time;
         $trace->{transport_start}  = $start;
 
-        my $textin    = $call->($textout, $trace);
+        my ($textin, $xops) = $call->(\$textout, $trace, $mtom);
         my $connected = time;
 
         my $xmlin;
         if($textin)
-        {   $xmlin = eval {$parser->parse_string($textin)};
+        {   $xmlin = eval {$parser->parse_string($$textin)};
             $trace->{error} = $@ if $@;
         }
 
@@ -152,7 +152,11 @@ sub compileClient(@)
         $trace->{connect_elapse}   = $connected - $stringify;
         $trace->{parse_elapse}     = $end - $connected;
         $trace->{transport_elapse} = $end - $start;
-        $answer;
+
+        wantarray || ! keys %$xops
+            or warning "loosing received XOPs";
+
+        wantarray ? ($answer, $xops) : $answer;
     }
 }
 

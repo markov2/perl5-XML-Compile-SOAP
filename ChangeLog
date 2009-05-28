@@ -1,6 +1,25 @@
 
 === version history of XML::Compile::SOAP
 
+version 2.05: Thu May 28 12:31:46 CEST 2009
+
+	Fixes:
+
+	- remove XML::Compile::SOAP::Tester, because it was not completely
+	  developed.  Signaled by [Georg Oechsler]
+
+	- use 'namespace' parameter (if available) in SOAP::RPC
+	  Reported by [Daniel Ruoso]
+
+	- rpc-literal one-way fix (hopefully).  Reported by [Daniel Ruoso]
+
+	Improvements:
+
+	- support MTOM and XOP in new modules XML::Compile::XOP(::Include)
+	  tests in t/60xop.t
+
+	- trace which message top-nodes are being skipped.
+
 version 2.04: Mon Apr 13 19:01:15 CEST 2009
 
 	Fixes:

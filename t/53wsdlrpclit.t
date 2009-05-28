@@ -140,6 +140,7 @@ isa_ok($soap, 'XML::Compile::SOAP11');
 my $wsdl = XML::Compile::WSDL11->new($schema);
 ok(defined $wsdl, "created object");
 isa_ok($wsdl, 'XML::Compile::WSDL11');
+$wsdl->prefixes(sonae => $NSEXP);
 
 #
 # Element part
@@ -157,15 +158,15 @@ isa_ok($er, 'CODE');
 
 $server_expects = <<_EXPECTS;
 <?xml version="1.0" encoding="UTF-8"?>
-<SOAP-ENV:Envelope xmlns:SOAP-ENV="$soapenv">
+<SOAP-ENV:Envelope xmlns:SOAP-ENV="$soapenv" xmlns:sonae="$NSEXP">
   <SOAP-ENV:Body>
-    <using_element>
+    <sonae:using_element>
       <exp:list xmlns:exp="$NS">
         <item><id>1</id><name>aap</name></item>
         <item><id>2</id><name>noot</name></item>
         <item><id>3</id><name>mies</name></item>
       </exp:list>
-    </using_element>
+    </sonae:using_element>
   </SOAP-ENV:Body>
 </SOAP-ENV:Envelope>
 _EXPECTS
@@ -174,9 +175,9 @@ $server_answers = <<_ANSWER;
 <?xml version="1.0" encoding="UTF-8"?>
 <SOAP-ENV:Envelope xmlns:SOAP-ENV="$soapenv">
   <SOAP-ENV:Body>
-    <using_element>
+    <sonae:using_element xmlns:sonae="$NSEXP">
       <exp:result xmlns:exp="$NS">3</exp:result>
-    </using_element>
+    </sonae:using_element>
   </SOAP-ENV:Body>
 </SOAP-ENV:Envelope>
 _ANSWER
@@ -207,25 +208,25 @@ isa_ok($tr, 'CODE');
 
 $server_expects = <<_REQUEST;
 <?xml version="1.0" encoding="UTF-8"?>
-<SOAP-ENV:Envelope xmlns:SOAP-ENV="http://schemas.xmlsoap.org/soap/envelope/">
- <SOAP-ENV:Body>
-  <using_type>
-    <list>
-      <item><id>1</id><name>aap</name></item>
-      <item><id>2</id><name>noot</name></item>
-      <item><id>3</id><name>mies</name></item>
-    </list>
-  </using_type>
- </SOAP-ENV:Body>
+<SOAP-ENV:Envelope xmlns:SOAP-ENV="$soapenv">
+  <SOAP-ENV:Body>
+    <x0:using_type xmlns:x0="$NSEXP">
+      <list>
+        <item><id>1</id><name>aap</name></item>
+        <item><id>2</id><name>noot</name></item>
+        <item><id>3</id><name>mies</name></item>
+      </list>
+    </x0:using_type>
+  </SOAP-ENV:Body>
 </SOAP-ENV:Envelope>
 _REQUEST
 
 $server_answers = <<_ANSWER;
-<SOAP-ENV:Envelope xmlns:SOAP-ENV="http://schemas.xmlsoap.org/soap/envelope/">
+<SOAP-ENV:Envelope xmlns:SOAP-ENV="$soapenv">
  <SOAP-ENV:Body>
-  <using_type>
+  <sonae:using_type xmlns:sonae="$NSEXP">
     <result>5</result>
-  </using_type>
+  </sonae:using_type>
  </SOAP-ENV:Body>
 </SOAP-ENV:Envelope>
 _ANSWER
