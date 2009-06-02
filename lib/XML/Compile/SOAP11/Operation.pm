@@ -126,7 +126,10 @@ sub _msg_parts($$$$$)
         my ($ns, $local) = unpack_type $msgname;
         my $procedure;
         if($style eq 'rpc')
-        {   my $ns = $body->{namespace} || '';
+        {   exists $body->{namespace}
+                or error __x"rpc operation {name} requires namespace attribute"
+                     , name => $msgname;
+            my $ns = $body->{namespace};
             $procedure = pack_type $ns, $opname;
         }
         else
@@ -240,18 +243,19 @@ sub compileHandler(@)
 
     my $soap = $soap11_server{$self->{schemas}}
       ||= XML::Compile::SOAP11::Server->new(schemas => $self->{schemas});
-    my $style = $args{style} = $self->style;
+    my $style = $args{style} ||= $self->style;
+    my $kind  = $args{kind} ||= $self->kind;
 
-    my %ro   = (%{$self->{input_def}},  %{$self->{fault_def}}, %args);
-    my %so   = (%{$self->{output_def}}, %{$self->{fault_def}}, %args);
-    my $fo   = $self->{input_def};
+    my @ro    = (%{$self->{input_def}},  %{$self->{fault_def}});
+    my @so    = (%{$self->{output_def}}, %{$self->{fault_def}});
+    my $fo    = $self->{input_def};
 
     $soap->compileHandler
       ( name      => $self->name
-      , kind      => $self->kind
+      , kind      => $kind
       , selector  => $soap->compileFilter(%$fo)
-      , encode    => $soap->_sender(%so)
-      , decode    => $soap->_receiver(%ro)
+      , encode    => $soap->_sender(@so, %args)
+      , decode    => $soap->_receiver(@ro, %args)
       , callback  => $args{callback}
       );
 }
@@ -278,16 +282,17 @@ sub compileClient(@)
 
     my $soap = $soap11_client{$self->{schemas}}
       ||= XML::Compile::SOAP11::Client->new(schemas => $self->{schemas});
-    my $style = $args{style} = $self->style;
+    my $style = $args{style} ||= $self->style;
+    my $kind  = $args{kind}  ||= $self->kind;
 
-    my %so   = (%{$self->{input_def}},  %{$self->{fault_def}}, %args);
-    my %ro   = (%{$self->{output_def}}, %{$self->{fault_def}}, %args);
+    my @so   = (%{$self->{input_def}},  %{$self->{fault_def}});
+    my @ro   = (%{$self->{output_def}}, %{$self->{fault_def}});
 
     $soap->compileClient
       ( name         => $self->name
-      , kind         => $self->kind
-      , encode       => $soap->_sender(%so)
-      , decode       => $soap->_receiver(%ro)
+      , kind         => $kind
+      , encode       => $soap->_sender(@so, %args)
+      , decode       => $soap->_receiver(@ro, %args)
       , transport    => $self->compileTransporter(%args)
       );
 }

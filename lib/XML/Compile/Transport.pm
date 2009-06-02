@@ -143,7 +143,7 @@ sub compileClient(@)
             if($code==202) { $answer = $xmlin || {} }
             else { $trace->{error} = "call failed with code $code" }
         }
-        elsif($xmlin) { $answer  = $xmlin }
+        elsif($xmlin) { $answer = $xmlin }
         else { $trace->{error} = 'no xml as answer' }
 
         my $end = $trace->{transport_end} = time;
@@ -222,10 +222,11 @@ __EXPECTED_CONTENT
 __ANSWER
  }
  
-Then, the fake server is initiated in one of the following ways:
+Then, the fake server is initiated in one of the follow ways:
 
   my $transport = XML::Compile::Transport::SOAPHTTP->new(...);
-  my $http = $transport->createClient(hook => \&fake_server, ...);
+  my $http = $transport->compileClient(hook => \&fake_server, ...);
+  $wsdl->compileClient('GetLastTracePrice', transporter => $http);
 
 or
 

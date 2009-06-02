@@ -1,6 +1,24 @@
 
 === version history of XML::Compile::SOAP
 
+version 2.06: Tue Jun  2 11:11:27 CEST 2009
+
+	Fixes:
+
+	- removed  XML::Compile::SOAP::Tester from t/01use.t
+	  [cpantesters] and rt.cpan.org#46588 [Dagfinn Ilmari Mannsaker]
+
+	- repair call structure when not running with test server.
+	  Reported by [Luong Truong]
+
+	- require 'namespace' attribute when SOAP  RPC.  Decided together
+	  with [Daniel Ruoso]
+
+	- removed more references to the "fakeServer" implementation which
+	  never got around.  There is a nice way to create "server stubs"
+	  to be able to test the clients without the need for a remote server.
+	  See the docs in XML::Compile::Transport
+
 version 2.05: Thu May 28 12:31:46 CEST 2009
 
 	Fixes:
@@ -8,7 +26,7 @@ version 2.05: Thu May 28 12:31:46 CEST 2009
 	- remove XML::Compile::SOAP::Tester, because it was not completely
 	  developed.  Signaled by [Georg Oechsler]
 
-	- use 'namespace' parameter (if available) in SOAP::RPC
+	- use 'namespace' parameter (if available) in SOAP RPC
 	  Reported by [Daniel Ruoso]
 
 	- rpc-literal one-way fix (hopefully).  Reported by [Daniel Ruoso]
@@ -16,7 +34,7 @@ version 2.05: Thu May 28 12:31:46 CEST 2009
 	Improvements:
 
 	- support MTOM and XOP in new modules XML::Compile::XOP(::Include)
-	  tests in t/60xop.t
+	  tests in t/60xop.t   Needed by [Luong Truong]
 
 	- trace which message top-nodes are being skipped.
 

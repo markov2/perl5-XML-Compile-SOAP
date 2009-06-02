@@ -154,8 +154,9 @@ cmp_ok(scalar @$mtom2, '==', 1);
 is($mtom2->[0]->cid, 'mycid2@home');
 
 my $hash2 = $receiver->($xmltext2, $back2);
-isa_ok($hash2, 'HASH', 'produced HASH');
 
+isa_ok($hash2, 'HASH', 'produced HASH');
+ 
 #warn Dumper $hash2;
 my $exp2 = { request =>
   { first => XML::Compile::XOP::Include->new(bytes => \"Hello, World!\n"

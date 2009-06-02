@@ -312,7 +312,7 @@ sub _sender(@)
     }
     elsif($style eq 'rpc')
     {   my $procedure = $args{body}{procedure}
-            or error __x"operation requires procedure name with RPC";
+            or error __x"sending operation requires procedure name with RPC";
         push @$hooks, $self->_writer_rpc_hook('SOAP-ENV:Body'
           , $procedure, $body, $faults);
     }
@@ -539,7 +539,7 @@ sub _writer_xop_hook($)
 #------------------------------------------------
 # Receiver
 
-sub _receiver($)
+sub _receiver(@)
 {   my ($self, %args) = @_;
 
     error __"option 'destination' only for writers"
@@ -557,11 +557,14 @@ sub _receiver($)
     my $xops;  # forward backwards pass-on
     my $body   = $self->_reader_body(\%args, \$xops);
 
-    my $style  = $args{style};
+    my $style  = $args{style} || 'document';
+    my $kind   = $args{kind}  || 'request-response';
     if($style eq 'rpc')
-    {   my $procedure = $args{body}{procedure}
-            or error __x"operation requires procedure name with RPC";
-        $body  = $self->_reader_body_rpc_wrapper($procedure, $body);
+    {   if($kind ne 'one-way' && $kind ne 'notification')
+        {   my $procedure = $args{body}{procedure}
+            or error __x"receiving operation requires procedure name with RPC";
+            $body  = $self->_reader_body_rpc_wrapper($procedure, $body);
+        }
     }
     elsif($style ne 'document')
     {   error __x"unknown style `{style}'", style => $style;

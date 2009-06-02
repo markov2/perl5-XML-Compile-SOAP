@@ -64,18 +64,18 @@ my $schema = <<_SCHEMA;
     <soap:binding transport="http://schemas.xmlsoap.org/soap/http" style="rpc"/>
     <wsdl:operation name="Greet">
       <wsdl:input>
-        <soap:body use="literal"/>
+        <soap:body use="literal" namespace="$NS" />
       </wsdl:input>
       <wsdl:output>
-        <soap:body use="literal"/>
+        <soap:body use="literal" namespace="$NS" />
       </wsdl:output>
     </wsdl:operation>
     <wsdl:operation name="Shout">
       <wsdl:input>
-        <soap:body use="literal"/>
+        <soap:body use="literal" namespace="$NS" />
       </wsdl:input>
       <wsdl:output>
-        <soap:body use="literal"/>
+        <soap:body use="literal" namespace="$NS" />
       </wsdl:output>
     </wsdl:operation>
   </wsdl:binding>
@@ -126,12 +126,12 @@ isa_ok($er, 'CODE');
 
 $server_expects = <<_EXPECTS;
 <?xml version="1.0" encoding="UTF-8"?>
-<SOAP-ENV:Envelope xmlns:SOAP-ENV="http://schemas.xmlsoap.org/soap/envelope/">
+<SOAP-ENV:Envelope xmlns:SOAP-ENV="$soapenv" xmlns:hello="$NS">
   <SOAP-ENV:Body>
-    <Greet>
-       <hello:who xmlns:hello="http://example.com/hello">World</hello:who>
-       <hello:greeting xmlns:hello="http://example.com/hello">Hello</hello:greeting>
-    </Greet>
+   <hello:Greet>
+     <hello:who xmlns:hello="$NS">World</hello:who>
+     <hello:greeting xmlns:hello="$NS">Hello</hello:greeting>
+   </hello:Greet>
   </SOAP-ENV:Body>
 </SOAP-ENV:Envelope>
 _EXPECTS
@@ -140,9 +140,9 @@ $server_answers = <<_ANSWER;
 <?xml version="1.0" encoding="UTF-8"?>
 <SOAP-ENV:Envelope xmlns:SOAP-ENV="$soapenv">
   <SOAP-ENV:Body>
-    <Greet>
-      <hello:greeting xmlns:hello="http://example.com/hello">Hello, World!</hello:greeting>
-    </Greet>
+    <hello:Greet xmlns:hello="$NS">
+      <hello:greeting>Hello, World!</hello:greeting>
+    </hello:Greet>
   </SOAP-ENV:Body>
 </SOAP-ENV:Envelope>
 _ANSWER
