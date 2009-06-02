@@ -1,6 +1,12 @@
 
 === version history of XML::Compile::SOAP
 
+version 2.07: Tue Jun  2 15:52:20 CEST 2009
+
+	Fixes:
+
+	- remove debug print statement
+
 version 2.06: Tue Jun  2 11:11:27 CEST 2009
 
 	Fixes:

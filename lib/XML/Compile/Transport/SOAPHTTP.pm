@@ -279,7 +279,6 @@ sub _prepare_call($)
 
     : sub  # real call
       { my $trace = $_[1];
-print "REAL\n";
         $create_message->($request, $_[0], $_[2]);
 
         $trace->{http_request}  = $request;
