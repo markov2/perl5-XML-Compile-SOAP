@@ -3,7 +3,7 @@ use strict;
 
 package XML::Compile::SOAP::Trace;
 
-use Log::Report 'xml-compile-soap', syntax => 'SHORT';
+use Log::Report 'xml-compile-soap';  # no syntax SHORT, because we have own error()
 
 =chapter NAME
 XML::Compile::SOAP::Trace - help displaying trace details.
@@ -53,6 +53,12 @@ was initiated.
 =cut
 
 sub date() {scalar localtime shift->start}
+
+=method error
+Often contains an error message, when something went wrong.
+=cut
+
+sub error() {shift->{error}}
 
 =method elapse [KIND]
 Returns the time in seconds (with hires, sub-second detail) of a part of

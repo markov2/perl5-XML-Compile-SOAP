@@ -1,6 +1,16 @@
 
 === version history of XML::Compile::SOAP
 
+version 2.08: Thu Jun 18 10:29:13 CEST 2009
+
+	Fixes:
+
+	- Fault's did not decoded since v2.05, reported by [Gert Doering]
+
+	Improvements:
+
+	- new method XML::Compile::SOAP::Trace::error()
+
 version 2.07: Tue Jun  2 15:52:20 CEST 2009
 
 	Fixes:

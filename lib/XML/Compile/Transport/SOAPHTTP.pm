@@ -293,7 +293,7 @@ sub _prepare_call($)
                 if $response->header('Client-Warning');
 
             warning $response->message;
-            return undef;
+            # still try to parse the response for Fault blocks
         }
 
         $parse_message->($response);
@@ -319,7 +319,7 @@ sub _prepare_simple_call($)
         
         info "received ".$response->status_line;
 
-        $ct =~ m![/+]xml$!i
+        $ct =~ m,[/+]xml$,i
             or error __x"answer is not xml but `{type}'", type => $ct;
 
         # HTTP::Message::decoded_content() does not work for old Perls
@@ -415,6 +415,7 @@ sub _prepare_for_no_answer($)
             $content = $] >= 5.008 ? $response->decoded_content(ref => 1)
               : $response->content(ref => 1);
         }
+
         ($content, {});
       };
 }

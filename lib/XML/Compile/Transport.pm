@@ -144,7 +144,7 @@ sub compileClient(@)
             else { $trace->{error} = "call failed with code $code" }
         }
         elsif($xmlin) { $answer = $xmlin }
-        else { $trace->{error} = 'no xml as answer' }
+        else { $trace->{error} ||= 'no xml as answer' }
 
         my $end = $trace->{transport_end} = time;
 
