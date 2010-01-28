@@ -6,6 +6,7 @@ use base 'XML::Compile::Transport';
 
 use Log::Report 'xml-compile-soap', syntax => 'SHORT';
 use XML::Compile::SOAP::Util qw/:http/;
+use XML::Compile   ();
 
 use LWP            ();
 use LWP::UserAgent ();
@@ -37,7 +38,7 @@ XML::Compile::Transport::SOAPHTTP - exchange XML via HTTP
  use XML::Compile::Transport::SOAPHTTP;
 
  my $http = XML::Compile::Transport::SOAPHTTP->new(@options);
- my $send = $transporter->compileClient(@options2);
+ my $send = $http->compileClient(@options2);
 
  my $call = $wsdl->compileClient
   ( operation => 'some-port-name'
@@ -410,7 +411,7 @@ sub _prepare_for_no_answer($)
         info "received ".$response->status_line;
 
         my $content = '';
-        if($ct =~ m![/+]xml$!i)
+        if($ct =~ m,[/+]xml$,i)
         {   # HTTP::Message::decoded_content() does not work for old Perls
             $content = $] >= 5.008 ? $response->decoded_content(ref => 1)
               : $response->content(ref => 1);

@@ -1,7 +1,7 @@
 use warnings;
 use strict;
 
-package XML::Compile::SOAP;  #!!!
+package XML::Compile::SOAP11;  #!!!
 
 use Log::Report 'xml-compile-soap', syntax => 'SHORT';
 use List::Util qw/min first/;

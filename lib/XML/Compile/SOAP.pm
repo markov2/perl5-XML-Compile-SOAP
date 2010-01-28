@@ -166,6 +166,8 @@ knowledge about the types.
 
 sub schemas() {shift->{schemas}}
 
+#--------------------
+
 =section Single message
 
 =method compileMessage ('SENDER'|'RECEIVER'), OPTIONS
@@ -796,6 +798,8 @@ Produce an error structure to be returned to the sender.
 =cut
 
 sub replyMustUnderstandFault($) { panic "not implemented" }
+
+#----------------------
 
 =chapter DETAILS
 

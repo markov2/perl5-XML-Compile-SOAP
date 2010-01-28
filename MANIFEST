@@ -14,6 +14,8 @@ examples/rpc-literal/element.pl
 examples/rpc-literal/element.wsdl
 examples/rpc-literal/type.pl
 examples/rpc-literal/type.wsdl
+examples/wssecurity/README
+examples/wssecurity/security.pm
 lib/XML/Compile/Operation.pm
 lib/XML/Compile/SOAP.pm
 lib/XML/Compile/SOAP/Client.pm
