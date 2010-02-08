@@ -76,25 +76,23 @@ sub faultResponseInvalid($$)
 }
 
 sub faultNotImplemented($)
-{   my ($self, $name) = @_;
+{   my ($class, $name) = @_;
 
-    my $message =
-      __x"procedure {name} for {version} is not yet implemented"
-        , name => $name, version => 'SOAP11';
+    my $message = __x"procedure {name} for {version} is not yet implemented"
+      , name => $name, version => 'SOAP11';
 
-    $self->makeError
-      ( faultcode   => pack_type(SOAP11ENV, 'Server.notImplemented')
+ +{ Fault =>
+      { faultcode   => pack_type(SOAP11ENV, 'Server.notImplemented')
       , faultstring => $message
       , faultactor  => SOAP11NEXT
-      );
+      }
+  };
 }
 
 sub faultNoAnswerProduced($)
 {   my ($self, $name) = @_;
-    
-    my $message =
-        __x"callback {name} did not return an answer", name => $name;
-
+ 
+    my $message = __x"callback {name} did not return an answer", name => $name;
     $self->makeError
       ( faultcode   => pack_type(SOAP11ENV, 'Server.noAnswer')
       , faultstring => $message
@@ -109,11 +107,11 @@ sub faultMessageNotRecognized($$)
     if($handlers && @$handlers)
     {   $message =
        __x "{version} body element {name} not recognized, available are {def}"
-        , version => 'SOAP11', name => $name, def => $handlers;
+         , version => 'SOAP11', name => $name, def => $handlers;
     }
     else
     {   $message =
-          __x "{version} there are no handlers available, so also not {name}"
+          __x"{version} there are no handlers available, so also not {name}"
             , version => 'SOAP11', name => $name;
     }
 
@@ -128,8 +126,8 @@ sub faultTryOtherProtocol($$)
 {   my ($self, $name, $other) = @_;
 
     my $message =
-      __x"body element {name} not available in {version}, try {other}"
-        , name => $name, version => 'SOAP11', other => $other;
+        __x"body element {name} not available in {version}, try {other}"
+          , name => $name, version => 'SOAP11', other => $other;
 
     $self->makeError
       ( faultcode   => pack_type(SOAP11ENV, 'Server.tryUpgrade')

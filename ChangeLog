@@ -1,6 +1,25 @@
 
 === version history of XML::Compile::SOAP
 
+version 2.10: Mon Feb  8 19:43:42 CET 2010
+
+	Fixes:
+
+	- action parameter of XML::Compile::Transport::SOAPHTTP::new()
+	  was ignored. [Titi Ala'ilima]
+
+	- ::SOAP11::Server::faultNotImplemented() should only produce
+	  a fault structure, not a message.
+
+	Improvements:
+
+	- ::SOAP11::Server::compileHandler()  _RETURN_CODE and
+	   _RETURN_TEXT in produced answer will be used in the HTTP
+	   header.
+
+	- ::SOAP11::Server shows some client error messages in the
+	  server logs.
+
 version 2.09: Thu Jan 28 14:24:40 CET 2010
 
 	Fixes:

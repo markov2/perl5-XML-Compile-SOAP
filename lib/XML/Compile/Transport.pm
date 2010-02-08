@@ -54,7 +54,6 @@ sub init($)
     my @addrs = ref $addr eq 'ARRAY' ? @$addr : $addr;
 
     $self->{addrs} = \@addrs;
-
     $self;
 }
 

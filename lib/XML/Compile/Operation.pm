@@ -123,6 +123,8 @@ sub endPoints() { @{shift->{endpoints}} }
 
 =method compileTransporter OPTIONS
 
+Create the transporter code for a certain specific target.
+
 =option  transporter CODE
 =default transporter <created>
 The routine which will be used to exchange the data with the server.
@@ -137,9 +139,9 @@ Passed to M<XML::Compile::Transport::compileClient(hook)>.  Can be
 used to create off-line tests and last resort work-arounds.  See the
 DETAILs chapter in the M<XML::Compile::Transport> manual page.
 
-=option  endpoint URI
+=option  endpoint URI|ARRAY-of-URI
 =default endpoint <from WSDL>
-Overrule the destination address.
+Overrule the destination address(es).
 
 =option  server URI-HOST
 =default server undef
@@ -151,11 +153,12 @@ used when no explicit C<endpoint> is provided.
 sub compileTransporter(@)
 {   my ($self, %args) = @_;
 
-    my $send      = $args{transporter} || $args{transport};
+    my $send      = delete $args{transporter} || delete $args{transport};
     return $send if $send;
 
     my $proto     = $self->transport;
-    my @endpoints = $args{endpoint} ? $args{endpoint} : ();
+    my $endpoints = $args{endpoint} || [];
+    my @endpoints = ref $endpoints eq 'ARRAY' ? @$endpoints : ();
     unless(@endpoints)
     {   @endpoints = $self->endPoints;
         if(my $s = $args{server})
@@ -179,6 +182,7 @@ sub compileTransporter(@)
       , kind     => $self->kind
       , action   => $self->action
       , hook     => $args{transport_hook}
+      , %args
       );
 }
 

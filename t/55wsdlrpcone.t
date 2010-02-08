@@ -89,6 +89,8 @@ is($op->kind, 'one-way');
 sub fake_server($$)
 {  my ($request, $trace) = @_;
    my $content = $request->decoded_content;
+   #warn $request->headers->as_string;
+
    compare_xml($content, <<__EXPECTED, 'fake server received');
 <?xml version="1.0" encoding="UTF-8"?>
 <SOAP-ENV:Envelope xmlns:SOAP-ENV="$soapenv" xmlns:tns="$myNS">

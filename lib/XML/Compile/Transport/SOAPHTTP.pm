@@ -88,7 +88,7 @@ sub init($)
     $self->userAgent
      ( $args->{user_agent}
      , keep_alive => (exists $args->{keep_alive} ? $args->{keep_alive} : 1)
-     , timeout => ($args->{timeout} || 180)
+     , timeout    => ($args->{timeout} || 180)
      );
     $self;
 }
@@ -120,13 +120,12 @@ sub userAgent(;$)
     return $self->{user_agent} = $agent
         if defined $agent;
 
-    $self->{user_agent}
-    ||= LWP::UserAgent->new
-         ( requests_redirectable => [ qw/GET HEAD POST M-POST/ ]
-         , parse_head => 0
-         , protocols_allowed => [ qw/http https/ ]
-         , @_
-         );
+    $self->{user_agent} ||= LWP::UserAgent->new
+      ( requests_redirectable => [ qw/GET HEAD POST M-POST/ ]
+      , parse_head => 0
+      , protocols_allowed => [ qw/http https/ ]
+      , @_
+      );
 }
 
 #-------------------------------------------

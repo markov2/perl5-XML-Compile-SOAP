@@ -6,7 +6,8 @@ package XML::Compile::SOAP::Server;
 use Log::Report 'xml-compile-soap', syntax => 'SHORT';
 
 use XML::Compile::SOAP::Util qw/:soap11/;
-use HTTP::Status qw/RC_OK RC_NOT_ACCEPTABLE RC_INTERNAL_SERVER_ERROR/;
+use HTTP::Status qw/RC_OK RC_BAD_REQUEST RC_NOT_ACCEPTABLE
+   RC_INTERNAL_SERVER_ERROR/;
 
 =chapter NAME
 XML::Compile::SOAP::Server - server-side SOAP message processing
@@ -133,30 +134,34 @@ sub compileHandler(@)
         $selector->($xmlin, $info) or return;
         trace __x"procedure {name} selected", name => $name;
 
-        my ($data, $answer);
-
+        my $data;
         if($decode)
         {   $data = try { $decode->($xmlin) };
-            return ( RC_NOT_ACCEPTABLE, 'input validation failed'
+            if($@)
+            {   $@->wasFatal->throw(reason => 'INFO', is_fatal => 0);
+                return ( RC_NOT_ACCEPTABLE, 'input validation failed'
                    , $self->faultValidationFailed($name, $@->wasFatal))
-                if $@;
+            }
         }
         else
         {   $data = $xmlin;
         }
 
-        $answer = $callback->($self, $data);
-
-        defined $answer
-            or return ( RC_INTERNAL_SERVER_ERROR, 'no answer produced'
+        my $answer = $callback->($self, $data);
+        unless(defined $answer)
+        {   warning "procedure {name} did not produce an answer", name=> $name;
+            return ( RC_INTERNAL_SERVER_ERROR, 'no answer produced'
                       , $self->faultNoAnswerProduced($name));
+        }
 
-        !ref $answer || ref $answer eq 'HASH'
-            or return $answer;   # something ready or half ready
+        my $rc     = (delete $answer->{_RETURN_CODE}) ||
+           ($answer->{Fault} ? RC_BAD_REQUEST : RC_OK);
+        my $rc_txt = (delete $answer->{_RETURN_TEXT}) || 'Answer included';
 
         my $xmlout = try { $encode->($answer) };
-        $@ or return (RC_OK, 'Answer included', $xmlout);
+        $@ or return ($rc, $rc_txt, $xmlout);
 
+        $@->wasFatal->throw(reason => 'ALERT', is_fatal => 0);
         ( RC_INTERNAL_SERVER_ERROR, 'created response not valid'
         , $self->faultResponseInvalid($name, $@->wasFatal)
         );

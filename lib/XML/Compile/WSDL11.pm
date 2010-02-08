@@ -254,6 +254,10 @@ Required when more than one service is defined.
 =default port <only when just one>
 Required when more than one port is defined.
 
+=option action STRING
+=default action <undef>
+Overrule the soapAction from the WSDL.
+
 =requires operation NAME
 Ignored when the parameter list starts with a NAME (which is an
 alternative for this option).  Optional when there is only
@@ -393,6 +397,7 @@ sub operation(@)
      , port_op   => $port_op
 
      , wsdl      => $self
+     , action    => $args{action}
      );
  
     $operation;
