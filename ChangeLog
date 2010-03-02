@@ -1,6 +1,16 @@
 
 === version history of XML::Compile::SOAP
 
+version 2.11: Tue Mar  2 09:27:40 CET 2010
+
+	Fixes:
+
+	- syntax error caused by change in Log::Report.
+	  rt.cpan.org#55095 [Leandro Hermida]
+
+	- rpc with part types was not processed correctly
+	  [Tapio.Niva]
+
 version 2.10: Mon Feb  8 19:43:42 CET 2010
 
 	Fixes:

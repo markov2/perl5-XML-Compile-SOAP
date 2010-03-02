@@ -3,7 +3,8 @@ use strict;
 
 package XML::Compile::SOAP::Trace;
 
-use Log::Report 'xml-compile-soap';  # no syntax SHORT, because we have own error()
+use Log::Report 'xml-compile-soap', syntax => 'REPORT';
+  # no syntax SHORT, because we have own error()
 
 =chapter NAME
 XML::Compile::SOAP::Trace - help displaying trace details.

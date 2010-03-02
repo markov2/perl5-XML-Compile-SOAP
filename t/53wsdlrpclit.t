@@ -67,7 +67,7 @@ my $schema = <<_SCHEMA;
    <wsdl:part name="list" element="exp:list"/>
  </wsdl:message>
  <wsdl:message name="request_via_type">
-   <wsdl:part name="list" type="exp:list_part_type"/>
+   <wsdl:part name="list" type="exp:listType"/>
  </wsdl:message>
  <wsdl:message name="answer_via_element">
    <wsdl:part name="result" element="exp:result"/>
@@ -208,15 +208,15 @@ isa_ok($tr, 'CODE');
 
 $server_expects = <<_REQUEST;
 <?xml version="1.0" encoding="UTF-8"?>
-<SOAP-ENV:Envelope xmlns:SOAP-ENV="$soapenv">
+<SOAP-ENV:Envelope xmlns:SOAP-ENV="$soapenv" xmlns:sonae="$NSEXP">
   <SOAP-ENV:Body>
-    <x0:using_type xmlns:x0="$NSEXP">
+    <sonae:using_type>
       <list>
         <item><id>1</id><name>aap</name></item>
         <item><id>2</id><name>noot</name></item>
         <item><id>3</id><name>mies</name></item>
       </list>
-    </x0:using_type>
+    </sonae:using_type>
   </SOAP-ENV:Body>
 </SOAP-ENV:Envelope>
 _REQUEST
@@ -231,7 +231,7 @@ $server_answers = <<_ANSWER;
 </SOAP-ENV:Envelope>
 _ANSWER
 
-my $ta = $tr->(list => \%data);
+my $ta = $tr->(%data);
 ok(defined $ta, 'got type answer');
 isa_ok($ta->{using_type}, 'HASH');
 cmp_ok(keys %{$ta->{using_type}}, '==', 1);
