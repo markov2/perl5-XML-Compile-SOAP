@@ -77,11 +77,11 @@ my $schema = <<_SCHEMA;
  </wsdl:message>
 
  <wsdl:portType name="query">
-   <wsdl:operation name="using_element">
+   <wsdl:operation name="usingElement">
      <wsdl:input message="exp:request_via_element"/>
      <wsdl:output message="exp:answer_via_element"/>
    </wsdl:operation>
-   <wsdl:operation name="using_type">
+   <wsdl:operation name="usingType">
      <wsdl:input message="exp:request_via_type"/>
      <wsdl:output message="exp:answer_via_type"/>
    </wsdl:operation>
@@ -89,7 +89,7 @@ my $schema = <<_SCHEMA;
 
  <wsdl:binding name="query_SOAPHTTP" type="exp:query">
    <soap:binding style="rpc" transport="http://schemas.xmlsoap.org/soap/http"/>
-   <wsdl:operation name="using_element">
+   <wsdl:operation name="usingElement">
      <soap:operation style="rpc"/>
      <wsdl:input>
        <soap:body use="literal" namespace="$NSEXP"/>
@@ -98,7 +98,7 @@ my $schema = <<_SCHEMA;
        <soap:body use="literal" namespace="$NSEXP"/>
      </wsdl:output>
    </wsdl:operation>
-   <wsdl:operation name="using_type">
+   <wsdl:operation name="usingType">
      <soap:operation style="rpc"/>
      <wsdl:input>
        <soap:body use="literal" namespace="$NSEXP"/>
@@ -148,9 +148,9 @@ $wsdl->prefixes(sonae => $NSEXP);
 
 ok(1, "** using element");
 
-my $eop = $wsdl->operation('using_element');
+my $eop = $wsdl->operation('usingElement');
 isa_ok($eop, 'XML::Compile::SOAP11::Operation');
-is($eop->name, 'using_element');
+is($eop->name, 'usingElement');
 is($eop->style, 'rpc');
 
 my $er = $eop->compileClient(transport_hook => \&fake_server);
@@ -160,13 +160,13 @@ $server_expects = <<_EXPECTS;
 <?xml version="1.0" encoding="UTF-8"?>
 <SOAP-ENV:Envelope xmlns:SOAP-ENV="$soapenv" xmlns:sonae="$NSEXP">
   <SOAP-ENV:Body>
-    <sonae:using_element>
+    <sonae:usingElement>
       <exp:list xmlns:exp="$NS">
         <item><id>1</id><name>aap</name></item>
         <item><id>2</id><name>noot</name></item>
         <item><id>3</id><name>mies</name></item>
       </exp:list>
-    </sonae:using_element>
+    </sonae:usingElement>
   </SOAP-ENV:Body>
 </SOAP-ENV:Envelope>
 _EXPECTS
@@ -175,9 +175,9 @@ $server_answers = <<_ANSWER;
 <?xml version="1.0" encoding="UTF-8"?>
 <SOAP-ENV:Envelope xmlns:SOAP-ENV="$soapenv">
   <SOAP-ENV:Body>
-    <sonae:using_element xmlns:sonae="$NSEXP">
+    <sonae:usingElementResponse xmlns:sonae="$NSEXP">
       <exp:result xmlns:exp="$NS">3</exp:result>
-    </sonae:using_element>
+    </sonae:usingElementResponse>
   </SOAP-ENV:Body>
 </SOAP-ENV:Envelope>
 _ANSWER
@@ -189,18 +189,19 @@ my %data = ( item =>
 
 my $ea = $er->(\%data);
 ok(defined $ea, 'got element answer');
-isa_ok($ea->{using_element}, 'HASH');
-cmp_ok(keys %{$ea->{using_element}}, '==', 1);
-is($ea->{using_element}{result}, '3');
+my $u = $ea->{usingElementResponse};
+isa_ok($u, 'HASH');
+cmp_ok(keys %$u, '==', 1);
+is($u->{result}, '3');
 
 #
 # Type part
 #
 
 ok(1, "** using type");
-my $top = $wsdl->operation('using_type');
+my $top = $wsdl->operation('usingType');
 isa_ok($top, 'XML::Compile::SOAP11::Operation', 'using type');
-is($top->name, 'using_type');
+is($top->name, 'usingType');
 is($top->style, 'rpc');
 
 my $tr = $top->compileClient(transport_hook => \&fake_server);
@@ -210,13 +211,13 @@ $server_expects = <<_REQUEST;
 <?xml version="1.0" encoding="UTF-8"?>
 <SOAP-ENV:Envelope xmlns:SOAP-ENV="$soapenv" xmlns:sonae="$NSEXP">
   <SOAP-ENV:Body>
-    <sonae:using_type>
+    <sonae:usingType>
       <list>
         <item><id>1</id><name>aap</name></item>
         <item><id>2</id><name>noot</name></item>
         <item><id>3</id><name>mies</name></item>
       </list>
-    </sonae:using_type>
+    </sonae:usingType>
   </SOAP-ENV:Body>
 </SOAP-ENV:Envelope>
 _REQUEST
@@ -224,15 +225,16 @@ _REQUEST
 $server_answers = <<_ANSWER;
 <SOAP-ENV:Envelope xmlns:SOAP-ENV="$soapenv">
  <SOAP-ENV:Body>
-  <sonae:using_type xmlns:sonae="$NSEXP">
+  <sonae:usingTypeResponse xmlns:sonae="$NSEXP">
     <result>5</result>
-  </sonae:using_type>
+  </sonae:usingTypeResponse>
  </SOAP-ENV:Body>
 </SOAP-ENV:Envelope>
 _ANSWER
 
 my $ta = $tr->(%data);
 ok(defined $ta, 'got type answer');
-isa_ok($ta->{using_type}, 'HASH');
-cmp_ok(keys %{$ta->{using_type}}, '==', 1);
-is($ta->{using_type}{result}, '5');
+my $r = $ta->{usingTypeResponse};
+isa_ok($r, 'HASH');
+cmp_ok(keys %$r, '==', 1);
+is($r->{result}, '5');

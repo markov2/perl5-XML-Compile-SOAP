@@ -140,9 +140,9 @@ $server_answers = <<_ANSWER;
 <?xml version="1.0" encoding="UTF-8"?>
 <SOAP-ENV:Envelope xmlns:SOAP-ENV="$soapenv">
   <SOAP-ENV:Body>
-    <hello:Greet xmlns:hello="$NS">
+    <hello:GreetResponse xmlns:hello="$NS">
       <hello:greeting>Hello, World!</hello:greeting>
-    </hello:Greet>
+    </hello:GreetResponse>
   </SOAP-ENV:Body>
 </SOAP-ENV:Envelope>
 _ANSWER
@@ -151,6 +151,7 @@ my %data = ( who => 'World', greeting => 'Hello' );
 
 my $ea = $er->(\%data);
 ok(defined $ea, 'got element answer');
-isa_ok($ea->{Greet}, 'HASH');
-cmp_ok(keys %{$ea->{Greet}}, '==', 1);
-is($ea->{Greet}{greeting}, 'Hello, World!');
+my $g = $ea->{GreetResponse};
+isa_ok($g, 'HASH');
+cmp_ok(keys %$g, '==', 1);
+is($g->{greeting}, 'Hello, World!');

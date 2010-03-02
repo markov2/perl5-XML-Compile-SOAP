@@ -1,6 +1,12 @@
 
 === version history of XML::Compile::SOAP
 
+version 2.12: Tue Mar  2 15:58:48 CET 2010
+
+	Fixes:
+
+	- rpc return decoding.
+
 version 2.11: Tue Mar  2 09:27:40 CET 2010
 
 	Fixes:
