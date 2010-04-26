@@ -310,10 +310,10 @@ sub _reader_faults($$)
 sub replyMustUnderstandFault($)
 {   my ($self, $type) = @_;
 
-    { Fault =>
-        { faultcode   => pack_type(SOAP11ENV, 'MustUnderstand')
-        , faultstring => "SOAP mustUnderstand $type"
-        }
+   +{ Fault =>
+      { faultcode   => pack_type(SOAP11ENV, 'MustUnderstand')
+      , faultstring => "SOAP mustUnderstand $type"
+      }
     };
 }
 

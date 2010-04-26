@@ -8,7 +8,7 @@ use Log::Report 'xml-compile-soap', syntax => 'SHORT';
 
 use XML::Compile             ();      
 use XML::Compile::Util       qw/pack_type unpack_type/;
-use XML::Compile::SOAP::Util qw/:wsdl11 SOAP11ENV/;
+use XML::Compile::SOAP::Util qw/:wsdl11/;
 
 use XML::Compile::Operation  ();
 use XML::Compile::Transport  ();
@@ -45,12 +45,19 @@ XML::Compile::WSDL11 - create SOAP messages defined by WSDL 1.1
  # capture useful trace information
  my ($answer, $trace) = $call->(%request);
 
+ # investigate the %request structure (server input)
+ print $wsdl->explain('GetStockPrice', PERL => 'INPUT');
+
+ # investigate the $answer structure (server output)
+ print $wsdl->explain('GetStockPrice', PERL => 'OUTPUT');
+
  # when you like, get all operation definitions
  my @all_ops = $wsdl->operations;
 
  # Install XML::Compile::SOAP::Daemon
  my $server  = XML::Compile::SOAP::HTTPDaemon->new;
  $server->actionsFromWSDL($wsdl);
+ undef $wsdl;    # not needed any further
  
  # For debug info, start your script with:
  use Log::Report mode => 'DEBUG';
@@ -296,8 +303,7 @@ sub operation(@)
     }
 
     # get plugin for operation # {
-
-    my $address   = first { $_ =~ m/[_}]address$/ } keys %$port
+    my $address   = first { $_ =~ m/address$/ } keys %$port
         or error __x"no address provided in service port";
 
     if($address =~ m/^{/)      # }
@@ -310,6 +316,9 @@ sub operation(@)
     }
 
     my ($prefix)  = $address =~ m/(\w+)_address$/;
+    $prefix
+        or error __x"port address not prefixed; probably need to add a plugin";
+
     my $opns      = $self->findName("$prefix:");
     my $opclass   = XML::Compile::Operation->plugin($opns);
     unless($opclass)
@@ -581,6 +590,31 @@ sub printIndex(@)
     }
 }
 
+=method explain OPERATION, FORMAT, DIRECTION, OPTIONS
+[2.13]
+Produce templates (see M<XML::Compile::Schema::template()> which detail
+the use of the OPERATION. Currently, only the C<PERL> template FORMAT
+is available.
+
+The DIRECTION of operation is either C<INPUT> (input for the server,
+hence to be produced by the client), or C<OUTPUT> (from the server,
+received by the client).
+
+The actual work is done by M<XML::Compile::Operation::explain()>. The
+OPTIONS are passed to that method, as there are C<recurse> and
+C<skip_header>.
+
+=example
+  print $wsdl->explain('CheckStatus', PERL => 'INPUT');
+=cut
+
+sub explain($$$@)
+{   my ($self, $opname, $format, $direction, @opts) = @_;
+    my $op = $self->operation($opname)
+        or error __x"explain operation {name} not found", name => $opname;
+    $op->explain($self, $format, $direction, @opts);
+}
+
 #--------------------------------
 
 =chapter DETAILS
@@ -614,6 +648,5 @@ a choice, then you are required to select one explicitly.
  my $answer = $call->(%request);
 
 =cut
-
 
 1;

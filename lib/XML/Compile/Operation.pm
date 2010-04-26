@@ -220,4 +220,18 @@ Declare an operation type, but WSDL specific URI and envelope namespace.
     sub registered($)   { values %registered }
 }
 
+=method explain WSDL, FORMAT, DIRECTION, OPTIONS
+Dump an annotated structure showing how the operation works, helping
+developers to understand the schema. FORMAT is C<PERL> or C<XML>.
+
+The DIRECTION is C<INPUT>, it will return the message which the client
+sends to the server (input for the server). The C<OUTPUT> message is
+sent as response by the server.
+=cut
+
+sub explain($$$@)
+{   my ($self, $wsdl, $format, $dir, %args) = @_;
+    panic "not implemented for ".ref $self;
+}
+
 1;

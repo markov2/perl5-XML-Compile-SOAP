@@ -1,6 +1,21 @@
 
 === version history of XML::Compile::SOAP
 
+version 2.13: Mon Apr 26 10:07:11 CEST 2010
+
+	Fixes:
+
+	- crash when the data structure returned in a server handler
+	  does not match the expected structure. [Robin V.]
+
+	- role keywords were not translated into URIs.
+
+	Improvements:
+
+	- SOAP11::Operation::compileHandler() new option "selector"
+
+	- test server side production of wsdl defined faults.
+
 version 2.12: Tue Mar  2 15:58:48 CET 2010
 
 	Fixes:

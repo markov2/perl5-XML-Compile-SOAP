@@ -12,8 +12,8 @@ $Data::Dumper::Indent = 1;
 
 use XML::Compile::WSDL11;
 use XML::Compile::Transport::SOAPHTTP;
-use XML::Compile::Util       qw/SCHEMA2001/;
-use XML::Compile::SOAP::Util qw/WSDL11 WSDL11SOAP SOAP11HTTP/;
+use XML::Compile::Util       qw/SCHEMA2001 pack_type/;
+use XML::Compile::SOAP::Util qw/:wsdl11 :soap11/;
 use XML::Compile::Tester;
 use XML::Compile::SOAP11;
 
@@ -99,6 +99,8 @@ my $wsdl = XML::Compile::WSDL11->new($xml_wsdl);
 ok(defined $wsdl, "created object");
 isa_ok($wsdl, 'XML::Compile::WSDL11');
 
+# Get operation
+
 my $op = eval { $wsdl->operation('doSend') };
 my $err = $@ || '';
 ok(defined $op, 'existing operation');
@@ -106,6 +108,13 @@ is($@, '', 'no errors');
 isa_ok($op, 'XML::Compile::Operation');
 isa_ok($op, 'XML::Compile::SOAP11::Operation');
 is($op->kind, 'request-response');
+
+my $server = $op->compileHandler
+  ( callback => \&return_fault
+  , selector => sub {1}
+  );
+
+# Test client side
 
 my $client = $op->compileClient(transport_hook => \&fake_server);
 ok(defined $client, 'compiled client');
@@ -117,12 +126,38 @@ ok(defined $answer, 'got answer');
 is($answer->{Fault}->{faultstring}, 'any-ns.WentWrong', 'got fault string');
 is($answer->{WentWrong}{message}, 'Oh noes', 'parsed response XML');
 
+# Test server side
+
+sub return_fault(@)
+{
+  +{ fault =>
+       { faultcode   => pack_type(SOAP11ENV, 'Server')
+       , faultstring => 'any-ns.WentWrong'
+       , detail      =>
+ #          { pack_type($testNS, 'Broken') => { message => 'Oh noes' }
+ #          }
+            { message => 'Oh noes' }
+       }
+   };
+}
+
 sub fake_server($$)
 {  my ($request, $trace) = @_;
    my $content = $request->decoded_content;
 
-   if($content =~ m!<tns:Send[^>]*>999</tns:Send>!) {
-      return HTTP::Response->new(500, 'Internal Server Error'
+   $content =~ m!<tns:Send[^>]*>999</tns:Send>!
+      or return HTTP::Response->new(202, 'accepted'
+      , [ 'Content-Type' => 'text/plain' ], 'there is no body');
+
+   my ($code, $msg, $xml) = $server->();
+
+   HTTP::Response->new($code, $msg
+      , [ 'Content-Type' => 'text/xml;charset=utf-8' ]
+      , $xml->toString(1)
+      );
+
+=pod
+
       , [ 'Content-Type' => 'text/xml;charset=utf-8' ], <<__RESPONSE);
 <?xml version="1.0" encoding="UTF-8"?>
 <env:Envelope xmlns:env="http://schemas.xmlsoap.org/soap/envelope/"
@@ -136,8 +171,7 @@ sub fake_server($$)
   </env:Body>
 </env:Envelope>
 __RESPONSE
-   } else {
-      return HTTP::Response->new(202, 'accepted'
-      , [ 'Content-Type' => 'text/plain' ], 'there is no body');
-   }
+
+=cut
+
 }

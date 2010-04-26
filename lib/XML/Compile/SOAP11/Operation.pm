@@ -4,13 +4,16 @@ use strict;
 package XML::Compile::SOAP11::Operation;
 use base 'XML::Compile::Operation';
 
-use Log::Report 'xml-report-soap', syntax => 'SHORT';
+use Log::Report 'xml-compile-soap', syntax => 'SHORT';
 use List::Util  'first';
 
 use XML::Compile::Util       qw/pack_type unpack_type/;
 use XML::Compile::SOAP::Util qw/:soap11/;
 use XML::Compile::SOAP11::Client;
 use XML::Compile::SOAP11::Server;
+
+our $VERSION;         # OODoc adds $VERSION to the script
+$VERSION ||= 'undef';
 
 XML::Compile->knownNamespace(&WSDL11SOAP => 'wsdl-soap.xsd');
 __PACKAGE__->register(WSDL11SOAP, SOAP11ENV);
@@ -237,6 +240,10 @@ as will be run on the server. The M<XML::Compile::SOAP::Server> will
 connect these.
 
 =requires callback CODE
+
+=option  selector CODE
+=default selector <from input def>
+Determines whether the handler belongs to a received message.
 =cut
 
 sub compileHandler(@)
@@ -249,12 +256,13 @@ sub compileHandler(@)
 
     my @ro    = (%{$self->{input_def}},  %{$self->{fault_def}});
     my @so    = (%{$self->{output_def}}, %{$self->{fault_def}});
-    my $fo    = $self->{input_def};
+    my $sel   = $args{selector}
+             || $soap->compileFilter(%{$self->{input_def}});
 
     $soap->compileHandler
       ( name      => $self->name
       , kind      => $kind
-      , selector  => $soap->compileFilter(%$fo)
+      , selector  => $sel
       , encode    => $soap->_sender(@so, %args)
       , decode    => $soap->_receiver(@ro, %args)
       , callback  => $args{callback}
@@ -296,6 +304,129 @@ sub compileClient(@)
       , decode       => $soap->_receiver(@ro, %args)
       , transport    => $self->compileTransporter(%args)
       );
+}
+
+=method explain WSDL, FORMAT, DIRECTION, OPTIONS
+[since 2.13]
+Dump an annotated structure showing how the operation works, helping
+developers to understand the schema. FORMAT is always C<PERL>: C<XML>
+is not yet supported.
+
+The DIRECTION is C<INPUT>, it will return the message which the client
+sends to the server (input for the server). The C<OUTPUT> message is
+sent as response by the server.
+
+All OPTIONS besides those described here are passed to
+M<XML::Compile::Schema::template()>, when C<recurse> is enabled.
+
+=option  skip_header BOOLEAN
+=default skip_header <false>
+
+=option  recurse BOOLEAN
+=default recurse <false>
+Append the templates of all the part structures.
+=cut
+
+sub explain($$$@)
+{   my ($self, $schema, $format, $dir, %args) = @_;
+
+    # $schema has to be passed as argument, because we do not want operation
+    # objects to be glued to a schema object after compile time.
+
+    $format eq 'PERL'
+       or error __x"only PERL template supported for the moment, not {got}"
+            , got => $format;
+
+    my $style       = $self->style;
+    my $opname      = $self->name;
+    my $skip_header = delete $args{skip_header} || 0;
+    my $recurse     = delete $args{recurse}     || 0;
+
+    my $def = $dir eq 'INPUT' ? $self->{input_def} : $self->{output_def};
+
+    my (@struct, @attach);
+    my @main = $recurse
+       ? "# The details of the types and elements are attached below."
+       : "# To explore the HASHes for each part, use recurse option.";
+
+    foreach my $part ( @{$def->{body}{parts} || []} )
+    {   my $name = $part->{name};
+        my ($kind, $value) = $part->{type} ? (type => $part->{type})
+          : (element => $part->{element});
+
+        push @main, ''
+          , "# Part $kind $value"
+          , ($kind eq 'type' && $recurse ? "# See fake element '$name'" : ())
+          , "my \$$name = {};";
+        push @struct, "    $name => \$$name,";
+
+        $recurse or next;
+
+        my $elem = $value;
+        if($kind eq 'type')
+        {   # generate element with part name, because template requires elem
+            $schema->compileType(READER => $value, element => $name);
+            $elem = $name;
+        }
+
+        push @attach, ''
+          , $schema->template(PERL => $elem, skip_header => 1, %args);
+    }
+
+    if($dir eq 'INPUT')
+    {   push @main, ''
+         , '# Call with the combination of parts.'
+         , 'my @params = (', @struct, ');'
+         , 'my ($answer, $trace) = $call->(@params);', ''
+         , '# @params will become %$data_in in the server handler.'
+         , '# $answer is a HASH, an operation OUTPUT or Fault.'
+         , '# $trace is an XML::Compile::SOAP::Trace object.'
+    }
+    elsif($dir eq 'OUTPUT')
+    {   s/^/   / for @main, @struct;
+        unshift @main, ''
+         , "sub handle_$opname(\$)"
+         , '{  my ($server, $data_in) = @_;'
+         , '   # process $data_in, structured as INPUT message.'
+         , '   # Hint: use "print Dumper $data_in"';
+
+        push @main, ''
+         , '   # This will end-up as $answer at client-side'
+         , "   return    # optional keyword"
+         , "   +{", @struct, "    };", "}";
+    }
+    else
+    {   error __x"template for direction INPUT or OUTPUT, not {got}"
+          , got => $dir;
+    }
+
+    my @header;
+    push @header
+      , "# Operation $def->{body}{procedure}"
+      , "#           $dir $style $def->{body}{use}"
+      , "# Produced  by ".__PACKAGE__." version $VERSION"
+      , "#           on ".localtime()
+      , "#"
+      , "# The output below is only an example: it cannot be used"
+      , "# without interpretation, although very close to real code."
+      , ""
+        unless $args{skip_header};
+
+    if($dir eq 'INPUT')
+    {   push @header
+          , '# Compile only once in your code, usually during initiation:'
+          , "my \$call = \$wsdl->compileClient('$opname');"
+          , '# ... then call it as often as you need.';
+    }
+    else #OUTPUT
+    {   push @header
+          , '# As part of the initiation phase of your server:'
+          , 'my $daemon = XML::Compile::SOAP::HTTPDaemon->new;'
+          , '$deamon->operationsFromWSDL($wsdl,'
+          , "   callbacks => {$opname => \\&handle_$opname} );"
+    }
+
+    join "\n", @header, @main, @attach, '';
 }
 
 1;

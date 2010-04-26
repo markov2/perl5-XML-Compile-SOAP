@@ -55,7 +55,7 @@ sub new(@) { panic __PACKAGE__." only secundary in multiple inheritance" }
 
 sub init($)
 {  my ($self, $args) = @_;
-   $self->{role} = $self->roleAbbreviation($args->{role} || 'NEXT');
+   $self->{role} = $self->roleURI($args->{role} || 'NEXT') || $args->{role};
    $self;
 }
 
