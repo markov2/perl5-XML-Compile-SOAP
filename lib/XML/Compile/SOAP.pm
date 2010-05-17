@@ -474,7 +474,7 @@ sub _writer_body($)
         }
         elsif(my $type = $part->{type})
         {   $code  = $self->_writer_body_type($args, $part);
-            $label = (unpack_type $type)[1];
+            $label = (unpack_type $part->{name})[1];
         }
         else
         {   error __x"part {name} has neither `element' nor `type' specified"
@@ -512,7 +512,7 @@ sub _writer_body_type($$)
 
     $part->{writer} =
         $self->schemas->compileType
-          ( WRITER => $part->{type}, %$args
+          ( WRITER  => $part->{type}, %$args
           , element => $part->{name}
           , include_namespaces => sub {$_[0] ne $soapenv}
           );

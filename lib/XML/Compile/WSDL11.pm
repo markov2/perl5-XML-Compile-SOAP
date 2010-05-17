@@ -610,7 +610,7 @@ C<skip_header>.
 
 sub explain($$$@)
 {   my ($self, $opname, $format, $direction, @opts) = @_;
-    my $op = $self->operation($opname)
+    my $op = $self->operation($opname, @opts)
         or error __x"explain operation {name} not found", name => $opname;
     $op->explain($self, $format, $direction, @opts);
 }
