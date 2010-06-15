@@ -19,6 +19,7 @@ examples/wssecurity/security.pm
 lib/XML/Compile/Operation.pm
 lib/XML/Compile/SOAP.pm
 lib/XML/Compile/SOAP/Client.pm
+lib/XML/Compile/SOAP/Extension.pm
 lib/XML/Compile/SOAP/Server.pm
 lib/XML/Compile/SOAP/Trace.pm
 lib/XML/Compile/SOAP/Util.pm

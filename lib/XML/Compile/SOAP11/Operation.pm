@@ -11,6 +11,7 @@ use XML::Compile::Util       qw/pack_type unpack_type/;
 use XML::Compile::SOAP::Util qw/:soap11/;
 use XML::Compile::SOAP11::Client;
 use XML::Compile::SOAP11::Server;
+use XML::Compile::SOAP::Extension;
 
 our $VERSION;         # OODoc adds $VERSION to the script
 $VERSION ||= 'undef';
@@ -56,7 +57,6 @@ in WSDL1.1 style.
 =option  style  'document'|'rpc'
 =default style  'document'
 
-
 =cut
 
 sub init($)
@@ -68,6 +68,8 @@ sub init($)
         for qw/input_def output_def fault_def/;
 
     $self->{style} = $args->{style} || 'document';
+
+    XML::Compile::SOAP::Extension->soap11OperationInit($self);
     $self;
 }
 
@@ -229,8 +231,34 @@ sub style()     {shift->{style}}
 sub version()   { 'SOAP11' }
 sub serverClass { 'XML::Compile::SOAP11::Server' }
 sub clientClass { 'XML::Compile::SOAP11::Client' }
+sub soapAction  {shift->{action}}
 
 #-------------------------------------------
+
+=section Modify
+
+Operations are often modified by SOAP extensions. See M<XML::Compile::WSA>,
+for instance.
+
+=method addHeader ('INPUT'|'OUTPUT'|'FAULT'), LABEL, ELEM
+=cut
+
+sub addHeader($$$)
+{   my ($self, $dir, $label, $elem) = @_;
+    my $defs
+      = $dir eq 'INPUT'  ? 'input_def'
+      : $dir eq 'OUTPUT' ? 'output_def'
+      : $dir eq 'FAULT'  ? 'fault_def'
+      : panic "addHeader $dir";
+
+    my %part = (part => $label, use => 'literal'
+      , parts => [{name => $label, element => $elem}]);
+    push @{$self->{$defs}{header}}, \%part;
+    \%part;
+}
+
+#-------------------------------------------
+
 
 =section Handlers
 
@@ -271,7 +299,7 @@ sub compileHandler(@)
 
 =method compileClient OPTIONS
 Returns one CODE reference which handles the processing for this
-operation.  Options C<transporter>, C<transport_hook>, and
+operation. Options C<transporter>, C<transport_hook>, and
 C<endpoint> are passed to M<compileTransporter()>.
 
 You pass that CODE reference an input message of the correct
@@ -280,9 +308,10 @@ will return then answer, or C<undef> in case of failure.  An 'one-way'
 operation with return C<undef> in case of failure, and a true value
 when successfull.
 
-Besides the OPTIONS listed, you can also specify anything which is
-accepted by M<XML::Compile::Schema::compile()>, like
-C<< sloppy_integers => 1 >> or hooks.
+You B<cannot> pass options for M<XML::Compile::Schema::compile()>, like
+C<<sloppy_integers => 0>>, hooks or typemaps this way. Provide these to
+the C<::WSDL> or other C<::Cache> object which defines the types, via
+C<new> option C<opts_rw> and friends.
 
 =cut
 
@@ -297,13 +326,15 @@ sub compileClient(@)
     my @so   = (%{$self->{input_def}},  %{$self->{fault_def}});
     my @ro   = (%{$self->{output_def}}, %{$self->{fault_def}});
 
-    $soap->compileClient
+    my $call = $soap->compileClient
       ( name         => $self->name
       , kind         => $kind
       , encode       => $soap->_sender(@so, %args)
       , decode       => $soap->_receiver(@ro, %args)
       , transport    => $self->compileTransporter(%args)
       );
+
+    XML::Compile::SOAP::Extension->soap11ClientWrapper($self, $call);
 }
 
 =method explain WSDL, FORMAT, DIRECTION, OPTIONS

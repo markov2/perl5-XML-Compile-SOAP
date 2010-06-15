@@ -122,6 +122,7 @@ sub compileClient(@)
     {   my ($xmlout, $trace, $mtom) = @_;
         my $start     = time;
         my $textout   = ref $xmlout ? $xmlout->toString : $xmlout;
+#warn $xmlout->toString(1);   # show message sent
 
         my $stringify = time;
         $trace->{transport_start}  = $start;

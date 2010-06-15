@@ -9,6 +9,7 @@ use Log::Report 'xml-compile-soap', syntax => 'SHORT';
 use XML::Compile             ();      
 use XML::Compile::Util       qw/pack_type unpack_type/;
 use XML::Compile::SOAP::Util qw/:wsdl11/;
+use XML::Compile::SOAP::Extension;
 
 use XML::Compile::Operation  ();
 use XML::Compile::Transport  ();
@@ -117,6 +118,8 @@ sub init($)
       );
 
     $self->addWSDL($wsdl);
+
+    XML::Compile::SOAP::Extension->wsdl11Init($self, $args);
     $self;
 }
 
@@ -304,7 +307,8 @@ sub operation(@)
 
     # get plugin for operation # {
     my $address   = first { $_ =~ m/address$/ } keys %$port
-        or error __x"no address provided in service port";
+        or error __x"no address provided in service port {port}"
+           , port => $port->{name};
 
     if($address =~ m/^{/)      # }
     {   my ($ns)  = unpack_type $address;
@@ -424,16 +428,16 @@ M<operation()> (i.e. C<service> and C<port>), and all of
 =item .
 M<XML::Compile::Operation::compileClient()> (a whole lot,
 for instance C<transport_hook> and C<server>), plus
-=item .
-everything you can pass to M<XML::Compile::Schema::compile()>, for
-instance C<< check_values => 0 >>, hooks, and typemaps.
 =back
+
+You B<cannot> pass options for M<XML::Compile::Schema::compile()>, like
+C<<sloppy_integers => 0>>, hooks or typemaps this way. Use M<new(opts_rw)>
+and friends to declare those.
 
 =example
   $wsdl->compileClient
     ( operation => 'HelloWorld'
     , port      => 'PrefillSoap' # only needed when multiple ports
-    , sloppy_integers => 1       # X::C::compile() option
     );
 =cut
 

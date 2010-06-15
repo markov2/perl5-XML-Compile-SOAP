@@ -112,7 +112,10 @@ sub compileClient(@)
         $trace{encode_elapse} = $trace{transport_start} - $start;
 
         if(UNIVERSAL::isa($ans, 'XML::LibXML::Node'))
-        {   $ans = $decode->($ans);
+#       {   $ans = $decode->($ans);
+{   $ans = try { $decode->($ans) };
+$trace{decode_errors} = $@ if $@;
+warn $@ if $@;
             my $end = time;
             $trace{decode_elapse} = $end - $trace{transport_end};
             $trace{elapse} = $end - $start;

@@ -1,6 +1,15 @@
 
 === version history of XML::Compile::SOAP
 
+version 2.15: Tue Jun 15 15:22:30 CEST 2010
+
+	Improvements:
+
+	- add ways to extend SOAP11 operation definitions, to support
+	  extensions which are not in the WSDL.
+
+	- add XML::Compile::SOAP::Extension for XML::Compile::SOAP::WSA
+
 version 2.14: Mon May 17 13:12:39 CEST 2010
 
 	Changes:

@@ -389,17 +389,17 @@ various types before you call M<compileMessage()>.
 
 =section Receiving faults in SOAP1.1
 
-When faults are received, they will be returned with the C<Faults> key
+When faults are received, they will be returned with the C<Fault> key
 in the data structure.  So:
 
   my $answer = $call->($question);
-  if($answer->{Faults}) { ... }
+  if($answer->{Fault}) { ... }
 
 As extra service, for each of the fault types, as defined with
 M<compileMessage(faults)>, a decoded structure is included.  The name
 of that structure can be found like this:
 
-  if(my $faults = $answer->{Faults})
+  if(my $faults = $answer->{Fault})
   {   my $name    = $faults->{_NAME};
       my $decoded = $answer->{$name};
       ...
