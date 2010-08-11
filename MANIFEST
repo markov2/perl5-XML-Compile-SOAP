@@ -23,6 +23,8 @@ lib/XML/Compile/SOAP/Extension.pm
 lib/XML/Compile/SOAP/Server.pm
 lib/XML/Compile/SOAP/Trace.pm
 lib/XML/Compile/SOAP/Util.pm
+lib/XML/Compile/SOAP10.pm
+lib/XML/Compile/SOAP10/Operation.pm
 lib/XML/Compile/SOAP11.pm
 lib/XML/Compile/SOAP11/Client.pm
 lib/XML/Compile/SOAP11/Encoding.pm

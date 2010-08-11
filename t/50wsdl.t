@@ -218,7 +218,7 @@ $wsdl->printIndex($out);
 close $out;
 is($x, <<_INDEX);
 service StockQuoteService
-    port StockQuotePort (binding StockQuoteSoapBinding)
+    SOAP11 port StockQuotePort (binding StockQuoteSoapBinding)
         GetLastTradePrice
 _INDEX
 

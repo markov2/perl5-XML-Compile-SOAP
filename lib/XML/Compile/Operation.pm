@@ -213,7 +213,7 @@ Declare an operation type, but WSDL specific URI and envelope namespace.
     sub register($)
     { my ($class, $uri, $env) = @_;
       $registered{$uri} = $class;
-      $envelope{$env}   = $class;
+      $envelope{$env}   = $class if $env;
     }
     sub plugin($)       { $registered{$_[1]} }
     sub fromEnvelope($) { $envelope{$_[1]} }

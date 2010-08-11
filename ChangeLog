@@ -1,6 +1,30 @@
 
 === version history of XML::Compile::SOAP
 
+version 2.16: Wed Aug 11 16:13:14 CEST 2010
+
+	Fixes:
+
+	- rpc without parameters should create empty procedure element
+	  [Oliver Gorwit]
+
+	- do not crash with http-get and http-post bindings in the WSDL.
+	  [Morad Igmir]  A real-life server and examples are needed to
+	  be able to implement these protocols.
+
+	Improvements:
+
+	- accept FILEHANDLE argument in XML::Compile::SOAP::print*()
+	  Requested by [Max Cohan]
+
+	- add XML::Compile::Cache version to the HTTP headers.
+
+	- add 'Accept' HTTP line to request for SOAP answer (SOAP1.2)
+
+	- $wsdl->printIndex() shows SOAP version with port name.
+
+	- load wsdl-http.xsd in SOAP10, not WSDL11
+
 version 2.15: Tue Jun 15 15:22:30 CEST 2010
 
 	Improvements:

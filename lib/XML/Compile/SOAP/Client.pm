@@ -100,8 +100,8 @@ sub compileClient(@)
           : @_%2==0 ? ({@_}, undef)
           : error __x"client `{name}' called with odd length parameter list"
               , name => $name;
-        my ($req, $mtom) = $encode->($data, $charset);
 
+        my ($req, $mtom) = $encode->($data, $charset);
         my %trace;
         my $ans   = $transport->($req, \%trace, $mtom);
 
@@ -112,10 +112,9 @@ sub compileClient(@)
         $trace{encode_elapse} = $trace{transport_start} - $start;
 
         if(UNIVERSAL::isa($ans, 'XML::LibXML::Node'))
-#       {   $ans = $decode->($ans);
-{   $ans = try { $decode->($ans) };
-$trace{decode_errors} = $@ if $@;
-warn $@ if $@;
+        {   $ans = try { $decode->($ans) };
+            $trace{decode_errors} = $@ if $@;
+
             my $end = time;
             $trace{decode_elapse} = $end - $trace{transport_end};
             $trace{elapse} = $end - $start;

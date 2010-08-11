@@ -337,8 +337,13 @@ sub compileClient(@)
     XML::Compile::SOAP::Extension->soap11ClientWrapper($self, $call);
 }
 
+#--------------------------
+
+=section Helpers
+
 =method explain WSDL, FORMAT, DIRECTION, OPTIONS
 [since 2.13]
+
 Dump an annotated structure showing how the operation works, helping
 developers to understand the schema. FORMAT is always C<PERL>: C<XML>
 is not yet supported.

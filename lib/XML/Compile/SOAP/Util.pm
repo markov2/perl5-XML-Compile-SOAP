@@ -4,17 +4,17 @@ use strict;
 package XML::Compile::SOAP::Util;
 use base 'Exporter';
 
+my @soap10 = qw/SOAP11HTTP WSDL11HTTP WSDL11MIME SOAP11ENV/;
 my @soap11 = qw/SOAP11ENV SOAP11ENC SOAP11NEXT SOAP11HTTP WSDL11SOAP/;
 my @wsdl11 = qw/WSDL11 WSDL11SOAP WSDL11HTTP WSDL11MIME WSDL11SOAP12/;
-my @http   = qw/SOAP11HTTP WSDL11HTTP SOAP11ENV/;
 my @daemon = qw/MSEXT/;
 my @xop10  = qw/XOP10 XMIME10 XMIME11/;
 
-our @EXPORT_OK = (@soap11, @wsdl11, @http, @daemon, @xop10);
+our @EXPORT_OK = (@soap10, @soap11, @wsdl11, @daemon, @xop10);
 our %EXPORT_TAGS =
-  ( soap11 => \@soap11
+  ( soap10 => \@soap10
+  , soap11 => \@soap11
   , wsdl11 => \@wsdl11
-  , http   => \@http
   , daemon => \@daemon
   , xop10  => \@xop10
   );

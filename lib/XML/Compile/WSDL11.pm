@@ -17,10 +17,7 @@ use XML::Compile::Transport  ();
 use List::Util               qw/first/;
 
 XML::Compile->addSchemaDirs(__FILE__);
-XML::Compile->knownNamespace
-  ( &WSDL11       => 'wsdl.xsd'
-  , &WSDL11HTTP   => 'wsdl-http.xsd'
-  );
+XML::Compile->knownNamespace(&WSDL11 => 'wsdl.xsd');
 
 =chapter NAME
 
@@ -86,9 +83,7 @@ download magic to happen.
 
 =c_method new XML, OPTIONS
 The XML is the WSDL file, which is anything accepted by
-M<XML::Compile::dataToXML()>.  All options are also passed
-to create an internal M<XML::Compile::Schema> object.  See
-M<XML::Compile::Schema::new()>
+M<XML::Compile::dataToXML()>.
 =cut
 
 sub init($)
@@ -327,8 +322,17 @@ sub operation(@)
     my $opclass   = XML::Compile::Operation->plugin($opns);
     unless($opclass)
     {   my $pkg = $opns eq WSDL11SOAP   ? 'SOAP11'
-                : $opns eq WSDL11SOAP12 ? 'SOAP12' : '???';
-        error __x"add 'use XML::Compile::{pkg}' to your script", pkg => $pkg;
+                : $opns eq WSDL11SOAP12 ? 'SOAP12'
+                : $opns eq WSDL11HTTP   ? 'SOAP10'
+                :                         undef;
+
+        if($pkg)
+        {   error __x"add 'use XML::Compile::{pkg}' to your script", pkg=>$pkg;
+        }
+        else
+        {   notice __x"ignoring unsupported namespace {ns}", ns => $opns;
+            return;
+        }
     }
 
     $opclass->can('_fromWSDL11')
@@ -579,7 +583,7 @@ sub printIndex(@)
 
     my %tree;
     $tree{'service '.$_->serviceName}
-         {'port '.$_->portName . ' (binding '.$_->bindingName.')'}
+         {$_->version.' port '.$_->portName . ' (binding '.$_->bindingName.')'}
          {$_->name} = $_
          for $self->operations(@args);
 

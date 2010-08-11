@@ -420,11 +420,9 @@ sub _writer_rpc_hook($$$$$)
             if keys %data;
 
         my $node = $doc->createElement($tag);
-        if(@pchilds)
-        {    my $proc = $doc->createElement($proc);
-             $proc->appendChild($_) for @pchilds;
-             $node->appendChild($proc);
-        }
+        my $proc = $doc->createElement($proc);
+        $proc->appendChild($_) for @pchilds;
+        $node->appendChild($proc);
         $node->appendChild($_) for @fchilds;
         $node;
      };
