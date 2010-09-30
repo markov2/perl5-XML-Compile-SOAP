@@ -1,6 +1,34 @@
 
 === version history of XML::Compile::SOAP
 
+version 2.17: Thu Sep 30 17:05:42 CEST 2010
+
+	Fixes:
+
+	- when the WSDL does not contain a soapAction, there will
+	  not be such field in the mime-header (because SharePoint
+	  gets confused) [Pete Groff]
+
+	- when no namespace is defined in RPC, it should be
+	  interpreted as undefined, not produce an error. [Tapio Niva]
+
+	- repaired WSDL interpretation problem with faults.
+
+	Improvements:
+
+	- received header and body elements which are not understood
+	  (hence cannot be decoded) will be included as XML::LibXML node
+	  in the result. Question by [Lars Thegler]
+
+	- WSDL elements like service-name do now also accept prefixed
+	  names, not only qnames and local names.
+
+	- explain will prefer to show types in prefixed form, which
+	  is shorter than the qname version.
+
+	- do also cleanup server generated (out-of WSDL) faults and
+	  describe how to use them.
+
 version 2.16: Wed Aug 11 16:13:14 CEST 2010
 
 	Fixes:

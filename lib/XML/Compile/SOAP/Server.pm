@@ -161,9 +161,11 @@ sub compileHandler(@)
         my $xmlout = try { $encode->($answer) };
         $@ or return ($rc, $rc_txt, $xmlout);
 
-        $@->wasFatal->throw(reason => 'ALERT', is_fatal => 0);
+        my $fatal = $@->wasFatal;
+        $fatal->throw(reason => 'ALERT', is_fatal => 0);
+
         ( RC_INTERNAL_SERVER_ERROR, 'created response not valid'
-        , $self->faultResponseInvalid($name, $@->wasFatal)
+        , $self->faultResponseInvalid($name, $fatal)
         );
     };
 }

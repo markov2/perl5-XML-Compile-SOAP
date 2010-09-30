@@ -100,7 +100,7 @@ sub _fromWSDL11(@)
     $args{endpoints} = $args{serv_port}{soap_address}{location};
 
     my $sop = $b_op->{soap_operation}     || {};
-    $args{action}  ||= $sop->{soapAction} || '';
+    $args{action}  ||= $sop->{soapAction};
 
     my $sb = $args{binding}{soap_binding} || {};
     $args{transport} = $sb->{transport}   || 'HTTP';
@@ -130,17 +130,10 @@ sub _msg_parts($$$$$)
         my @parts     = $class->_select_parts($wsdl, $msgname, $body->{parts});
 
         my ($ns, $local) = unpack_type $msgname;
-        my $procedure;
-        if($style eq 'rpc')
-        {   exists $body->{namespace}
-                or error __x"rpc operation {name} requires namespace attribute"
-                     , name => $msgname;
-            my $ns = $body->{namespace};
-            $procedure = pack_type $ns, $opname;
-        }
-        else
-        {   $procedure = @parts==1 && $parts[0]{type} ? $msgname : $local; 
-        }
+        my $procedure
+            = $style eq 'rpc' ? pack_type($body->{namespace}, $opname)
+            : @parts==1 && $parts[0]{type} ? $msgname
+            : $local; 
 
         $parts{body}  = {procedure => $procedure, %$port_op, use => 'literal',
            %$body, parts => \@parts};
@@ -195,7 +188,8 @@ sub _fault_parts($$$)
 
     my @sel;
     foreach my $fault (map {$_->{soap_fault}} @$bind)
-    {   my $name  = $fault->{name};
+    {   $fault or next;
+        my $name  = $fault->{name};
 
         my $port  = first {$_->{name} eq $name} @$port_faults;
         defined $port
@@ -369,8 +363,11 @@ sub explain($$$@)
     # $schema has to be passed as argument, because we do not want operation
     # objects to be glued to a schema object after compile time.
 
+    UNIVERSAL::isa($schema, 'XML::Compile::Schema')
+        or error __x"explain() requires first element to be a schema";
+
     $format eq 'PERL'
-       or error __x"only PERL template supported for the moment, not {got}"
+        or error __x"only PERL template supported for the moment, not {got}"
             , got => $format;
 
     my $style       = $self->style;
@@ -390,8 +387,9 @@ sub explain($$$@)
         my ($kind, $value) = $part->{type} ? (type => $part->{type})
           : (element => $part->{element});
 
+        my $type = $schema->prefixed($value) || $value;
         push @main, ''
-          , "# Part $kind $value"
+          , "# Part $kind $type"
           , ($kind eq 'type' && $recurse ? "# See fake element '$name'" : ())
           , "my \$$name = {};";
         push @struct, "    $name => \$$name,";
@@ -406,6 +404,7 @@ sub explain($$$@)
         }
 
         push @attach, ''
+          , '#--------------------------------------------------------------'
           , $schema->template(PERL => $elem, skip_header => 1, %args);
     }
 

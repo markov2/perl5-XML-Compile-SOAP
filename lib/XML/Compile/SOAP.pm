@@ -618,7 +618,8 @@ sub _reader_hook($$)
                 next;
             }
             else
-            {   trace __x"node {type} ignored, expect from {has}",
+            {   $h{$type} = $child;
+                trace __x"node {type} not understood, expect from {has}",
                     type => $type, has => [sort keys %trans];
             }
 

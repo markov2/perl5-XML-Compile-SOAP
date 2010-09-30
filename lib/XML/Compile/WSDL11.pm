@@ -475,11 +475,12 @@ sub index(;$$)
     @_ ? $class->{ (shift) } : $class;
 }
 
-=method findDef CLASS, [QNAME|NAME]
+=method findDef CLASS, [QNAME|PREFIXED|NAME]
 With a QNAME, the HASH which contains the parsed XML information
 from the WSDL template for that CLASS-NAME combination is returned.
-Otherwise, NAME is considered to be the localName in that class.
-When the NAME is not found, an error is produced.
+You may also have a PREFIXED name, using one of the predefined namespace
+abbreviations.  Otherwise, NAME is considered to be the localName in
+that class.  When the NAME is not found, an error is produced.
 
 Without QNAME in SCALAR context, there may only be one such name
 defined otherwise an error is produced.  In LIST context, all definitions
@@ -492,7 +493,12 @@ sub findDef($;$)
         or error __x"no definitions for `{class}' found", class => $class;
 
     if(defined $name)
-    {   return $group->{$name} if exists $group->{$name};
+    {   return $group->{$name} if exists $group->{$name};  # QNAME
+
+        if($name =~ m/\:/)                                 # PREFIXED
+        {   my $qname = $self->findName($name);
+            return $group->{$qname} if exists $group->{$qname};
+        }
 
         if(my $q = first { (unpack_type $_)[1] eq $name } keys %$group)
         {   return $group->{$q};
@@ -509,8 +515,9 @@ sub findDef($;$)
     return (values %$group)[0]
         if keys %$group==1;
 
-    error __x"explicit selection required: pick one {class} from {groups}"
-      , class => $class, groups => join("\n    ", '', sort keys %$group);
+    my @alts = map $self->prefixed($_), sort keys %$group;
+    error __x"explicit selection required: pick one {class} from {alts}"
+      , class => $class, alts => join("\n    ", '', @alts);
 }
 
 =method operations OPTIONS

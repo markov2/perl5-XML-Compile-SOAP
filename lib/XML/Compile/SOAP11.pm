@@ -265,7 +265,6 @@ sub _reader_fault_reader()
 
 sub _reader_faults($$)
 {   my ($self, $args, $faults) = @_;
-    $faults && %$faults or return sub {};
 
     my %names;
     while(my ($name, $def) = each %$faults)
@@ -279,9 +278,6 @@ sub _reader_faults($$)
         my $dettype = delete $details->{_ELEMENT_ORDER};
         $dettype && @$dettype or return $data;
 
-        my $name    = $names{$dettype->[0]}
-            or return $data;
-
         my ($code_ns, $code_err) = unpack_type $faults->{faultcode};
         my ($err, @sub_err) = split /\./, $code_err;
         $err = 'Receiver' if $err eq 'Server';
@@ -293,12 +289,29 @@ sub _reader_faults($$)
           , reason => $faults->{faultstring}
           );
 
-        $nice{role}      = $self->roleAbbreviation($faults->{faultactor})
+        $nice{role} = $self->roleAbbreviation($faults->{faultactor})
             if $faults->{faultactor};
 
-        if(keys %$details==1)
-        {   my (undef, $v) = %$details;
-            @nice{keys %$v} = values %$v;
+        my $name;
+        if($name = $names{$dettype->[0]})
+        {   # fault named in WSDL
+            if(keys %$details==1)
+            {   my (undef, $v) = %$details;
+                @nice{keys %$v} = values %$v;
+            }
+        }
+        elsif(keys %$details==1)
+        {   # simple generic fault, not in WSDL. Maybe internal server error
+            ($name) = keys %$details;
+            my $v = $details->{$name};
+            my @v = ref $v eq 'ARRAY' ? @$v : $v;
+            my @r = map { UNIVERSAL::isa($_, 'XML::LibXML::Node')
+                          ? $_->textContent : $_} @v;
+            $nice{$name} = @r==1 ? $r[0] : \@r;
+        }
+        else
+        {   # unknown complex generic error
+            $name = 'generic';
         }
 
         $data->{$name}   = \%nice;
@@ -441,10 +454,42 @@ The C<class> is an unpacked version of the code.  SOAP1.2 is using the
 C<role> is constructed by decoding the C<faultactor> using
 M<roleAbbreviation()>.  The names are closer to the SOAP1.2 specification.
 
-If the received fault is of an unpredicted type, then key C<body>
-is used, and the C<detail> will list the unparsed XMLNODEs.  When there
-are no details, (according to the specs) the error must be caused by
-a header problem, so the C<header> key is used.
+If the received fault is of an unpredicted type, then the client tries
+to DWIM. in the worst case, C<detail> will list the unparsed XMLNODEs.
+When the M<XML::Compile::SOAP::Daemon> server has produced the error,
+the content of the reply will typically be
+
+ { Fault =>        # SOAP version specific
+    { _NAME => 'error'
+    , #...more...
+    }
+ , error =>        # less SOAP version specific, readable
+    { role    => 'NEXT'
+    , reason  => 'procedure xyz for SOAP11 produced an invalid response'
+    , error   => 'some explanation'
+    , code    =>
+        '{http://schemas.xmlsoap.org/soap/envelope/}Server.invalidResponse'
+    , class   => [ SOAP11ENV, 'Receiver', 'invalidResponse' ],
+    }
+  }
+
+Hence, a typical client routine could contain
+
+  my ($answer, $trace) = $call->(message => $message);
+  if(my $f = $answer->{Fault})
+  {   if($f->{_NAME} eq 'error')
+      {   # server implementation error
+          die "SERVER ERROR:\n$answer->{error}{error}\n";
+      }
+      else
+      {   # the fault is described in the WSDL, handle it!
+          warn "FAULT:\n",Dumper $answer->{$f->{_NAME}};
+      }
+  }
+  else
+  {   # correct answer
+      print Dumper $answer;
+  }
 
 =cut
 

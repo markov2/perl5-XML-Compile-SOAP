@@ -193,7 +193,7 @@ sub _prepare_call($)
     my $soap     = $args->{soap}     || 'SOAP11';
     my $version  = ref $soap ? $soap->version : $soap;
     my $mpost_id = $args->{mpost_id} || 42;
-    my $action   = $args->{action}   || '';
+    my $action   = $args->{action};
     my $mime     = $args->{mime};
     my $kind     = $args->{kind}     || 'request-response';
     my $expect   = $kind ne 'one-way' && $kind ne 'notification-operation';
@@ -213,7 +213,7 @@ sub _prepare_call($)
     elsif($version eq 'SOAP12')
     {   $mime  ||= 'application/soap+xml';
         my $sa   = defined $action ? qq{; action="$action"} : '';
-        $content_type = qq{$mime; charset="$charset"$action};
+        $content_type = qq{$mime; charset="$charset"$sa};
         $header->header(Accept => $mime);  # not the HTML answer
     }
     else
@@ -307,7 +307,9 @@ sub _prepare_simple_call($)
       };
 
     my $parse  = sub
-      { my $response = shift;
+      { my $response = shift
+            or error __x"no response produced";
+
         my $ct       = $response->content_type || '';
 
         lc($ct) ne 'multipart/related'
