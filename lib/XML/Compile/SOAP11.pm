@@ -159,6 +159,7 @@ sub _sender(@)
     {   error __x"mustUnderstand for unknown header {headers}"
           , headers => [keys %understand];
     }
+
     if(keys %destination)
     {   error __x"destination for unknown header {headers}"
           , headers => [keys %destination];
@@ -274,9 +275,6 @@ sub _reader_faults($$)
     sub
     {   my $data   = shift;
         my $faults  = $data->{Fault}    or return;
-        my $details = $faults->{detail} or return;
-        my $dettype = delete $details->{_ELEMENT_ORDER};
-        $dettype && @$dettype or return $data;
 
         my ($code_ns, $code_err) = unpack_type $faults->{faultcode};
         my ($err, @sub_err) = split /\./, $code_err;
@@ -292,9 +290,14 @@ sub _reader_faults($$)
         $nice{role} = $self->roleAbbreviation($faults->{faultactor})
             if $faults->{faultactor};
 
+        my $details = $faults->{detail};
+        my $dettype = $details ? delete $details->{_ELEMENT_ORDER} : undef;
+
         my $name;
-        if($name = $names{$dettype->[0]})
+        if(!$details) { $name = 'error' }
+        elsif(@$dettype && $names{$dettype->[0]})
         {   # fault named in WSDL
+            $name = $names{$dettype->[0]};
             if(keys %$details==1)
             {   my (undef, $v) = %$details;
                 @nice{keys %$v} = values %$v;

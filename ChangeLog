@@ -1,6 +1,43 @@
 
 === version history of XML::Compile::SOAP
 
+version 2.18: Mon Nov  1 17:10:17 CET 2010
+
+	Changes:
+
+	- extra "action" parameter for faultMessageNotRecognized().
+	  [Patrick Powell]
+
+	- renamed XML::Compile::Operation to XML::Compile::SOAP::Operation
+
+	Improvements:
+
+	- also Faults which do not contain additional details will
+	  get decoded for convenience. Found by [Patrick Powell]
+
+	- promote soapAction from ::SOAP11::Operation into ::Operation
+
+	- document availability of ::Operation::wsaAction() for ::WSA
+
+	- produce error when binding of operation is missing.
+
+	- XML::Compile::Transport becomes an ::Extension
+
+	- added ::Extension::soap11ServerWrapper()
+
+	- explain how to use ANY elements in SOAP messages.
+
+	- ::SOAP::compileClient() can now be used with async transfer
+	  protocols. [Aleksey Mashanov]
+
+	- document existence of ::Transfer::SOAPHTTP_AnyEvent
+
+	- ::SOAP::messageStructure() also shows wsa_action.
+
+	- remove dependency on Test::Pod
+
+	- started with XML::Compile::SOAP::FAQ
+
 version 2.17: Thu Sep 30 17:05:42 CEST 2010
 
 	Fixes:

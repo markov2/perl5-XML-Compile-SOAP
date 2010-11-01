@@ -1,0 +1,55 @@
+=head1 NAME
+
+XML::Compile::FAQ - frequently asked questions
+
+=head1 DESCRIPTION
+
+On this page, a wild collection of questions are answered related to
+the XML::Compile::SOAP modules.  Or better said: let's hope there will
+be more in the future. If you have contributions either in question or
+as answer, then please contribute via the xml mailinglist.
+
+See also M<XML::Compile::FAQ>.
+
+=head2 Modifing the messages
+
+=head3 add header fields
+
+Although WSDLs offer a nice way to define header-fields explicitly, quite
+a number of applications require fields which are not described. Also
+some W3C standards play this game.  See M<XML::Compile::SOAP::WSA>
+for a complex example. A simple example follows here.
+
+  use warnings;
+  use strict;
+
+  package XML::Compile::SOAP::MYEXT;
+  use base 'XML::Compile::SOAP::Extension';
+
+  use Log::Report;
+  use XML::Compile::SOAP::Util      qw/WSDL11/;
+  use XML::Compile::Util            qw/pack_type/;
+
+  my $my_ns = 'http://..../';
+  my $my_schema_fie = 'aaa.xsd';
+
+  sub wsdl11Init($@)
+  {   my ($self, $wsdl, $args) = @_;
+      $wsdl->prefixes(myprefix => $my_ns);
+      $wsdl->importDefinitions($my_schema_file);
+      $self;
+  }
+
+  sub soap11Operation$$)
+  {   my ($self, $op, $args) = @_;
+      # towards the server
+      $op->addHeader(INPUT
+        => "myprefix_$fieldname" => "{$my_ns}$fieldtype");
+
+      # in server answers
+      $op->addHeader(OUTPUT => ...);
+  }
+
+With C<soap11ClientWrapper()> and C<soap11HandlerWrapper()>
+you can influence the client respectively server processing, for
+instance to fill-in default values.

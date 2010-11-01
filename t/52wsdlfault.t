@@ -105,7 +105,7 @@ my $op = eval { $wsdl->operation('doSend') };
 my $err = $@ || '';
 ok(defined $op, 'existing operation');
 is($@, '', 'no errors');
-isa_ok($op, 'XML::Compile::Operation');
+isa_ok($op, 'XML::Compile::SOAP::Operation');
 isa_ok($op, 'XML::Compile::SOAP11::Operation');
 is($op->kind, 'request-response');
 
@@ -133,10 +133,7 @@ sub return_fault(@)
   +{ fault =>
        { faultcode   => pack_type(SOAP11ENV, 'Server')
        , faultstring => 'any-ns.WentWrong'
-       , detail      =>
- #          { pack_type($testNS, 'Broken') => { message => 'Oh noes' }
- #          }
-            { message => 'Oh noes' }
+       , detail      => { message => 'Oh noes' }
        }
    };
 }

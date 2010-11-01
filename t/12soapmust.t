@@ -115,7 +115,7 @@ __FAULT
 
 # remove fault decoding extras
 delete $hash2->{header};
-delete $hash2->{Fault}{_NAME};
+delete $hash2->{delete $hash2->{Fault}{_NAME}};
 
 my $xml2 = $sender->($hash2);
 isa_ok($xml2, 'XML::LibXML::Node', 'produced XML fault');

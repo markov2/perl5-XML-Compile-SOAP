@@ -4,7 +4,7 @@ use warnings;
 use strict;
 
 use lib 'lib', 't';
-use Test::More tests => 16;
+use Test::More tests => 19;
 use TestTools;
 
 # The versions of the following packages are reported to help understanding
@@ -34,17 +34,23 @@ foreach my $package (@show_versions)
 
 warn "libxml2 ".XML::LibXML::LIBXML_DOTTED_VERSION()."\n";
 
-use_ok('XML::Compile::Operation');
-use_ok('XML::Compile::SOAP11::Client');
-use_ok('XML::Compile::SOAP11::Encoding');
-use_ok('XML::Compile::SOAP11::Operation');
-use_ok('XML::Compile::SOAP11');
-use_ok('XML::Compile::SOAP11::Server');
-use_ok('XML::Compile::SOAP::Client');
+use_ok('XML::Compile::SOAP::Util');
 use_ok('XML::Compile::SOAP');
 use_ok('XML::Compile::SOAP::Server');
 use_ok('XML::Compile::SOAP::Trace');
-use_ok('XML::Compile::SOAP::Util');
+use_ok('XML::Compile::SOAP::Operation');
+use_ok('XML::Compile::SOAP::Client');
+use_ok('XML::Compile::SOAP::Extension');
+
+use_ok('XML::Compile::SOAP10');
+use_ok('XML::Compile::SOAP10::Operation');
+
+use_ok('XML::Compile::SOAP11');
+use_ok('XML::Compile::SOAP11::Client');
+use_ok('XML::Compile::SOAP11::Encoding');
+use_ok('XML::Compile::SOAP11::Operation');
+use_ok('XML::Compile::SOAP11::Server');
+
 use_ok('XML::Compile::Transport');
 use_ok('XML::Compile::Transport::SOAPHTTP');
 use_ok('XML::Compile::WSDL11');

@@ -12,6 +12,9 @@ use XML::Compile::SOAP::Util qw/:xop10/;
 use Time::HiRes          qw/time/;
 use MIME::Base64         qw/decode_base64/;
 
+# XML::Compile::SOAP::WSA::Util often not installed
+use constant WSA10 => 'http://www.w3.org/2005/08/addressing';
+
 =chapter NAME
 XML::Compile::SOAP - base-class for SOAP implementations
 
@@ -270,10 +273,15 @@ sub messageStructure($)
 {   my ($thing, $xml) = @_;
     my $env = $xml->isa('XML::LibXML::Document') ? $xml->documentElement :$xml;
 
-    my (@header, @body);
+    my (@header, @body, $wsa_action);
     if(my ($header) = $env->getChildrenByLocalName('Header'))
     {   @header = map { $_->isa('XML::LibXML::Element') ? type_of_node($_) : ()}
            $header->childNodes;
+
+        if(my $wsa = ($header->getChildrenByTagNameNS(WSA10, 'Action'))[0])
+        {   $wsa_action = $wsa->textContent;
+            for($wsa_action) { s/^\s+//; s/\s+$//; s/\s{2,}/ /g }
+        }
     }
 
     if(my ($body) = $env->getChildrenByLocalName('Body'))
@@ -281,8 +289,9 @@ sub messageStructure($)
            $body->childNodes;
     }
 
-    +{ header => \@header
-     , body   => \@body
+    +{ header     => \@header
+     , body       => \@body
+     , wsa_action => $wsa_action
      };
 }
 
@@ -328,10 +337,11 @@ sub _sender(@)
 
     sub
     {   my ($values, $charset) = ref $_[0] eq 'HASH' ? @_ : ( {@_}, undef);
-        my $doc   = XML::LibXML::Document->new('1.0', $charset || 'UTF-8');
         my %copy  = %$values;  # do not destroy the calling hash
-        my %data;
+        my $doc   = delete $copy{_doc}
+                 || XML::LibXML::Document->new('1.0', $charset || 'UTF-8');
 
+        my %data;
         $data{$_}   = delete $copy{$_} for qw/Header Body/;
         $data{Body} ||= {};
 
@@ -875,6 +885,32 @@ A proxy is a complex kind of server, which in implemented
 by <XML::Compile::SOAP::Server>, which is available from the
 XML-Compile-SOAP-Daemon distribution.  The server is based on
 M<Net::Server>, which may have some portability restrictions.
+
+=section Use of wildcards (any/anyAttribute)
+
+Start reading about wildcards in M<XML::Compile>. When you receive a
+message which contains "ANY" elements, an attempt will be made to decode
+it automatically. Only sending messages which contain "ANY" fields is
+harder... you may try hooks or something more along these lines:
+
+   my $doc = XML::LibXML::Document->new('1.0', 'UTF-8');
+   my $type    = pack_type $ns, $local;
+   my $node    = $wsdl->writer($type)->($doc, $value);
+   my $message = { ..., $type => $node };
+
+   my $call = $wsdl->compileClient('myOpToCall');
+   my ($answer, $trace) =  $call->(_doc => $doc, message => $message);
+
+Here, C<$type> is the type of the element which needs to be filled in
+on a spot where the schema defines an "ANY" element. You need to include
+the full typename as key in the HASH (on the right spot) and a fully
+prepared C<$node>, an M<XML::LibXML::Element>, as key.
+
+You see that the C<$doc> which is created to produce the special node
+in the message is also passed to the C<$call>. The call produces the
+message which is sent and needs to use the same document object as the
+node inside it. The chances are that when you forget to pass the C<$doc>
+it still works... but you may get into characterset problems and such.
 
 =cut
 

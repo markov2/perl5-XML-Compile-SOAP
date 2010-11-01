@@ -4,7 +4,7 @@ use 5.008;
 
 WriteMakefile
  ( NAME	 	=> 'XML::Compile::SOAP'
- , VERSION	=> '2.17'
+ , VERSION	=> '2.18'
  , PREREQ_PM    =>
    { XML::Compile         => 1.17
    , XML::Compile::Tester => 0.05
@@ -17,7 +17,6 @@ WriteMakefile
 
    , Test::More      => 0.54
    , Test::Deep      => 0.095
-   , Test::Pod       => '1.00'
    }
  , AUTHOR       => 'Mark Overmeer'
  , ABSTRACT     => 'SOAP and WSDL, client side'
@@ -27,7 +26,7 @@ WriteMakefile
 ### used by oodist during production of distribution
 sub MY::postamble { <<'__POSTAMBLE' }
 
-EXTENDS		= ../XMLCompile:../XMLDaemon:../XMLTester:../XMLCache:../XMLSOAP12
+EXTENDS		= ../XMLCompile:../XMLDaemon:../XMLTester:../XMLCache:../XMLSOAP12:../SOAPAnyEvent:../XMLWSA
 
 # for DIST
 RAWDIR          = ../public_html/xml-compile-soap/raw

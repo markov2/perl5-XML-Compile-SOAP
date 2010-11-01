@@ -197,7 +197,7 @@ my @ops = $wsdl->operations;
 cmp_ok(scalar @ops, '==', 1, 'one op hash listed');
 $op = shift @ops;
 
-isa_ok($op, 'XML::Compile::Operation');
+isa_ok($op, 'XML::Compile::SOAP::Operation');
 isa_ok($op, 'XML::Compile::SOAP11::Operation');
 
 is($op->name, 'GetLastTradePrice', 'got name');

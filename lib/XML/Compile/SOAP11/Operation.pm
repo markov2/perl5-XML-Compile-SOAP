@@ -2,7 +2,7 @@ use warnings;
 use strict;
 
 package XML::Compile::SOAP11::Operation;
-use base 'XML::Compile::Operation';
+use base 'XML::Compile::SOAP::Operation';
 
 use Log::Report 'xml-compile-soap', syntax => 'SHORT';
 use List::Util  'first';
@@ -69,7 +69,7 @@ sub init($)
 
     $self->{style} = $args->{style} || 'document';
 
-    XML::Compile::SOAP::Extension->soap11OperationInit($self);
+    XML::Compile::SOAP::Extension->soap11OperationInit($self, $args);
     $self;
 }
 
@@ -79,9 +79,7 @@ sub _initWSDL11($)
     trace "initialize SOAP11 operations for WSDL11";
 
     $wsdl->importDefinitions(WSDL11SOAP, element_form_default => 'qualified');
-    $wsdl->prefixes
-      ( soap => WSDL11SOAP
-      );
+    $wsdl->prefixes(soap => WSDL11SOAP);
 
     $wsdl->declare(READER =>
       [ "soap:address", "soap:operation", "soap:binding"
@@ -225,14 +223,14 @@ sub style()     {shift->{style}}
 sub version()   { 'SOAP11' }
 sub serverClass { 'XML::Compile::SOAP11::Server' }
 sub clientClass { 'XML::Compile::SOAP11::Client' }
-sub soapAction  {shift->{action}}
 
 #-------------------------------------------
 
 =section Modify
 
-Operations are often modified by SOAP extensions. See M<XML::Compile::WSA>,
-for instance.
+Operations are often modified by SOAP extensions.
+See M<XML::Compile::SOAP::WSA>, for instance. Also demonstrated in
+the FAQ, M<XML::Compile::SOAP::FAQ>.
 
 =method addHeader ('INPUT'|'OUTPUT'|'FAULT'), LABEL, ELEM
 =cut
@@ -259,7 +257,8 @@ sub addHeader($$$)
 =method compileHandler OPTIONS
 Prepare the routines which will decode the request and encode the answer,
 as will be run on the server. The M<XML::Compile::SOAP::Server> will
-connect these.
+connect these. All OPTIONS will get passed to
+M<XML::Compile::SOAP11::Server::compileHandler()>
 
 =requires callback CODE
 
@@ -274,21 +273,20 @@ sub compileHandler(@)
     my $soap = $soap11_server{$self->{schemas}}
       ||= XML::Compile::SOAP11::Server->new(schemas => $self->{schemas});
     my $style = $args{style} ||= $self->style;
-    my $kind  = $args{kind} ||= $self->kind;
 
     my @ro    = (%{$self->{input_def}},  %{$self->{fault_def}});
     my @so    = (%{$self->{output_def}}, %{$self->{fault_def}});
-    my $sel   = $args{selector}
-             || $soap->compileFilter(%{$self->{input_def}});
 
-    $soap->compileHandler
-      ( name      => $self->name
-      , kind      => $kind
-      , selector  => $sel
-      , encode    => $soap->_sender(@so, %args)
-      , decode    => $soap->_receiver(@ro, %args)
-      , callback  => $args{callback}
-      );
+    $args{encode}   ||= $soap->_sender(@so, %args);
+    $args{decode}   ||= $soap->_receiver(@ro, %args);
+    $args{selector} ||= $soap->compileFilter(%{$self->{input_def}});
+    $args{kind}     ||= $self->kind;
+    $args{name}       = $self->name;
+
+    $args{callback} = XML::Compile::SOAP::Extension
+      ->soap11HandlerWrapper($self, $args{callback}, \%args);
+
+    $soap->compileHandler(%args);
 }
 
 =method compileClient OPTIONS
@@ -328,7 +326,7 @@ sub compileClient(@)
       , transport    => $self->compileTransporter(%args)
       );
 
-    XML::Compile::SOAP::Extension->soap11ClientWrapper($self, $call);
+    XML::Compile::SOAP::Extension->soap11ClientWrapper($self, $call, \%args);
 }
 
 #--------------------------

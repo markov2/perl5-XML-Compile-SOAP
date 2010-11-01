@@ -62,13 +62,38 @@ If you pass a M<XML::Compile::Transport::SOAPHTTP> object, the
 compileClient will be called for you.  This is possible in case you do
 not have any configuration options to pass with the compileClient().
 
+=option  async BOOLEAN
+=default async <false>
+If true, a whole different code-reference is returned. Each time it
+is called, the call will be made but the function returns immediately.
+As additional parameter to the call, you must provide a C<_callback>
+parameter which is a code-reference which will handle the result.
+
+=example
+
+Normal call:
+
+   my $call = $wsdl->compileClient('myOp');
+   my ($answer, $trace) = $call->(@params);
+   #do something with $answer
+
+Async call:
+
+   my $call = $wsdl->compileClient('myOp', async => 1);
+   sub cb
+   {  my ($answer, $trace) = @_;
+      #do something with $answer
+   };
+   $call->(@params, _callback => \&cb);
+
 =cut
 
 my $rr = 'request-response';
+
 sub compileClient(@)
 {   my ($self, %args) = @_;
 
-    my $name   = $args{name};
+    my $name = $args{name};
     my $kind = $args{kind} || $rr;
     $kind eq $rr || $kind eq 'one-way'
         or error __x"operation direction `{kind}' not supported for {name}"
@@ -93,38 +118,62 @@ sub compileClient(@)
           , is => (ref $transport || $transport);
     }
 
-    my $core = sub
-    {   my $start = time;
-        my ($data, $charset)
-          = UNIVERSAL::isa($_[0], 'HASH') ? @_
-          : @_%2==0 ? ({@_}, undef)
-          : error __x"client `{name}' called with odd length parameter list"
-              , name => $name;
-
-        my ($req, $mtom) = $encode->($data, $charset);
-        my %trace;
-        my $ans   = $transport->($req, \%trace, $mtom);
-
+    my $output_handler = sub {
+        my ($ans, $trace) = @_;
         wantarray or return
             UNIVERSAL::isa($ans, 'XML::LibXML::Node') ? $decode->($ans) : $ans;
 
-        $trace{start}  = $start;
-        $trace{encode_elapse} = $trace{transport_start} - $start;
-
         if(UNIVERSAL::isa($ans, 'XML::LibXML::Node'))
         {   $ans = try { $decode->($ans) };
-            $trace{decode_errors} = $@ if $@;
+            $trace->{decode_errors} = $@ if $@;
 
             my $end = time;
-            $trace{decode_elapse} = $end - $trace{transport_end};
-            $trace{elapse} = $end - $start;
+            $trace->{decode_elapse} = $end - $trace->{transport_end};
+            $trace->{elapse} = $end - $trace->{start};
         }
         else
-        {   $trace{elapse} = $trace{transport_end} - $start;
+        {   $trace->{elapse} = $trace->{transport_end} - $trace->{start};
         }
-
-        ($ans, XML::Compile::SOAP::Trace->new(\%trace));
+        ($ans, XML::Compile::SOAP::Trace->new($trace));
     };
+
+    $args{async}
+    ? sub  # Asynchronous call, f.i. X::C::Transfer::SOAPHTTP::AnyEvent
+      { my ($data, $charset)
+          = UNIVERSAL::isa($_[0], 'HASH') ? @_
+          : @_%2==0 ? ({@_}, undef)
+          : error __x"operation `{name}' called with odd length parameter list"
+              , name => $name;
+
+        my $callback = delete $data->{_callback}
+            or error __x"opertaion `{name}' is async, so requires _callback";
+
+        my $trace = {start => time};
+        my ($req, $mtom) = $encode->($data, $charset);
+        $trace->{encode_elapse} = time - $trace->{start};
+
+        $transport->($req, $trace, $mtom
+          , sub { $callback->($output_handler->(@_)) }
+          );
+      }
+    : sub # Synchronous call (f.i. XML::Compile::Transfer::SOAPHTTP
+      { my ($data, $charset)
+          = UNIVERSAL::isa($_[0], 'HASH') ? @_
+          : @_%2==0 ? ({@_}, undef)
+          : error __x"operation `{name}' called with odd length parameter list"
+              , name => $name;
+
+        $data->{_callback}
+            and error __x"operation `{name}' called with _callback, but "
+                  . "compiled without async flag", name => $name;
+
+        my $trace = {start => time};
+        my ($req, $mtom) = $encode->($data, $charset);
+        my $ans = $transport->($req, $trace, $mtom);
+
+        $trace->{encode_elapse} = $trace->{transport_start} - $trace->{start};
+        $output_handler->($ans, $trace);
+      };
 }
 
 #------------------------------------------------

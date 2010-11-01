@@ -20,6 +20,8 @@ lib/XML/Compile/Operation.pm
 lib/XML/Compile/SOAP.pm
 lib/XML/Compile/SOAP/Client.pm
 lib/XML/Compile/SOAP/Extension.pm
+lib/XML/Compile/SOAP/FAQ.pod
+lib/XML/Compile/SOAP/Operation.pm
 lib/XML/Compile/SOAP/Server.pm
 lib/XML/Compile/SOAP/Trace.pm
 lib/XML/Compile/SOAP/Util.pm
@@ -56,5 +58,5 @@ t/53wsdlrpclit.t
 t/54wsdlrpclit.t
 t/55wsdlrpcone.t
 t/60xop.t
-t/99pod.t
 t/TestTools.pm
+xt/99pod.t

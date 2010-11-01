@@ -110,7 +110,9 @@ my $xml1a = XML::LibXML->new->parse_string($xml1->toString(1));
 my $struct = $soap->messageStructure($xml1a);
 ok(defined $struct, 'got message structure');
 cmp_deeply($struct, { body   => [ '{http://test-types}GetLastTradePrice' ],
-                    , header => [ '{http://test-types}Transaction' ] });
+                    , header => [ '{http://test-types}Transaction' ]
+                    , wsa_action => undef
+                    });
 
 
 # Receiver

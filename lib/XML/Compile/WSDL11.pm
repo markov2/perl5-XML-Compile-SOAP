@@ -11,7 +11,7 @@ use XML::Compile::Util       qw/pack_type unpack_type/;
 use XML::Compile::SOAP::Util qw/:wsdl11/;
 use XML::Compile::SOAP::Extension;
 
-use XML::Compile::Operation  ();
+use XML::Compile::SOAP::Operation  ();
 use XML::Compile::Transport  ();
 
 use List::Util               qw/first/;
@@ -54,7 +54,7 @@ XML::Compile::WSDL11 - create SOAP messages defined by WSDL 1.1
 
  # Install XML::Compile::SOAP::Daemon
  my $server  = XML::Compile::SOAP::HTTPDaemon->new;
- $server->actionsFromWSDL($wsdl);
+ $server->operationsFromWSDL($wsdl);
  undef $wsdl;    # not needed any further
  
  # For debug info, start your script with:
@@ -92,7 +92,7 @@ sub init($)
     my $wsdl = delete $args->{top};
 
     local $args->{any_element}      = 'ATTEMPT';
-    local $args->{any_attribute}    = 'ATTEMPT';
+    local $args->{any_attribute}    = 'ATTEMPT'; # not implemented
     local $args->{allow_undeclared} = 1;
 
     $self->SUPER::init($args);
@@ -100,11 +100,12 @@ sub init($)
     $self->{index}   = {};
 
     $self->prefixes(wsdl => WSDL11, soap => WSDL11SOAP, http => WSDL11HTTP);
-    $self->importDefinitions(WSDL11);
 
+    # next module should change into an extension as well...
     $_->can('_initWSDL11') && $_->_initWSDL11($self)
-        for XML::Compile::Operation->registered
-          , XML::Compile::Transport->registered;
+        for XML::Compile::SOAP::Operation->registered;
+
+    XML::Compile::SOAP::Extension->wsdl11Init($self, $args);
 
     $self->declare
       ( READER      => 'wsdl:definitions'
@@ -112,9 +113,8 @@ sub init($)
       , hook        => {type => 'wsdl:tOperation', after => 'ELEMENT_ORDER'}
       );
 
+    $self->importDefinitions(WSDL11);
     $self->addWSDL($wsdl);
-
-    XML::Compile::SOAP::Extension->wsdl11Init($self, $args);
     $self;
 }
 
@@ -239,7 +239,7 @@ sub namesFor($)
 
 =method operation [NAME], OPTIONS
 Collect all information for a certain operation.  Returned is an
-M<XML::Compile::Operation> object.
+M<XML::Compile::SOAP::Operation> object.
 
 An operation is defined by a service name, a port, some bindings,
 and an operation name, which can be specified explicitly and often
@@ -319,7 +319,7 @@ sub operation(@)
         or error __x"port address not prefixed; probably need to add a plugin";
 
     my $opns      = $self->findName("$prefix:");
-    my $opclass   = XML::Compile::Operation->plugin($opns);
+    my $opclass   = XML::Compile::SOAP::Operation->plugin($opns);
     unless($opclass)
     {   my $pkg = $opns eq WSDL11SOAP   ? 'SOAP11'
                 : $opns eq WSDL11SOAP12 ? 'SOAP12'
@@ -378,6 +378,8 @@ sub operation(@)
 
     my @bindops   = @{$binding->{wsdl_operation} || []};
     my $bind_op   = first {$_->{name} eq $name} @bindops;
+    $bind_op
+        or error __x"cannot find bind operation for {name}", name => $name;
 
     # This should be detected while parsing the WSDL because the order of
     # input and output is significant (and lost), but WSDL 1.1 simplifies
@@ -421,7 +423,7 @@ sub operation(@)
 }
 
 =method compileClient [NAME], OPTIONS
-Creates temporarily an M<XML::Compile::Operation> object with
+Creates temporarily an M<XML::Compile::SOAP::Operation> object with
 M<operation()>, and then calls C<compileClient()> on that; an usual
 combination.
 
@@ -430,7 +432,7 @@ As OPTIONS are available the combination of all possibilities for
 =item .
 M<operation()> (i.e. C<service> and C<port>), and all of
 =item .
-M<XML::Compile::Operation::compileClient()> (a whole lot,
+M<XML::Compile::SOAP::Operation::compileClient()> (a whole lot,
 for instance C<transport_hook> and C<server>), plus
 =back
 
@@ -615,7 +617,7 @@ The DIRECTION of operation is either C<INPUT> (input for the server,
 hence to be produced by the client), or C<OUTPUT> (from the server,
 received by the client).
 
-The actual work is done by M<XML::Compile::Operation::explain()>. The
+The actual work is done by M<XML::Compile::SOAP::Operation::explain()>. The
 OPTIONS are passed to that method, as there are C<recurse> and
 C<skip_header>.
 

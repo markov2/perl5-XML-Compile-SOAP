@@ -13,8 +13,6 @@ use LWP::UserAgent ();
 use HTTP::Request  ();
 use HTTP::Headers  ();
 
-use XML::LibXML   ();
-
 if($] >= 5.008003)
 {   use Encode;
     Encode->import;
@@ -23,15 +21,13 @@ else
 {   *encode = sub { $_[1] };
 }
 
-my $parser = XML::LibXML->new;
-
 # (Microsofts HTTP Extension Framework)
 my $http_ext_id = SOAP11ENV;
 
 __PACKAGE__->register(SOAP11HTTP);
 
 =chapter NAME
-XML::Compile::Transport::SOAPHTTP - exchange XML via HTTP
+XML::Compile::Transport::SOAPHTTP - exchange XML-SOAP via HTTP
 
 =chapter SYNOPSIS
  use XML::Compile::Transport::SOAPHTTP;
@@ -40,9 +36,9 @@ XML::Compile::Transport::SOAPHTTP - exchange XML via HTTP
  my $send = $http->compileClient(@options2);
 
  my $call = $wsdl->compileClient
-  ( operation => 'some-port-name'
-  , transport => $send
-  );
+   ( operation => 'some-port-name'
+   , transport => $send
+   );
 
  my ($xmlout, $trace) = $call->($xmlin);
 
@@ -85,14 +81,14 @@ sub init($)
     $self->SUPER::init($args);
 
     $self->userAgent
-     ( $args->{user_agent}
-     , keep_alive => (exists $args->{keep_alive} ? $args->{keep_alive} : 1)
-     , timeout    => ($args->{timeout} || 180)
-     );
+      ( $args->{user_agent}
+      , keep_alive => (exists $args->{keep_alive} ? $args->{keep_alive} : 1)
+      , timeout    => ($args->{timeout} || 180)
+      );
     $self;
 }
 
-sub _initWSDL11($)
+sub initWSDL11($)
 {   my ($class, $wsdl) = @_;
     trace "initialize SOAPHTTP transporter for WSDL11";
 }
@@ -417,7 +413,6 @@ sub _prepare_for_no_answer($)
         ($content, {});
       };
 }
-
 
 =ci_method headerAddVersions HEADER
 Adds some lines about module versions, which may help debugging

@@ -2,6 +2,8 @@ use warnings;
 use strict;
 
 package XML::Compile::Transport;
+use base 'XML::Compile::SOAP::Extension';
+
 use Log::Report 'xml-compile-soap', syntax => 'SHORT';
 
 use XML::LibXML ();
@@ -23,8 +25,22 @@ This module defines the exchange of (XML) messages. The module does not
 known how to parse or compose XML, but only worries about the transport
 aspects.
 
-On the moment, there is only one transporter implementation: the
-M<XML::Compile::Transport::SOAPHTTP>.
+On the moment, there are two transporter implementations:
+
+=over 4
+
+=item M<XML::Compile::Transport::SOAPHTTP>
+implements an synchronous message exchange; the library waits for an
+answer before it returns to the user application. The information is
+exchanged using HTTP with SOAP encapsulation (SOAP also defines a
+transport protocol over HTTP without encapsulation)
+
+=item M<XML::Compile::Transport::SOAPHTTP_AnyEvent>
+This requires the installation of an additional module. The user
+provides a callback to handle responses. Many queries can be spawned
+in parallel.
+
+=back
 
 =chapter METHODS
 
@@ -41,13 +57,9 @@ One or more URI which represents the servers.
 
 =cut
 
-sub new(@)
-{   my $class = shift;
-    (bless {}, $class)->init( {@_} );
-}
-
 sub init($)
 {   my ($self, $args) = @_;
+    $self->SUPER::init($args);
     $self->{charset} = $args->{charset} || 'utf-8';
 
     my $addr  = $args->{address} || 'http://localhost';
@@ -113,6 +125,7 @@ Kind of communication, as defined by WSDL.
 =cut
 
 my $parser = XML::LibXML->new;
+
 sub compileClient(@)
 {   my ($self, %args) = @_;
     my $call  = $self->_prepare_call(\%args);
