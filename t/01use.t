@@ -16,6 +16,7 @@ my @show_versions =
     XML::Compile
     XML::Compile::Tester
     XML::Compile::Cache
+    XML::Compile::SOAP::WSA
     XML::LibXML
     Math::BigInt
    /;

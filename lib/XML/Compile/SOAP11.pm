@@ -343,13 +343,13 @@ sub roleAbbreviation($) { $_[1] && $_[1] eq SOAP11NEXT ? 'NEXT' : $_[1] }
 
 =section Header and Body entries
 
-You only call M<compileMessage()> explicit if you do not have a WSDL
-file which contains this information.  So, in the unlucky situation,
-you have to dig in the defined types by hand.
+You only call M<compileMessage()> explicitly if you do not have a WSDL
+file which contains this information. In the unlucky situation, you
+have to dig out the defined types by hand.
 
 But even with a WSDL, there are still a few problems you may encounter.
 For instance, the WSDL will not contain C<mustUnderstand> and C<actor>
-header routing information.  You can add these to the compile call
+header routing information.  You can add these to the compileClient call
 
   my $call = $wsdl->compileClient
     ( 'MyCall'

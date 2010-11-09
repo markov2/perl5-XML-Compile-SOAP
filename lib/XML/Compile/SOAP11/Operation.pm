@@ -324,6 +324,7 @@ sub compileClient(@)
       , encode       => $soap->_sender(@so, %args)
       , decode       => $soap->_receiver(@ro, %args)
       , transport    => $self->compileTransporter(%args)
+      , async        => $args{async}
       );
 
     XML::Compile::SOAP::Extension->soap11ClientWrapper($self, $call, \%args);

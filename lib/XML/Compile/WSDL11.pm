@@ -67,15 +67,18 @@ An WSDL file defines a set of messages to be send and received over
 (SOAP) connections.
 
 As end-user, you do not have to worry about the complex details of the
-messages and the way to exchange of them: it's all simple Perl for you.
-Also faults are handled automatically.  The only complication you have
-to worry about, is to shape a nested HASH structure to the sending
+messages and the way to exchange them: it's all simple Perl for you.
+Also, faults are handled automatically.  The only complication you have
+to worry about is to shape a nested HASH structure to the sending
 message structure.  M<XML::Compile::Schema::template()> may help you.
 
-When the definitions are spread over multiple files, you will need to
-use M<addWSDL()> (wsdl), or M<importDefinitions()> (additional schema's)
-explicitly, because M<XML::Compile::Schema> does not wish dynamic internet
-download magic to happen.
+When the definitions are spread over multiple files you will need to
+use M<addWSDL()> (wsdl) or M<importDefinitions()> (additional schema's)
+explicitly. Usually, interreferences between those files are broken.
+Often they reference over networks (you should never trust). So, on
+purpose you B<must explicitly load> the files you need from local disk!
+(of course, it is simple to find one-liners as work-arounds, but I will
+to tell you how!)
 
 =chapter METHODS
 
@@ -115,6 +118,7 @@ sub init($)
 
     $self->importDefinitions(WSDL11);
     $self->addWSDL($wsdl);
+
     $self;
 }
 
@@ -127,10 +131,10 @@ sub schemas(@) { panic "schemas() removed in v2.00, not needed anymore" }
 =section Extension
 
 =method addWSDL XMLDATA
-Some XMLDATA, accepted by M<XML::Compile::dataToXML()> is provided,
-which should represent the top-level of a (partial) WSDL document.
-The specification can be spread over multiple files, which each have a
-C<definition> root element.
+The XMLDATA must be acceptable to M<XML::Compile::dataToXML()> and 
+should represent the top-level of a (partial) WSDL document.
+The specification can be spread over multiple files, each of
+which must have a C<definition> root element.
 =cut
 
 sub _learn_prefixes($)
@@ -228,8 +232,10 @@ sub addWSDL($)
 }
 
 =method namesFor CLASS
-Returns the list of names available for a certain definition
-CLASS in the WSDL.
+Returns the list of names available for a certain definition CLASS in
+the WSDL. See M<index()> for a way to determine the available CLASS
+information.
+
 =cut
 
 sub namesFor($)
@@ -242,21 +248,17 @@ Collect all information for a certain operation.  Returned is an
 M<XML::Compile::SOAP::Operation> object.
 
 An operation is defined by a service name, a port, some bindings,
-and an operation name, which can be specified explicitly and often
-left-out (in any situation where there are no alternative choices).
+and an operation name, which can be specified explicitly and is often
+left-out: in the many configurations where there are no alternative
+choices. In case there are alternatives, you will be requested to
+pick an option.
 
-When not specified explicitly via OPTIONS, each of the CLASSes are only
-permitted to have exactly one definition.  Otherwise, you must make a
-choice explicitly.  There is a very good reason to be not too flexible
-in this area: developers need to be aware when there are choices, where
-some flexibility is required.
-
-=option  service QNAME
-=default service <only when just one>
+=option  service QNAME|PREFIXED
+=default service <only when just one service in WSDL>
 Required when more than one service is defined.
 
 =option  port NAME
-=default port <only when just one>
+=default port <only when just one port in WSDL>
 Required when more than one port is defined.
 
 =option action STRING
@@ -423,17 +425,16 @@ sub operation(@)
 }
 
 =method compileClient [NAME], OPTIONS
-Creates temporarily an M<XML::Compile::SOAP::Operation> object with
-M<operation()>, and then calls C<compileClient()> on that; an usual
-combination.
+Creates an M<XML::Compile::SOAP::Operation> temporary object using
+M<operation()>, and then calls C<compileClient()> on that.
 
-As OPTIONS are available the combination of all possibilities for
+The OPTIONS available include all of the options for:
 =over 4
 =item .
 M<operation()> (i.e. C<service> and C<port>), and all of
 =item .
-M<XML::Compile::SOAP::Operation::compileClient()> (a whole lot,
-for instance C<transport_hook> and C<server>), plus
+M<XML::Compile::SOAP::Operation::compileClient()> (there are many of
+these, for instance C<transport_hook> and C<server>)
 =back
 
 You B<cannot> pass options for M<XML::Compile::Schema::compile()>, like
@@ -465,6 +466,8 @@ should stick to the M<operation()> and M<compileClient()> methods.
 With a CLASS and QNAME, it returns one WSDL definition HASH or undef.
 Returns the index for the CLASS group of names as HASH.  When no CLASS is
 specified, a HASH of HASHes is returned with the CLASSes on the top-level.
+
+CLASS includes C<service>, C<binding>, C<portType>, and C<message>.
 =cut
 
 sub index(;$$)
@@ -487,6 +490,10 @@ that class.  When the NAME is not found, an error is produced.
 Without QNAME in SCALAR context, there may only be one such name
 defined otherwise an error is produced.  In LIST context, all definitions
 in CLASS are returned.
+
+=example
+ $service  = $obj->findDef(service => 'http://xyz');
+ @services = $obj->findDef('service');
 =cut
 
 sub findDef($;$)
@@ -618,8 +625,7 @@ hence to be produced by the client), or C<OUTPUT> (from the server,
 received by the client).
 
 The actual work is done by M<XML::Compile::SOAP::Operation::explain()>. The
-OPTIONS are passed to that method, as there are C<recurse> and
-C<skip_header>.
+OPTIONS passed to that method include C<recurse> and C<skip_header>.
 
 =example
   print $wsdl->explain('CheckStatus', PERL => 'INPUT');
@@ -642,18 +648,18 @@ When you have a WSDL file, then SOAP is simple.  If there is no such file
 at hand, then it is still possible to use SOAP.  See the DETAILS chapter
 in M<XML::Compile::SOAP>.
 
-The WSDL file contains operations, which can be addressed by name.
-In this WSDL file, you need to find the name of the port to be used.
+The WSDL file contains operations which can be addressed by name.
+In the WSDL file you need to find the name of the port to be used.
 In most cases, the WSDL has only one service, one port, one binding,
 and one portType and those names can therefore be omitted.  If there is
-a choice, then you are required to select one explicitly.
+a choice, then you must explicitly select one.
 
  use XML::Compile::WSDL11 ();
 
  # once in your program
  my $wsdl   = XML::Compile::WSDL11->new('def.wsdl');
 
- # XML::Compile::Schema does not want to follow "include" and
+ # XML::Compile::Schema refuses to follow "include" and
  # "import" commands, so you need to invoke them explicitly.
  # $wsdl->addWSDL('file2.wsdl');            # optional
  # $wsdl->importDefinitions('schema1.xsd'); # optional

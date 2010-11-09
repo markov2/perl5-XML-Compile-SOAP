@@ -812,22 +812,22 @@ sub replyMustUnderstandFault($) { panic "not implemented" }
 
 =section SOAP introduction
 
-Although the specification of SOAP1.1 and WSDL1.1 are thin, the number
-of special constructs are many.  And, of course, all poorly documented.
+Although the specifications of SOAP1.1 and WSDL1.1 are thin, the number
+of special constructs are many. And, of course, all are poorly documented.
 Both SOAP and WSDL have 1.2 versions, which will clear things up a lot,
-but not used that often yet.
+but are not used that often yet.
 
 WSDL defines two kinds of messages: B<document> style SOAP and B<rpc>
-style SOAP.  In I<Document style SOAP>, the messages are described in
+style SOAP.  In document style SOAP, the messages are described in
 great detail in the WSDL: the message components are all defined in
-Schema's; the worst things you can (will) encounter are C<any> schema
+Schema's. The worst things you can (will) encounter are C<any> schema
 elements which require additional manual processing.
 
 C<RPC Literal> behaves very much the same way as document style soap,
 but has one extra wrapper inside the Body of the message.
 
 C<Encoded SOAP-RPC>, however, is a very different ball-game.  It is simple
-to use on strongly typed languages, to exchange data when you create both
+to use with strongly typed languages, to exchange data when you create both
 the client software and the server software.  You can simply autogenerate
 the data encoding.  Clients written by third parties have to find the
 documentation on how to use the encoded  RPC call in some other way... in
@@ -844,22 +844,22 @@ of the procedure, followed by the ordered 'out' and 'in/out' parameters.
 
 XML uses namespaces: URIs which are used as constants, grouping a set
 of type and element definitions.  By using name-spaces, you can avoid
-name clashes, which have frustrate many projects in history, when they
+name clashes, which have frustrated many projects in the past when they
 grew over a certain size... at a certain size, it becomes too hard to
-think of good distriguishable names.  In such case, you must be happy
+think of good distinguishable names.  In such case, you must be happy
 when you can place those names in a context, and use the same naming in
 seperate contexts without confusion.
 
 That being said: XML supports both namespace- and non-namespace elements
 and schema's; and of cause many mixed cases.  It is by far preferred to
-use namespace schemas only.  For a schema xsd file, look for the
+use namespace schemas only. In a schema XSD file, look for the
 C<targetNamespace> attribute of the C<schema> element: if present, it
 uses namespaces.
 
 In XML data, it is seen as a hassle to write the full length of the URI
-each time that a namespace is addressed.  For this reason, prefixes
-are used as abbreviations.  In programs, you can simply assign short
-variable names to long URIs, so we do not need that trick.
+each time that a namespace is addressed.  For this reason, prefixes are
+used as abbreviations for the namespace URI.  In programs, you can simply
+assign short variable names to long URIs, so we do not need that trick.
 
 Within your program, you use
 
@@ -872,25 +872,27 @@ or nicer
   use constant MYNS => 'some uri';
   ... $type => pack_type(MYNS, 'typename') ...
 
-The M<XML::Compile::Util> module provides a helpfull methods and constants,
+The M<XML::Compile::Util> module provides a helpful methods and constants,
 as does the M<XML::Compile::SOAP::Util>.
 
-=section Client, Proxy and Server implementations
+=section Client and Server implementations
 
 To learn how to create clients in SOAP, read the DETAILS section in
 M<XML::Compile::SOAP::Client>.  The client implementation is platform
 independent.
 
-A proxy is a complex kind of server, which in implemented
-by <XML::Compile::SOAP::Server>, which is available from the
-XML-Compile-SOAP-Daemon distribution.  The server is based on
-M<Net::Server>, which may have some portability restrictions.
+Servers can be created with the external M<XML::Compile::SOAP::Daemon>
+distribution. Those servers are based on M<Net::Server>. Can be used
+to create a test-server in a few minutes... or production server.
+
+Don't forget to have a look at the examples in the F<examples/> directory
+included in the distribution.
 
 =section Use of wildcards (any/anyAttribute)
 
 Start reading about wildcards in M<XML::Compile>. When you receive a
 message which contains "ANY" elements, an attempt will be made to decode
-it automatically. Only sending messages which contain "ANY" fields is
+it automatically. Sending messages which contain "ANY" fields is
 harder... you may try hooks or something more along these lines:
 
    my $doc = XML::LibXML::Document->new('1.0', 'UTF-8');
@@ -904,7 +906,7 @@ harder... you may try hooks or something more along these lines:
 Here, C<$type> is the type of the element which needs to be filled in
 on a spot where the schema defines an "ANY" element. You need to include
 the full typename as key in the HASH (on the right spot) and a fully
-prepared C<$node>, an M<XML::LibXML::Element>, as key.
+prepared C<$node>, an M<XML::LibXML::Element>, as the value.
 
 You see that the C<$doc> which is created to produce the special node
 in the message is also passed to the C<$call>. The call produces the

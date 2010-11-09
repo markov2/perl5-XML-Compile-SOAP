@@ -13,10 +13,11 @@ XML::Compile::SOAP::Extension - plugins for standards
  # only as base-class
 
 =chapter DESCRIPTION
-This module defines hooks which are used to implement the SOAP and WSDL
-extensions.  Where SOAP does lack a lot of useful features, many
-working-groups have added components on various spots in the XML
-messages.
+This module defines hooks which are used to implement the SOAP and
+WSDL extensions. Hooks are created on critial spots, where additional
+standards play tricks with the logic of SOAP and WSDL. There are a
+lot of those standards, for instance Web Service Addressing (WSA,
+M<XML::Compile::SOAP::WSA>)
 
 =chapter METHODS
 
@@ -37,6 +38,9 @@ sub init($)
 =section WSDL11
 
 =ci_method wsdl11Init WSDL, ARGS
+
+Do not use this hook for adding WSDLs or Schemas, unless those are
+used to interpret WSDL or SOAP files.
 
 =cut
 

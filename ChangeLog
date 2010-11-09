@@ -1,6 +1,16 @@
 
 === version history of XML::Compile::SOAP
 
+version 2.19: Tue Nov  9 13:23:05 CET 2010
+
+	Fixes:
+
+	- pass async flag of ::Operation::compileClient [Aleksey Mashanov]
+
+	Improvements:
+
+	- documentation fixes by [Patrick Powell]
+
 version 2.18: Mon Nov  1 17:10:17 CET 2010
 
 	Changes:
@@ -15,7 +25,7 @@ version 2.18: Mon Nov  1 17:10:17 CET 2010
 	- also Faults which do not contain additional details will
 	  get decoded for convenience. Found by [Patrick Powell]
 
-	- promote soapAction from ::SOAP11::Operation into ::Operation
+	- promote soapAction() from ::SOAP11::Operation into ::Operation
 
 	- document availability of ::Operation::wsaAction() for ::WSA
 
