@@ -184,8 +184,7 @@ sub _fault_parts($$$)
     my $port_faults  = $portop || [];
     my %faults;
 
-    my @sel;
-    foreach my $fault (map {$_->{soap_fault}} @$bind)
+    foreach my $fault (@$bind)
     {   $fault or next;
         my $name  = $fault->{name};
 
@@ -209,7 +208,7 @@ sub _fault_parts($$$)
           };
     }
 
-    {faults => \%faults };
+   +{ faults => \%faults };
 }
 
 #-------------------------------------------
@@ -356,6 +355,8 @@ M<XML::Compile::Schema::template()>, when C<recurse> is enabled.
 Append the templates of all the part structures.
 =cut
 
+my $sep = '#--------------------------------------------------------------';
+
 sub explain($$$@)
 {   my ($self, $schema, $format, $dir, %args) = @_;
 
@@ -374,9 +375,10 @@ sub explain($$$@)
     my $skip_header = delete $args{skip_header} || 0;
     my $recurse     = delete $args{recurse}     || 0;
 
-    my $def = $dir eq 'INPUT' ? $self->{input_def} : $self->{output_def};
+    my $def    = $dir eq 'INPUT' ? $self->{input_def} : $self->{output_def};
+    my $faults = $self->{fault_def}{faults};
 
-    my (@struct, @attach);
+    my (@struct, @postproc, @attach);
     my @main = $recurse
        ? "# The details of the types and elements are attached below."
        : "# To explore the HASHes for each part, use recurse option.";
@@ -388,7 +390,7 @@ sub explain($$$@)
 
         my $type = $schema->prefixed($value) || $value;
         push @main, ''
-          , "# Part $kind $type"
+          , "# Part '$name' is $kind $type"
           , ($kind eq 'type' && $recurse ? "# See fake element '$name'" : ())
           , "my \$$name = {};";
         push @struct, "    $name => \$$name,";
@@ -402,8 +404,46 @@ sub explain($$$@)
             $elem = $name;
         }
 
-        push @attach, ''
-          , '#--------------------------------------------------------------'
+        push @attach, '', $sep
+          , $schema->template(PERL => $elem, skip_header => 1, %args);
+    }
+
+    foreach my $fault (sort keys %$faults)
+    {   my $part = $faults->{$fault}{part};  # fault msgs have only one part
+        my ($kind, $value) = $part->{type} ? (type => $part->{type})
+          : (element => $part->{element});
+
+        my $type = $schema->prefixed($value) || $value;
+
+        if($dir eq 'OUTPUT')
+        {   push @main, ''
+              , "# ... or fault $fault is $kind"
+              , "my \$$fault = {}; # $type"
+              , ($kind eq 'type' && $recurse ? "# See fake element '$fault'" : ())
+              , "my \$fault ="
+              , "  { code   => pack_type(\$myns, 'Open.NoSuchFile')"
+              , "  , reason => 'because I can'"
+              , "  , detail => \$$fault"
+              , '  };';
+            push @struct, "    $fault => \$fault,";
+        }
+        else
+        {   push @postproc
+              , "    elsif(\$errname eq '$fault')"
+              , "    {   # \$details is a $type"
+              , "    }";
+        }
+
+        $recurse or next;
+
+        my $elem = $value;
+        if($kind eq 'type')
+        {   # generate element with part name, because template requires elem
+            $schema->compileType(READER => $value, element => $fault);
+            $elem = $fault;
+        }
+
+        push @attach, '', $sep
           , $schema->template(PERL => $elem, skip_header => 1, %args);
     }
 
@@ -414,7 +454,22 @@ sub explain($$$@)
          , 'my ($answer, $trace) = $call->(@params);', ''
          , '# @params will become %$data_in in the server handler.'
          , '# $answer is a HASH, an operation OUTPUT or Fault.'
-         , '# $trace is an XML::Compile::SOAP::Trace object.'
+         , '# $trace is an XML::Compile::SOAP::Trace object.';
+
+        unshift @postproc, ''
+          , '# You may get an error back from the server'
+          , 'if(my $f = $answer->{Fault})'
+          , '{   my $errname = $f->{_NAME};'
+          , '    my $error   = $answer->{$errname};'
+          , '    print "$error->{code}\n";', ''
+          , '    my $details = $error->{detail};'
+          , '    if(not $details)'
+          , '    {   # system error, no $details'
+          , '    }';
+    
+        push @postproc
+          , '    exit 1;'
+          , '}';
     }
     elsif($dir eq 'OUTPUT')
     {   s/^/   / for @main, @struct;
@@ -437,7 +492,15 @@ sub explain($$$@)
     my @header;
     push @header
       , "# Operation $def->{body}{procedure}"
-      , "#           $dir $style $def->{body}{use}"
+      , "#           $dir, $style $def->{body}{use}";
+
+    foreach my $fault (sort keys %$faults)
+    {   my $usage = $faults->{$fault};
+        push @header
+      , "#           FAULT $fault, $style $usage->{use}" # $style?
+    }
+
+    push @header
       , "# Produced  by ".__PACKAGE__." version $VERSION"
       , "#           on ".localtime()
       , "#"
@@ -456,11 +519,14 @@ sub explain($$$@)
     {   push @header
           , '# As part of the initiation phase of your server:'
           , 'my $daemon = XML::Compile::SOAP::HTTPDaemon->new;'
-          , '$deamon->operationsFromWSDL($wsdl,'
-          , "   callbacks => {$opname => \\&handle_$opname} );"
+          , '$deamon->operationsFromWSDL'
+          , '  ( $wsdl'
+          , '  , callbacks =>'
+          , "     { $opname => \\&handle_$opname}"
+          , '  );'
     }
 
-    join "\n", @header, @main, @attach, '';
+    join "\n", @header, @main, @postproc, @attach, '';
 }
 
 1;

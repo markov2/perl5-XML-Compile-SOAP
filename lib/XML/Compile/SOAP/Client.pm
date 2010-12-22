@@ -431,8 +431,8 @@ In either protocol case, the following will get you at a compatible
 structure in two steps:
 
   if(my $fault = $got->{Fault})
-  {   my $decoded = $got->{$fault->{_NAME}};
-      print $decoded->{code};
+  {   my $decoded = fault->{_NAME}};
+      print $got->{$decoded}->{code};
       ...
   }
 

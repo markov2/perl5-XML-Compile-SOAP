@@ -123,6 +123,8 @@ isa_ok($client, 'CODE');
 my ($answer, $trace) = $client->(body => 999);
 
 ok(defined $answer, 'got answer');
+#use Data::Dumper;
+#warn Dumper $answer, $trace;
 is($answer->{Fault}->{faultstring}, 'any-ns.WentWrong', 'got fault string');
 is($answer->{WentWrong}{message}, 'Oh noes', 'parsed response XML');
 
@@ -130,7 +132,7 @@ is($answer->{WentWrong}{message}, 'Oh noes', 'parsed response XML');
 
 sub return_fault(@)
 {
-  +{ fault =>
+  +{ WentWrong =>
        { faultcode   => pack_type(SOAP11ENV, 'Server')
        , faultstring => 'any-ns.WentWrong'
        , detail      => { message => 'Oh noes' }

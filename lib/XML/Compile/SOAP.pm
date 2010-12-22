@@ -453,7 +453,7 @@ sub _writer_header($)
         my $element = $part->{element};
         my $code    = $part->{writer}
          || $self->_writer($element, %$args, elements_qualified => 'TOP'
-              , include_namespaces => sub {$_[0] ne $soapenv});
+              , include_namespaces => sub {$_[0] ne $soapenv && $_[2]});
 
         push @rules, $label => $code;
         push @hlabels, $label;
@@ -503,7 +503,7 @@ sub _writer_body_element($$)
 
     $part->{writer}
        ||= $self->_writer($element, %$args, elements_qualified => 'TOP'
-            , include_namespaces => sub {$_[0] ne $soapenv});
+            , include_namespaces => sub {$_[0] ne $soapenv && $_[2]});
 }
 
 sub _writer_body_type($$)
@@ -522,7 +522,7 @@ sub _writer_body_type($$)
         $self->schemas->compileType
           ( WRITER  => $part->{type}, %$args
           , element => $part->{name}
-          , include_namespaces => sub {$_[0] ne $soapenv}
+          , include_namespaces => sub {$_[0] ne $soapenv && $_[2]}
           );
 }
 

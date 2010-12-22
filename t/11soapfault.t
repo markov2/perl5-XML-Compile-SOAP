@@ -35,7 +35,9 @@ my $schema = <<__HELPERS;
   </element>
 
   <element name="fault_two" nillable="true">
-    <complexType><sequence/></complexType>
+    <complexType>
+<sequence/>
+</complexType>
   </element>
 
 </schema>
@@ -101,7 +103,8 @@ my $msg2_soap = <<__MSG2;
 <?xml version="1.0" encoding="UTF-8"?>
 <SOAP-ENV:Envelope xmlns:SOAP-ENV="$soap11_env">
   <SOAP-ENV:Body>
-    <SOAP-ENV:Fault>
+    <SOAP-ENV:Fault xmlns:SOAP-ENC="http://schemas.xmlsoap.org/soap/encoding/"
+         xmlns:xsd="http://www.w3.org/2001/XMLSchema">
       <faultcode>SOAP-ENV:Server.first</faultcode>
       <faultstring>my mistake</faultstring>
       <faultactor>http://schemas.xmlsoap.org/soap/actor/next</faultactor>

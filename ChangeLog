@@ -1,6 +1,26 @@
 
 === version history of XML::Compile::SOAP
 
+version 2.20: Wed Dec 22 16:40:56 CET 2010
+
+	Fixes:
+
+	- load soap11 schemas, even when WSDL defines a SOAP-ENV.
+	  rt.cpan.org#63439
+
+	- fix server faults even further :(
+	  Good test-env by [Patrick Powell] is half the work
+
+	Improvements:
+
+	- call caching, with new methods compileCalls() and call().
+	  Simplifies application, as shown by [Bernd Web]
+
+	- new ::endPoint()
+
+	- add fault structures to ::Operation::explain() on request
+	  by [Patrick Powell]
+
 version 2.19: Tue Nov  9 13:23:05 CET 2010
 
 	Fixes:

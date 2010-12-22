@@ -43,6 +43,10 @@ XML::Compile::WSDL11 - create SOAP messages defined by WSDL 1.1
  # capture useful trace information
  my ($answer, $trace) = $call->(%request);
 
+ # no need to administer the operations by hand: alternative
+ $wsdl->compileCalls;  # at initiation
+ my $answer = $wsdl->call(GetStockPrice => %request);
+
  # investigate the %request structure (server input)
  print $wsdl->explain('GetStockPrice', PERL => 'INPUT');
 
@@ -104,7 +108,7 @@ sub init($)
 
     $self->prefixes(wsdl => WSDL11, soap => WSDL11SOAP, http => WSDL11HTTP);
 
-    # next module should change into an extension as well...
+    # next modules should change into an extension as well...
     $_->can('_initWSDL11') && $_->_initWSDL11($self)
         for XML::Compile::SOAP::Operation->registered;
 
@@ -116,9 +120,10 @@ sub init($)
       , hook        => {type => 'wsdl:tOperation', after => 'ELEMENT_ORDER'}
       );
 
+    $self->{XCW_dcopts} = {};
+
     $self->importDefinitions(WSDL11);
     $self->addWSDL($wsdl);
-
     $self;
 }
 
@@ -127,6 +132,98 @@ sub schemas(@) { panic "schemas() removed in v2.00, not needed anymore" }
 #--------------------------
 
 =section Accessors
+
+=section Compilers
+
+=method compileAll ['READERS'|'WRITERS'|'RW'|'CALLS', [NAMESPACE]]
+[2.20] With explicit C<CALLS> or without any parameter, it will call
+M<compileCalls()>. Otherwise, see M<XML::Compile::Cache::compileAll()>.
+=cut
+
+sub compileAll(;$$)
+{   my ($self, $need, $usens) = @_;
+    $self->SUPER::compileAll($need, $usens)
+        if !$need || $need ne 'CALLS';
+
+    $self->compileCalls
+        if !$need || $need eq 'CALLS';
+    $self;
+} 
+
+=method compileCalls OPTIONS
+[2.20] Compile a handler for each of the available operations. The OPTIONS are
+passed to each call of M<compileClient()>, but will be overruled by more
+specific declared options.
+
+Additionally, OPTIONS can contain C<service>, C<port>, and C<binding>
+to limit the set of involved calls. See M<operations()> for details on
+these options.
+
+You may declare additional specific compilation options with the
+M<declare()> method.
+
+=example
+   my $trans = XML::Compile::Transport::SOAPHTTP
+     ->new(timeout => 500, address => $wsdl->endPoint);
+   $wsdl->compileCalls(transport => $trans);
+
+   # alternatives for simple cases
+   $wsdl->compileAll('CALLS');
+   $wsdl->compileAll;
+   
+   my $answer = $wsdl->call($myop, $request);
+=cut
+
+sub compileCalls(@)
+{   my ($self, %args) = @_;
+
+    my @ops = $self->operations
+      ( service => delete $args{service}
+      , port    => delete $args{port}
+      , binding => delete $args{binding}
+      );
+
+    $self->{XCW_ccode} ||= {};
+    foreach my $op (@ops)
+    {   my $name  = $op->name;
+        my @opts  = %args;
+        my $dopts = $self->{XCW_dcopts} || {};
+        push @opts, ref $dopts eq 'ARRAY' ? @$dopts : %$dopts;
+
+        $self->{XCW_ccode}{$name} ||= $op->compileClient(@opts);
+    }
+
+    $self->{XCW_ccode};
+}
+
+#--------------------------
+
+=method call OPERATION, DATA
+[2.20] Call the OPERATION (by name) with DATA (HASH or LIST of parameters).
+This only works when you have called M<compileCalls()> beforehand,
+always during the initiation phase of the program.
+
+=example
+   # at initiation time (compile once)
+   $wsdl->compileCalls;
+
+   # at runtime (run often)
+   my $answer = $wsdl->call($operation, $request);
+=cut
+
+sub call($@)
+{   my ($self, $name) = (shift, shift);
+
+    my $codes = $self->{XCW_ccode}
+        or error __x"you can only use call() after compileCalls()";
+
+    my $call  = $codes->{$name}
+        or error __x"operation {name} is not known", name => $name;
+    
+    $call->(@_);
+}
+
+#--------------------------
 
 =section Extension
 
@@ -304,8 +401,8 @@ sub operation(@)
 
     # get plugin for operation # {
     my $address   = first { $_ =~ m/address$/ } keys %$port
-        or error __x"no address provided in service port {port}"
-           , port => $port->{name};
+        or error __x"no address provided in service {service} port {port}"
+             , service => $service->{name}, port => $port->{name};
 
     if($address =~ m/^{/)      # }
     {   my ($ns)  = unpack_type $address;
@@ -457,6 +554,40 @@ sub compileClient(@)
 
 #---------------------
 
+=section Administration
+
+=method declare GROUP, COMPONENT|ARRAY, OPTIONS
+Register specific compile OPTIONS for the specific COMPONENT. See also
+M<XML::Compile::Cache::declare()>. The GROUP is either C<READER>,
+C<WRITER>, C<RW> (both reader and writer), or C<OPERATION>.  As COMPONENT,
+you specify the element name (for readers and writers) or operation name
+(for operations). OPTIONS are specified as LIST, ARRAY or HASH.
+
+=example
+   $wsdl->declare(OPERATION => 'GetStockPrice', @extra_opts);
+   $wsdl->compileCalls;
+   my $answer = $wsdl->call(GetStockPrice => %request);
+=cut
+
+sub declare($$@)
+{   my ($self, $need, $names, @opts) = @_;
+    my $opts = @opts==1 ? shift @opts : \@opts;
+    $opts = [ %$opts ] if ref $opts eq 'HASH';
+
+    $need eq 'OPERATION'
+        or $self->SUPER::declare($need, $names, @opts);
+
+    foreach my $name (ref $names eq 'ARRAY' ? @$names : $names)
+    {   # checking existence of opname is expensive here
+        # and may be problematic with multiple bindings.
+        $self->{XCW_dcopts}{$name} = $opts;
+    }
+
+    $self;
+}
+
+#--------------------------
+
 =section Introspection
 
 All of the following methods are usually NOT meant for end-users. End-users
@@ -584,6 +715,46 @@ sub operations(@)
     }
 
     @ops;
+}
+
+=method endPoint OPTIONS
+[2.20] Returns the address of the server, as specified by the WSDL. When
+there are no alternatives for service or port, you not not need to
+specify those paramters.
+
+=option  service QNAME|PREFIXED
+=default service <undef>
+
+=option  port    NAME
+=default port    <undef>
+=cut
+
+sub endPoint(@)
+{   my ($self, %args) = @_;
+    my $service   = $self->findDef(service => delete $args{service});
+
+    my $port;
+    my @ports     = @{$service->{wsdl_port} || []};
+    my @portnames = map {$_->{name}} @ports;
+    if(my $portname = delete $args{port})
+    {   $port = first {$_->{name} eq $portname} @ports;
+        error __x"cannot find port `{portname}', pick from {ports}"
+            , portname => $portname, ports => join("\n    ", '', @portnames)
+           unless $port;
+    }
+    elsif(@ports==1)
+    {   $port = shift @ports;
+    }
+    else
+    {   error __x"specify port explicitly, pick from {portnames}"
+            , portnames => join("\n    ", '', @portnames);
+    }
+
+    foreach my $k (keys %$port)
+    {   return $port->{$k}{location} if $k =~ m/address$/;
+    }
+
+    ();
 }
 
 =method printIndex [FILEHANDLE], OPTIONS

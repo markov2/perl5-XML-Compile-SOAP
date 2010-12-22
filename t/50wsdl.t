@@ -21,10 +21,10 @@ use XML::Compile::SOAP::Util  qw/WSDL11 SOAP11HTTP/;
 use XML::Compile::Tester;
 use XML::Compile::SOAP11;
 
-use Test::More tests => 39;
+use Test::More tests => 41;
 use Test::Deep;
 
-#use Log::Report mode => 'DEBUG';
+use Log::Report   'try';
 
 my $xml_xsd = <<__STOCKQUOTE_XSD;
 <?xml version="1.0"?>
@@ -81,6 +81,7 @@ __STOCKQUOTE_WSDL
 my $servns    = 'http://example.com/stockquote/service';
 my $servlocal = 'StockQuoteService';
 my $servname  = "{$servns}$servlocal";
+my $servaddr  = 'http://example.com/stockquote';
 
 my $xml_service = <<'__STOCKQUOTESERVICE_WSDL';
 <?xml version="1.0"?>
@@ -131,8 +132,8 @@ my @services = $wsdl->findDef('service');
 cmp_ok(scalar(@services), '==', 1, 'find service list context');
 is($services[0]->{name}, $servlocal);
 
-my $s   = eval { $wsdl->findDef(service => 'aap') };
-my $err = $@; $err =~ s! at t/80.*\n$!!;
+my $s   = try { $wsdl->findDef(service => 'aap') };
+my $err = $@->wasFatal; $err =~ s! at t/80.*\n$!!;
 ok(!defined $s, 'find non-existing service');
 
 is($err, <<'__ERR');
@@ -140,33 +141,35 @@ error: no definition for `aap' as service, pick from:
     {http://example.com/stockquote/service}StockQuoteService
 __ERR
 
-$s = eval { $wsdl->findDef(service => $servname) };
-$err = $@;
+$s = try { $wsdl->findDef(service => $servname) };
+$err = $@->wasFatal;
 ok(defined $s, "request existing service $servlocal");
 is($@, '', 'no errors');
 ok(UNIVERSAL::isa($s, 'HASH'));
 
-my $s2 = eval { $wsdl->findDef('service') };
-$err = $@;
+my $s2 = try { $wsdl->findDef('service') };
+$err = $@->wasFatal;
 ok(defined $s, "request only service, not by name");
 is($@, '', 'no errors');
 cmp_ok($s, '==', $s2, 'twice same definition');
-
 #warn Dumper $s;
+
+is($wsdl->endPoint, $servaddr);
+is($wsdl->endPoint(service => $servname), $servaddr);
 
 $wsdl->importDefinitions($xml_xsd);
 $wsdl->addWSDL($xml_wsdl);
 
-my $op = eval { $wsdl->operation('noot') };
-$err = $@; $err =~ s!\sat t/80.*\n$!\n!;
+my $op = try { $wsdl->operation('noot') };
+$err = $@->wasFatal; $err =~ s!\sat t/80.*\n$!\n!;
 ok(!defined $op, "non-existing operation");
 is($err, <<'__ERR');
 error: no operation `noot' for portType {http://example.com/stockquote/definitions}StockQuotePortType, pick from
     GetLastTradePrice
 __ERR
 
-$op = eval { $wsdl->operation('GetLastTradePrice') };
-$err = $@ || '';
+$op = try { $wsdl->operation('GetLastTradePrice') };
+$err = $@->wasFatal || '';
 ok(defined $op, 'existing operation');
 is($@, '', 'no errors');
 isa_ok($op, 'XML::Compile::SOAP11::Operation');
