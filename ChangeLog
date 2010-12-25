@@ -1,6 +1,12 @@
 
 === version history of XML::Compile::SOAP
 
+version 2.21: Sat Dec 25 12:01:30 CET 2010
+
+	Fixes:
+
+	- various tests fail with newer Test::More
+
 version 2.20: Wed Dec 22 16:40:56 CET 2010
 
 	Fixes:

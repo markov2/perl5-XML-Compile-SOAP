@@ -133,7 +133,7 @@ cmp_ok(scalar(@services), '==', 1, 'find service list context');
 is($services[0]->{name}, $servlocal);
 
 my $s   = try { $wsdl->findDef(service => 'aap') };
-my $err = $@->wasFatal; $err =~ s! at t/80.*\n$!!;
+my $err = $@->wasFatal->toString; $err =~ s! at t/80.*\n$!!;
 ok(!defined $s, 'find non-existing service');
 
 is($err, <<'__ERR');
@@ -144,13 +144,13 @@ __ERR
 $s = try { $wsdl->findDef(service => $servname) };
 $err = $@->wasFatal;
 ok(defined $s, "request existing service $servlocal");
-is($@, '', 'no errors');
+is("$@", '', 'no errors');
 ok(UNIVERSAL::isa($s, 'HASH'));
 
 my $s2 = try { $wsdl->findDef('service') };
 $err = $@->wasFatal;
 ok(defined $s, "request only service, not by name");
-is($@, '', 'no errors');
+is("$@", '', 'no errors');
 cmp_ok($s, '==', $s2, 'twice same definition');
 #warn Dumper $s;
 
@@ -161,7 +161,7 @@ $wsdl->importDefinitions($xml_xsd);
 $wsdl->addWSDL($xml_wsdl);
 
 my $op = try { $wsdl->operation('noot') };
-$err = $@->wasFatal; $err =~ s!\sat t/80.*\n$!\n!;
+$err = $@->wasFatal->toString; $err =~ s!\sat t/80.*\n$!\n!;
 ok(!defined $op, "non-existing operation");
 is($err, <<'__ERR');
 error: no operation `noot' for portType {http://example.com/stockquote/definitions}StockQuotePortType, pick from
@@ -171,7 +171,7 @@ __ERR
 $op = try { $wsdl->operation('GetLastTradePrice') };
 $err = $@->wasFatal || '';
 ok(defined $op, 'existing operation');
-is($@, '', 'no errors');
+is("$@", '', 'no errors');
 isa_ok($op, 'XML::Compile::SOAP11::Operation');
 is($op->kind, 'request-response');
 
