@@ -404,8 +404,8 @@ sub explain($$$@)
             $elem = $name;
         }
 
-        push @attach, '', $sep
-          , $schema->template(PERL => $elem, skip_header => 1, %args);
+        push @attach, '', $sep, "\$$name ="
+          , $schema->template(PERL => $elem, skip_header => 1, %args), ';';
     }
 
     foreach my $fault (sort keys %$faults)
@@ -443,8 +443,8 @@ sub explain($$$@)
             $elem = $fault;
         }
 
-        push @attach, '', $sep
-          , $schema->template(PERL => $elem, skip_header => 1, %args);
+        push @attach, '', $sep, "# FAULT", "\$$fault ="
+          , $schema->template(PERL => $elem, skip_header => 1, %args), ';';
     }
 
     if($dir eq 'INPUT')

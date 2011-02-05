@@ -275,6 +275,7 @@ sub _prepare_call($)
 
         $trace->{http_request}  = $request;
 
+warn $request->as_string;
         my $response = $ua->request($request)
             or return undef;
 

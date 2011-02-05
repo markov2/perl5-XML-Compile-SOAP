@@ -1,6 +1,20 @@
 
 === version history of XML::Compile::SOAP
 
+version 2.22: Sat Feb  5 20:41:13 CET 2011
+
+	Fixes:
+
+	- endpoint parameter got broken in 2.20 [Daniel Stini]
+
+	Improvements:
+
+	- make explain() output well-formed, syntax correct.
+	  [Patrick Powell]
+
+	- $op->compileClient now also accepts parameters for the
+	  transporter which is created internally [Robin V.]
+
 version 2.21: Sat Dec 25 12:01:30 CET 2010
 
 	Fixes:
