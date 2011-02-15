@@ -1,6 +1,15 @@
 
 === version history of XML::Compile::SOAP
 
+version 2.23: Tue Feb 15 08:56:35 CET 2011
+
+	Fixes:
+
+	- check whether reading from XOP file succeeds.
+
+	- ahhh... debug warning was left-in.
+	  rt.cpan.org #65720 [Boris Zentner]
+
 version 2.22: Sat Feb  5 20:41:13 CET 2011
 
 	Fixes:

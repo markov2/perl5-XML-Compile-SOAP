@@ -35,7 +35,7 @@ stead of base64 encoding them adding 25% to the size of the data, these
 binaries are added as pure binary attachement to the SOAP message.
 
 In the official specification, the XML message will be created first
-with the base64 representation of the data in it.  Only at transmission,
+with the base64 representation of the data in it. Only at transmission,
 a preprocessor XOP (XML-binary Optimized Packaging) extracts those
 components to be send seperately.  In Perl, we have to be more careful
 about performance.  Therefore, the path via encoding to base64 and then

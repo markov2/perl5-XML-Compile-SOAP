@@ -70,9 +70,8 @@ The MIME-Type of the data.
 
 sub new(@)
 {   my ($class, %args) = @_;
-    ref $args{bytes} eq 'SCALAR'
-        or $args{bytes} = \(delete $args{bytes});
-
+    $args{bytes} = \(delete $args{bytes})
+        if defined $args{bytes} && ref $args{bytes} ne 'SCALAR';
     bless \%args, $class;
 }
 
@@ -114,9 +113,9 @@ sub content(;$)
     unless($self->{bytes})
     {   my $f     = $self->{file};
         my $bytes = try { read_file $f };
+        fault "failed reading XOP file {fn}", fn => $f;
         $self->{bytes} = \$bytes;
     }
-
     $byref ? $self->{bytes} : ${$self->{bytes}};
 }
 
