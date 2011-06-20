@@ -262,7 +262,7 @@ sub _prepare_call($)
         $trace->{hooked}        = 1;
 
         my $response = $hook->($request, $trace)
-           or return undef;
+            or return undef;
 
         $trace->{http_response} = $response;
 

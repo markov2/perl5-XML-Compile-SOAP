@@ -30,6 +30,7 @@ XML::Compile::SOAP11::Operation - defines a SOAP11 interaction
 =chapter SYNOPSIS
  # object created by XML::Compile::WSDL*
  my $op = $wsdl->operation('GetStockPrices');
+ $op->explain($wsdl, PERL => 'INPUT', recurse => 1);
 
 =chapter DESCRIPTION
 Objects of this type define one possible SOAP11 interaction, either
@@ -383,6 +384,35 @@ sub explain($$$@)
        ? "# The details of the types and elements are attached below."
        : "# To explore the HASHes for each part, use recurse option.";
 
+  HEAD_PART:
+    foreach my $header (@{$def->{header} || []})
+    {   foreach my $part ( @{$header->{parts} || []} )
+        {   my $name = $part->{name};
+            my ($kind, $value) = $part->{type} ? (type => $part->{type})
+              : (element => $part->{element});
+    
+            my $type = $schema->prefixed($value) || $value;
+            push @main, ''
+              , "# Header part '$name' is $kind $type"
+              , ($kind eq 'type' && $recurse ? "# See fake element '$name'" : ())
+              , "my \$$name = {};";
+            push @struct, "    $name => \$$name,";
+    
+            $recurse or next HEAD_PART;
+    
+            my $elem = $value;
+            if($kind eq 'type')
+            {   # generate element with part name, because template requires elem
+                $schema->compileType(READER => $value, element => $name);
+                $elem = $name;
+            }
+    
+            push @attach, '', $sep, "\$$name ="
+              , $schema->template(PERL => $elem, skip_header => 1, %args), ';';
+        }
+    }
+
+  BODY_PART:
     foreach my $part ( @{$def->{body}{parts} || []} )
     {   my $name = $part->{name};
         my ($kind, $value) = $part->{type} ? (type => $part->{type})
@@ -390,12 +420,12 @@ sub explain($$$@)
 
         my $type = $schema->prefixed($value) || $value;
         push @main, ''
-          , "# Part '$name' is $kind $type"
+          , "# Body part '$name' is $kind $type"
           , ($kind eq 'type' && $recurse ? "# See fake element '$name'" : ())
           , "my \$$name = {};";
         push @struct, "    $name => \$$name,";
 
-        $recurse or next;
+        $recurse or next BODY_PART;
 
         my $elem = $value;
         if($kind eq 'type')

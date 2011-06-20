@@ -1,6 +1,20 @@
 
 === version history of XML::Compile::SOAP
 
+version 2.24: Mon Jun 20 14:27:15 CEST 2011
+
+	Fixes:
+
+	- cleanly catch more errors in trace object.
+
+	Improvements:
+
+	- allow instantiation of WSDL11 object with ARRAY of wsdl
+	  filenames.
+
+	- template: also show headers in explain()  Hinted by [Patrick
+	  Powell]
+
 version 2.23: Tue Feb 15 08:56:35 CET 2011
 
 	Fixes:

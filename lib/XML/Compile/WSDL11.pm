@@ -48,7 +48,7 @@ XML::Compile::WSDL11 - create SOAP messages defined by WSDL 1.1
  my $answer = $wsdl->call(GetStockPrice => %request);
 
  # investigate the %request structure (server input)
- print $wsdl->explain('GetStockPrice', PERL => 'INPUT');
+ print $wsdl->explain('GetStockPrice', PERL => 'INPUT', recurse => 1);
 
  # investigate the $answer structure (server output)
  print $wsdl->explain('GetStockPrice', PERL => 'OUTPUT');
@@ -123,7 +123,8 @@ sub init($)
     $self->{XCW_dcopts} = {};
 
     $self->importDefinitions(WSDL11);
-    $self->addWSDL($wsdl);
+
+    $self->addWSDL(ref $wsdl eq 'ARRAY' ? @$wsdl : $wsdl);
     $self;
 }
 
@@ -413,6 +414,8 @@ sub operation(@)
         error __x"ports of type {ns} not supported (not loaded?)", ns => $ns;
     }
 
+#use Data::Dumper;
+#warn Dumper $port, $self->prefixes;
     my ($prefix)  = $address =~ m/(\w+)_address$/;
     $prefix
         or error __x"port address not prefixed; probably need to add a plugin";
@@ -800,6 +803,11 @@ OPTIONS passed to that method include C<recurse> and C<skip_header>.
 
 =example
   print $wsdl->explain('CheckStatus', PERL => 'INPUT');
+
+  print $wsdl->explain('CheckStatus', PERL => 'OUTPUT'
+     , recurse => 1                 # explain options
+     , port    => 'Soap12PortName'  # operation options
+     );
 =cut
 
 sub explain($$$@)

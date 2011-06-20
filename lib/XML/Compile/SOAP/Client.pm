@@ -132,7 +132,8 @@ sub compileClient(@)
             $trace->{elapse} = $end - $trace->{start};
         }
         else
-        {   $trace->{elapse} = $trace->{transport_end} - $trace->{start};
+        {   $trace->{elapse} = $trace->{transport_end} - $trace->{start}
+                if defined $trace->{transport_end};
         }
         ($ans, XML::Compile::SOAP::Trace->new($trace));
     };
