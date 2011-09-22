@@ -46,13 +46,13 @@ my $answer = $call->(list => \%request);
 #    $trace->printTimings;
 
 # When you do not know how the answer is structured
-#    print Dumper $answer;
+    print Dumper $answer;
 
 if($answer->{Fault})
 {   print "Oops\n";
 }
 else
-{   print "*** RESULT=$answer->{answer_via_type}{result}\n";
+{   print "*** RESULT=$answer->{using_typeResponse}{result}\n";
 }
 
 exit 0;
@@ -73,9 +73,9 @@ sub fake_server($$)
    my $server_answer = <<_ANSWER;
 <SOAP-ENV:Envelope xmlns:SOAP-ENV="http://schemas.xmlsoap.org/soap/envelope/">
  <SOAP-ENV:Body>
-  <x0:answer_via_type xmlns:x0="urn:example:wsdl">
-    <result>5</result>
-  </x0:answer_via_type>
+   <call:using_typeResponse>
+     <exp:result xmlns:exp="urn:example:wsdl">5</exp:result>
+   </call:using_typeResponse>
  </SOAP-ENV:Body>
 </SOAP-ENV:Envelope>
 _ANSWER

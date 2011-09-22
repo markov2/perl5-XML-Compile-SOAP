@@ -103,7 +103,12 @@ sub create_call($)
 sub get_countries()
 {   
     my $getCountries = create_call 'getCountries';
-    my $answer = $getCountries->();
+
+    my ($answer, $trace) = $getCountries->();
+    $answer
+        or die "No answer received\n";
+use Data::Dumper;
+warn Dumper $trace;
 
     if(my $fault_raw = $answer->{Fault})
     {   my $fault_nice = $answer->{$fault_raw->{_NAME}};

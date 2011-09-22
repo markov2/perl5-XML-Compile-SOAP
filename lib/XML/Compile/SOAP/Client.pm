@@ -125,7 +125,11 @@ sub compileClient(@)
 
         if(UNIVERSAL::isa($ans, 'XML::LibXML::Node'))
         {   $ans = try { $decode->($ans) };
-            $trace->{decode_errors} = $@ if $@;
+            if($@)
+            {   $trace->{decode_errors} = $@;
+                my $fatal = $trace->{error} = $@->wasFatal;
+                $fatal->message($fatal->message->concat("decode error: ", 1));
+            }
 
             my $end = time;
             $trace->{decode_elapse} = $end - $trace->{transport_end};

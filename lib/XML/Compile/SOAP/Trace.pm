@@ -141,15 +141,51 @@ sub printRequest(;$)
     ($fh || *STDOUT)->print("Request:\n$req\n");
 }
 
-=method printResponse [FILEHANDLE]
+=method printResponse [FILEHANDLE], OPTIONS
+=option  pretty_print BOOLEAN
+=default pretty_print C<false>
 =cut
 
 sub printResponse(;$)
+{   my $self = shift;
+    my $resp = $self->response or return;
+
+    my $fh   = @_%2 ? shift : *STDOUT;
+    my %args = @_;
+
+    if($args{pretty_print})
+    {   $fh->print($resp->header->as_string);
+        XML::LibXML
+          ->load_xml(string => ($resp->decoded_content || $resp->content))
+          ->toFH($fh, 1);
+    }
+    else
+    {   my $resp = $resp->as_string;
+        $resp    =~ s/^/  /gm;
+        $fh->print("Response:\n$resp\n");
+    }
+}
+
+=method printErrors [FILEHANDLE]
+The filehandle defaults to STDERR.
+
+If you want to see more output, try adding C<<use Log::Report mode => 3;>>
+=cut
+
+sub printErrors(;$)
 {   my ($self, $fh) = @_;
-    my $response = $self->response or return;
-    my $resp     = $response->as_string;
-    $resp =~ s/^/  /gm;
-    ($fh || *STDOUT)->print("Response:\n$resp\n");
+    $fh ||= *STDERR;
+
+    if(my $e = $self->{error})   # Log::Report::Exception
+    {   print $fh $e->toString;
+    }
+
+    if(my $d = $self->{decode_errors})  # Log::Report::Dispatcher::Try object
+    {   print $fh "Errors while decoding:\n";
+        foreach my $e ($d->exceptions)
+        {   print $fh "  ", $e->toString;
+        }
+    }
 }
 
 1;

@@ -88,7 +88,7 @@ because it is not so easy to detect which handler must be called.
 The CODE reference is used to decode the (parsed) XML input message
 into the pure Perl request.  The reference is a READER, created with
 M<XML::Compile::Schema::compile()>.  If no input decoder is specified,
-then the  callbackhandler will be called with the un-decoded
+then the callback handler will be called with the un-decoded
 M<XML::LibXML::Document> node.
 
 =option  encode CODE
@@ -109,7 +109,7 @@ user.
 =option  selector CODE
 =default selector sub {0}
 One way or the other, you have to figure-out whether a message addresses
-a certain process.  The callback will only be used if the CODE reference
+a certain process. The callback will only be used if the CODE reference
 specified here returns a true value.
 
 The CODE reference will be called with the XML version of the message,
@@ -130,7 +130,10 @@ sub compileHandler(@)
     my $callback = $args{callback};
 
     sub
-    {   my ($name, $xmlin, $info) = @_;
+    {   my ($name, $xmlin, $info, $session) = @_;
+        # info is used to help determine if the xmlin is of the type for
+        # this call. $session is passed in by the server and is in turn
+        # passed to the handlers
         $selector->($xmlin, $info) or return;
         trace __x"procedure {name} selected", name => $name;
 
@@ -147,15 +150,15 @@ sub compileHandler(@)
         {   $data = $xmlin;
         }
 
-        my $answer = $callback->($self, $data);
+        my $answer = $callback->($self, $data, $session);
         unless(defined $answer)
-        {   alert "procedure {name} did not produce an answer", name=> $name;
+        {   alert __x"procedure {name} did not produce an answer", name=> $name;
             return ( RC_INTERNAL_SERVER_ERROR, 'no answer produced'
                       , $self->faultNoAnswerProduced($name));
         }
 
         if(ref $answer ne 'HASH')
-        {   alert "procedure {name} did not return a HASH", name => $name;
+        {   alert __x"procedure {name} did not return a HASH", name => $name;
             return ( RC_INTERNAL_SERVER_ERROR, 'invalid answer produced'
                       , $self->faultNoAnswerProduced($name));
         }

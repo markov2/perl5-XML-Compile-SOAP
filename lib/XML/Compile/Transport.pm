@@ -155,15 +155,16 @@ sub compileClient(@)
             $trace->{error} = $@ if $@;
         }
 
-        my $answer;
+        my $answer = $xmlin;
         if($kind eq 'one-way')
         {   my $response = $trace->{http_response};
             my $code = defined $response ? $response->code : -1;
-            if($code==202) { $answer = $xmlin || {} }
+            if($code==202) { $answer ||= {} }
             else { $trace->{error} = "call failed with code $code" }
         }
-        elsif($xmlin) { $answer = $xmlin }
-        else { $trace->{error} ||= 'no xml as answer' }
+        elsif(!$xmlin)
+        {   $trace->{error} ||= 'no xml as answer';
+        }
 
         my $end = $trace->{transport_end} = time;
 
@@ -200,7 +201,7 @@ Declare an transporter type.
 =section Use of the transport hook
 
 A transport hook can be used to follow the process of creating a
-message to its furthest extend: it will be called with the data
+message to its furthest extendt it will be called with the data
 as used by the actual protocol, but will not actually connect to
 the internet.  Within the transport hook routine, you have to
 simulate the remote server's activities.
@@ -208,14 +209,57 @@ simulate the remote server's activities.
 There are two reasons to use a hook:
 
 =over 4
+
+=item .
+You want to fake a server, to produce a test environment.
+
 =item .
 You may need to modify the request or answer messages outside the
 reach of M<XML::Compile::SOAP>, because something is wrong in either
 your WSDL of M<XML::Compile> message processing.
 
-=item .
-You want to fake a server, to produce a test environment.
 =back
+
+=subsection XML and Header Modifications
+  
+Some servers require special extensions, which do not follow any standard
+(or logic). But even those features can be tricked, although it requires
+quite some programming skills.
+
+The C<transfer_hook> routine is called with a C<$trace> hash, one of
+whose entries is the UserAgent which was set up for the data transfer. You
+can modify the outgoing message XML body and headers, carry out the data
+exchange using the UserAgent, and then examine the returned Reponse for
+content and headers using methods similar to the following:
+
+ sub transport_hook($$)
+ {   my ($request, $trace) = @_;
+     my $content = $request->content;
+
+     # ... modify content if you need
+     my $new_content = encode "utf-8", $anything;
+     $request->content($new_content);
+     $request->header(Content_Length => length $new_content);
+     $request->header(Content_Type => 'text/plain; charset="utf-8");
+
+     # ... update the headers
+     $request->header(Name => "value");
+
+     # sent the request myself
+     my $ua = $trace->{user_agent};
+     my $response = $ua->request($request);
+
+     # ... check the response headers
+     $response->header('Name');
+
+     # ... use the response content
+     my $received = $response->decoded_content || $response->content;
+
+     $response;
+ }
+
+You should be aware that if you change the size or length of the content
+you MUST update the C<Content-Length> header value, as demonstrated above.
 
 =subsection Transport hook for debugging
 

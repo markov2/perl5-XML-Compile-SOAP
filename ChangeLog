@@ -1,6 +1,34 @@
 
 === version history of XML::Compile::SOAP
 
+version 2.25: Thu Sep 22 10:56:11 CEST 2011
+
+	Fixes:
+
+	- do not silently continue when there are decoding errors.
+
+	- two missing __x() in ::SOAP::Server errors. [Patrick Powell]
+
+	- one-way message error-handling and explain [Patrick Powell]
+
+	- examples/rpc-literal/element.pl failed.  Reported by
+	  [Caleb Cushing]
+
+	Improvements:
+
+	- new method XML::Compile::SOAP::Trace::printErrors()
+
+	- explain how to use transport_hook to implement transporter
+	  tricks without fully extending ::Transport [Patrick Powell]
+
+	- handler callbacks pass additional session object around.
+	  [Patrick Powell]
+
+	- extended ::Trace::printResponse() with 'pretty_print' options,
+	  as suggested by [Caleb Cushin]
+
+	- remove example/wssecurity from the distribution: we now have
+	  XML::Compile:WSS.
 version 2.24: Mon Jun 20 14:27:15 CEST 2011
 
 	Fixes:

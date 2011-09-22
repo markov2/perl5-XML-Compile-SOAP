@@ -129,8 +129,12 @@ sub _msg_parts($$$$$)
         my @parts     = $class->_select_parts($wsdl, $msgname, $body->{parts});
 
         my ($ns, $local) = unpack_type $msgname;
+        my $rpc_ns    = $body->{namespace};
+        $wsdl->prefixes(call => $rpc_ns)   # hopefully no-one uses "call"
+            if defined $rpc_ns && !$wsdl->prefixFor($rpc_ns);
+
         my $procedure
-            = $style eq 'rpc' ? pack_type($body->{namespace}, $opname)
+            = $style eq 'rpc' ? pack_type($rpc_ns, $opname)
             : @parts==1 && $parts[0]{type} ? $msgname
             : $local; 
 
@@ -520,9 +524,16 @@ sub explain($$$@)
     }
 
     my @header;
-    push @header
-      , "# Operation $def->{body}{procedure}"
-      , "#           $dir, $style $def->{body}{use}";
+    if(my $how = $def->{body})
+    {   my $use  = $how->{use} || 'literal';
+        push @header
+          , "# Operation $how->{procedure}"
+          , "#           $dir, $style $use";
+    }
+    else
+    {   push @header,
+          , "# Operation $opname has no $dir";
+    }
 
     foreach my $fault (sort keys %$faults)
     {   my $usage = $faults->{$fault};

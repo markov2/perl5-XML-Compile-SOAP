@@ -46,13 +46,13 @@ my $answer = $call->(list => \%request);
 #    $trace->printTimings;
 
 # When you do not know how the answer is structured
-#print Dumper $answer;
+print Dumper $answer;
 
 if($answer->{Fault})
 {   print "Oops\n";
 }
 else
-{   print "*** RESULT=$answer->{answer_via_element}{result}\n";
+{   print "*** RESULT=$answer->{using_elementResponse}{result}\n";
 }
 
 exit 0;
@@ -73,10 +73,10 @@ sub fake_server($$)
    my $server_answer = <<_ANSWER;
 <?xml version="1.0" encoding="UTF-8"?>
 <SOAP-ENV:Envelope xmlns:SOAP-ENV="$soapenv">
-  <SOAP-ENV:Body>
-    <answer_via_element>
+  <SOAP-ENV:Body xmlns:call="urn:sonae:elegibilidade:exp">
+    <call:using_elementResponse>
       <exp:result xmlns:exp="urn:example:wsdl">3</exp:result>
-    </answer_via_element>
+    </call:using_elementResponse>
   </SOAP-ENV:Body>
 </SOAP-ENV:Envelope>
 _ANSWER
