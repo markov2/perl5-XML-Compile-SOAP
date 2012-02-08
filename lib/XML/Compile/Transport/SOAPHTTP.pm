@@ -261,7 +261,7 @@ sub _prepare_call($)
         $trace->{user_agent}    = $ua;
         $trace->{hooked}        = 1;
 
-        my $response = $hook->($request, $trace)
+        my $response = $hook->($request, $trace, $self)
             or return undef;
 
         $trace->{http_response} = $response;
@@ -343,10 +343,10 @@ sub _prepare_xop_call($)
     my $charset = $self->charset;
     my $create  = sub
       { my ($request, $content, $mtom) = @_;
-        $mtom ||= [];
+        $mtom        ||= [];
         @$mtom or return $simple_create->($request, $content);
 
-        my $bound = "MIME-boundary-".int rand 10000;
+        my $bound      = "MIME-boundary-".int rand 10000;
         (my $start_cid = $mtom->[0]->cid) =~ s/^.*\@/xml@/;
 
         $request->header(Content_Type => <<_CT);

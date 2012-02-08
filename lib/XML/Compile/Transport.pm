@@ -110,10 +110,10 @@ contains trace information.
 =default hook <undef>
 See section L<DETAILS/Use of the transport hook>.
 When defined, the hook will be called, in stead of transmitting the
-message.  The hook will get a two parameters passed in: the textual
-representation of the XML message to be transmitted, and the trace
-HASH with all values collected so far.  The trace HASH will have a
-massive amount of additional information added as well.
+message.  The hook will gets three parameters passed in: the textual
+representation of the XML message to be transmitted, the trace HASH with
+all values collected so far, and the transporter object.  The trace HASH
+will have a massive amount of additional information added as well.
 
 You may add information to the trace.  You have to return a textual
 representation of the XML answer, or C<undef> to indicate that the
@@ -122,19 +122,25 @@ message was totally unacceptable.
 =option  kind STRING
 =default kind 'request-response'
 Kind of communication, as defined by WSDL.
+
+=option  xml_format 0|1|2
+=default xml_format 0
+[2.26] See M<XML::LibXML::Document::toString()>.  With '1', you will get
+beautified output.
 =cut
 
 my $parser = XML::LibXML->new;
 
 sub compileClient(@)
 {   my ($self, %args) = @_;
-    my $call  = $self->_prepare_call(\%args);
-    my $kind  = $args{kind} || 'request-response';
+    my $call   = $self->_prepare_call(\%args);
+    my $kind   = $args{kind} || 'request-response';
+    my $format = $args{xml_format} || 0;
 
     sub
     {   my ($xmlout, $trace, $mtom) = @_;
         my $start     = time;
-        my $textout   = ref $xmlout ? $xmlout->toString : $xmlout;
+        my $textout   = ref $xmlout ? $xmlout->toString($format) : $xmlout;
 #warn $xmlout->toString(1);   # show message sent
 
         my $stringify = time;
@@ -200,11 +206,11 @@ Declare an transporter type.
 
 =section Use of the transport hook
 
-A transport hook can be used to follow the process of creating a
-message to its furthest extendt it will be called with the data
-as used by the actual protocol, but will not actually connect to
-the internet.  Within the transport hook routine, you have to
-simulate the remote server's activities.
+A I<transport hook> can be used to follow the process of creating a
+message to its furthest extend: it will be called with the data as
+used by the actual protocol, but will not connect to the internet.
+Within the transport hook routine, you have to simulate the remote
+server's activities.
 
 There are two reasons to use a hook:
 
@@ -226,7 +232,7 @@ Some servers require special extensions, which do not follow any standard
 (or logic). But even those features can be tricked, although it requires
 quite some programming skills.
 
-The C<transfer_hook> routine is called with a C<$trace> hash, one of
+The C<transport_hook> routine is called with a C<$trace> hash, one of
 whose entries is the UserAgent which was set up for the data transfer. You
 can modify the outgoing message XML body and headers, carry out the data
 exchange using the UserAgent, and then examine the returned Reponse for

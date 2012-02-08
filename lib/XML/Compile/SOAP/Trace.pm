@@ -119,45 +119,69 @@ sub printTimings(;$)
     printf "      encoding: %7.2f ms\n", $self->elapse('encode')    *1000;
     printf "     stringify: %7.2f ms\n", $self->elapse('stringify') *1000;
     printf "    connection: %7.2f ms\n", $self->elapse('connect')   *1000;
-    printf "       parsing: %7.2f ms\n", $self->elapse('parse')     *1000;
+
+    my $dp = $self->elapse('parse');
+    if(defined $dp) {printf "       parsing: %7.2f ms\n", $dp *1000 }
+    else            {printf "       parsing:       -    (no xml to parse)\n" }
 
     my $dt = $self->elapse('decode');
-    if(defined $dt) { printf "      decoding: %7.2f ms\n", $dt *1000 }
-    else            { print  "      decoding:       -    (no xml answer)\n" }
+    if(defined $dt) {printf "      decoding: %7.2f ms\n", $dt *1000 }
+    else            {print  "      decoding:       -    (no xml to convert)\n"} 
 
-    printf "    total time: %7.2f ms ",  $self->elapse              *1000;
-    printf "= %.3f seconds\n\n", $self->elapse;
+    my $el = $self->elapse;
+    printf "    total time: %7.2f ms = %.3f seconds\n\n", $el*1000, $el
+        if defined $el;
+
     select $oldfh if $oldfh;
 }
 
-=method printRequest [FILEHANDLE]
+=method printRequest [FILEHANDLE], OPTIONS
+
+=option  pretty_print 0|1|2
+=default pretty_print 0
+Use M<XML::Compile::Transport::compileClient(xml_format)> if you want
+the messages to be sent readible.
 =cut
 
-sub printRequest(;$)
-{   my ($self, $fh) = @_;
+sub printRequest(;$%)
+{   my $self    = shift;
     my $request = $self->request or return;
-    my $req     = $request->as_string;
-    $req =~ s/^/  /gm;
-    ($fh || *STDOUT)->print("Request:\n$req\n");
+
+    my $fh      = @_%2 ? shift : *STDOUT;
+    my %args    = @_;
+
+    if(my $format = $args{pretty_print})
+    {   $fh->print("\n", $request->headers->as_string, "\n");
+        XML::LibXML
+          ->load_xml(string => $request->content)
+          ->toFH($fh, $format);
+    }
+    else
+    {   my $req = $request->as_string;
+        $req =~ s/^/  /gm;
+        $fh->print("Request:\n$req\n");
+    }
 }
 
 =method printResponse [FILEHANDLE], OPTIONS
-=option  pretty_print BOOLEAN
-=default pretty_print C<false>
+=option  pretty_print 0|1|2
+=default pretty_print 0
+Use M<XML::Compile::Transport::compileClient(xml_format)> if you want
+the messages to be sent readible.
 =cut
 
-sub printResponse(;$)
+sub printResponse(;$%)
 {   my $self = shift;
     my $resp = $self->response or return;
 
     my $fh   = @_%2 ? shift : *STDOUT;
     my %args = @_;
 
-    if($args{pretty_print})
-    {   $fh->print($resp->header->as_string);
+    if(my $format = $args{pretty_print})
+    {   $fh->print("\n", $resp->headers->as_string, "\n");
         XML::LibXML
           ->load_xml(string => ($resp->decoded_content || $resp->content))
-          ->toFH($fh, 1);
+          ->toFH($fh, $format);
     }
     else
     {   my $resp = $resp->as_string;
