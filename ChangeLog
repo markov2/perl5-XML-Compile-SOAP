@@ -1,14 +1,18 @@
 
 === version history of XML::Compile::SOAP
 
+version 2.28: Fri Jun 22 20:19:53 CEST 2012
+
+	Fixes:
+
+	- handling single string fault details. [ZP Gu]
+
 version 2.27: Fri Jun 22 08:54:08 CEST 2012
 
 	Fixes:
 
 	- disable attempts of the XML::LibXML parser to dynamically load
 	  DTDs for ::Trace::*(pretty_print)  [Michael Ludwig]
-
-	- handling single string fault details. [ZP Gu]
 
 	Improvements:
 
