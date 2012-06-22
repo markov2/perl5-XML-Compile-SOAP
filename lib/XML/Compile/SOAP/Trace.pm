@@ -8,6 +8,8 @@ use Log::Report 'xml-compile-soap', syntax => 'REPORT';
 
 use IO::Handle;
 
+my @xml_parse_opts = (load_ext_dtd => 0, recover => 1, no_network => 1);
+
 =chapter NAME
 XML::Compile::SOAP::Trace - help displaying trace details.
 
@@ -105,6 +107,13 @@ without any message was exchanged.
 
 sub response() {shift->{http_response}}
 
+=method responseDOM
+Returns the M<XML::LibXML::Document> top node of the response: the parsed
+text of the content of the received HTTP message.
+=cut
+
+sub responseDOM() {shift->{response_dom}}
+
 =section Printing
 
 =method printTimings [FILEHANDLE]
@@ -140,7 +149,7 @@ sub printTimings(;$)
 =option  pretty_print 0|1|2
 =default pretty_print 0
 Use M<XML::Compile::Transport::compileClient(xml_format)> if you want
-the messages to be sent readible.
+the messages to be shown readible.
 =cut
 
 sub printRequest(;$%)
@@ -150,10 +159,11 @@ sub printRequest(;$%)
     my $fh      = @_%2 ? shift : *STDOUT;
     my %args    = @_;
 
-    if(my $format = $args{pretty_print})
+    my $format = $args{pretty_print} || 0;
+    if($format && $request->content_type =~ m/xml/i)
     {   $fh->print("\n", $request->headers->as_string, "\n");
         XML::LibXML
-          ->load_xml(string => $request->content)
+          ->load_xml(string => $request->content, @xml_parse_opts)
           ->toFH($fh, $format);
     }
     else
@@ -167,7 +177,7 @@ sub printRequest(;$%)
 =option  pretty_print 0|1|2
 =default pretty_print 0
 Use M<XML::Compile::Transport::compileClient(xml_format)> if you want
-the messages to be sent readible.
+the messages to be shown readible.
 =cut
 
 sub printResponse(;$%)
@@ -177,11 +187,13 @@ sub printResponse(;$%)
     my $fh   = @_%2 ? shift : *STDOUT;
     my %args = @_;
 
-    if(my $format = $args{pretty_print})
+    my $format = $args{pretty_print} || 0;
+    if($format && $resp->content_type =~ m/xml/i)
     {   $fh->print("\n", $resp->headers->as_string, "\n");
-        XML::LibXML
-          ->load_xml(string => ($resp->decoded_content || $resp->content))
-          ->toFH($fh, $format);
+        XML::LibXML->load_xml
+          ( string => ($resp->decoded_content || $resp->content)
+          , @xml_parse_opts
+          )->toFH($fh, $format);
     }
     else
     {   my $resp = $resp->as_string;

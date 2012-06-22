@@ -125,6 +125,11 @@ levels. Yeh, unclean programming but useful.
   my $call  = $wsdl->compileClient(transport => $trans
     , user_agent => $ua);
 
+When you only need to add simple authentication to the headers, you
+may use the magic of LWP: provide your server address into
+
+  http://user:password@example.com/service
+
 =head2 Collection XSD imports
 
 From a maintenance point of view, it is a very bad idea that some XML

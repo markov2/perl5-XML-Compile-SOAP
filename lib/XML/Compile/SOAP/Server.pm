@@ -152,13 +152,13 @@ sub compileHandler(@)
 
         my $answer = $callback->($self, $data, $session);
         unless(defined $answer)
-        {   alert __x"procedure {name} did not produce an answer", name=> $name;
+        {   notice __x"procedure {name} did not produce an answer", name=> $name;
             return ( RC_INTERNAL_SERVER_ERROR, 'no answer produced'
                       , $self->faultNoAnswerProduced($name));
         }
 
         if(ref $answer ne 'HASH')
-        {   alert __x"procedure {name} did not return a HASH", name => $name;
+        {   notice __x"procedure {name} did not return a HASH", name => $name;
             return ( RC_INTERNAL_SERVER_ERROR, 'invalid answer produced'
                       , $self->faultNoAnswerProduced($name));
         }

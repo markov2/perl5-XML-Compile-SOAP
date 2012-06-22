@@ -4,7 +4,7 @@ use 5.008;
 
 WriteMakefile
  ( NAME	 	=> 'XML::Compile::SOAP'
- , VERSION	=> '2.26'
+ , VERSION	=> '2.27'
  , PREREQ_PM    =>
    { XML::Compile         => 1.22
    , XML::Compile::Tester => 0.05

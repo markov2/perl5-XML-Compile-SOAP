@@ -1,8 +1,9 @@
 
 ==== README to examples/namesservice/
 
-This directory contains four examples based on the same existing
-remote server.
+This directory contains four examples based on the same existing remote
+server.  Sorry, the server of thomas-bayer is not available anymore:
+the examples with the remote service will not work anymore.
 
 The server published a nice WSDL file, and a separate schema, which
 have been beautified a bit but nothing more.

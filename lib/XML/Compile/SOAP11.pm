@@ -343,6 +343,14 @@ sub roleAbbreviation($) { $_[1] && $_[1] eq SOAP11NEXT ? 'NEXT' : $_[1] }
 
 #-------------------------------------
 
+=section Transcoding
+=subsection Encoding
+=subsection Decoding
+=cut
+#loaded from ::SOAP11::Encoding
+
+#-------------------------------------
+
 =chapter DETAILS
 
 =section Header and Body entries

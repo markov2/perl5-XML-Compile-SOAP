@@ -34,7 +34,7 @@ XML::Compile::WSDL11 - create SOAP messages defined by WSDL 1.1
  $wsdl->addWSDL(...more WSDL files...);
  $wsdl->importDefinitions(...more schemas...);
 
- # during initiation, for each used call (slow)
+ # during initiation, for each used call
  my $call = $wsdl->compileClient('GetStockPrice', ...);
 
  # at "run-time", call as often as you want (fast)

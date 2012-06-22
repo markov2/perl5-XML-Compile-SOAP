@@ -77,7 +77,7 @@ XML::Compile::SOAP - base-class for SOAP implementations
 
  # !!! Usage, with or without WSDL file the same
 
- my $result = $call->(@quey)           # SCALAR only the result
+ my $result = $call->(@query)          # SCALAR only the result
  print $result->{h2}->{...};
  print $result->{b2}->{...};
 

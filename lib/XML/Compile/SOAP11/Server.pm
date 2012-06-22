@@ -106,7 +106,7 @@ sub faultMessageNotRecognized($$$)
     my $message;
     if($handlers && @$handlers)
     {   my $sa = $action ? " (soapAction $action)" : '';
-        $message = __x"{version} body element {name}{sa} not recognized, available are {def}"
+        $message = __x"{version} body element {name}{sa} not recognized, available ports are {def}"
          , version => 'SOAP11', name => $name, sa => $sa, def => $handlers;
     }
     else

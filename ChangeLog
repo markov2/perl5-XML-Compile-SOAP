@@ -1,6 +1,23 @@
 
 === version history of XML::Compile::SOAP
 
+version 2.27: Fri Jun 22 08:54:08 CEST 2012
+
+	Fixes:
+
+	- disable attempts of the XML::LibXML parser to dynamically load
+	  DTDs for ::Trace::*(pretty_print)  [Michael Ludwig]
+
+	- handling single string fault details. [ZP Gu]
+
+	Improvements:
+
+	- take hint by [Boris Jakubaschk] about how simpel it is to get
+	  basic authentication included in the HTTP headers.
+
+	- add parsed response DOM-tree to the ::Trace.
+	  On request by [Michael Ludwig]
+
 version 2.26: Wed Feb  8 20:19:15 CET 2012
 
 	Fixes:

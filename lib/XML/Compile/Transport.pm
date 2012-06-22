@@ -158,7 +158,8 @@ sub compileClient(@)
         my $xmlin;
         if($textin)
         {   $xmlin = eval {$parser->parse_string($$textin)};
-            $trace->{error} = $@ if $@;
+            if($@) { $trace->{error} = $@ }
+            else   { $trace->{response_dom} = $xmlin }
         }
 
         my $answer = $xmlin;

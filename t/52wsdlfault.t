@@ -17,7 +17,7 @@ use XML::Compile::SOAP::Util qw/:wsdl11 :soap11/;
 use XML::Compile::Tester;
 use XML::Compile::SOAP11;
 
-use Test::More tests => 12;
+use Test::More tests => 14;
 use Test::Deep;
 #use Log::Report mode => 'DEBUG';
 
@@ -127,6 +127,9 @@ ok(defined $answer, 'got answer');
 #warn Dumper $answer, $trace;
 is($answer->{Fault}->{faultstring}, 'any-ns.WentWrong', 'got fault string');
 is($answer->{WentWrong}{message}, 'Oh noes', 'parsed response XML');
+
+can_ok $trace, 'responseDOM';
+isa_ok $trace->responseDOM, 'XML::LibXML::Document';
 
 # Test server side
 

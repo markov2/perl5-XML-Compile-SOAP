@@ -249,7 +249,8 @@ sub _prepare_call($)
         unless $expect;
 
     my $hook = $args->{hook};
-      $hook
+
+    $hook
     ? sub  # hooked code
       { my $trace = $_[1];
         $create_message->($request, $_[0], $_[2]);
