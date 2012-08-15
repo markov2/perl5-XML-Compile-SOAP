@@ -255,7 +255,6 @@ sub addHeader($$$)
 
 #-------------------------------------------
 
-
 =section Handlers
 
 =method compileHandler OPTIONS
@@ -342,8 +341,8 @@ sub compileClient(@)
 [since 2.13]
 
 Dump an annotated structure showing how the operation works, helping
-developers to understand the schema. FORMAT is always C<PERL>: C<XML>
-is not yet supported.
+developers to understand the schema. FORMAT is C<PERL>.
+(C<XML> is not yet supported)
 
 The DIRECTION is C<INPUT>, it will return the message which the client
 sends to the server (input for the server). The C<OUTPUT> message is
@@ -515,7 +514,7 @@ sub explain($$$@)
 
         push @main, ''
          , '   # This will end-up as $answer at client-side'
-         , "   return    # optional keyword"
+         , '   return    # optional keyword'
          , "   +{", @struct, "    };", "}";
     }
     else
@@ -568,6 +567,34 @@ sub explain($$$@)
     }
 
     join "\n", @header, @main, @postproc, @attach, '';
+}
+
+=method parsedWSDL
+[2.29] For some purposes, it is useful to get access to the parsed WSDL
+structure.
+
+B<Be aware> that the structure returned is consided "internal"
+and strongly influenced by behavior of M<XML::Compile>; backwards
+compatibility will not be maintained at all cost.
+
+You can use M<XML::Compile::Schema->template()> format C<TREE> to get
+more details about the element types mentioned in this structure.
+
+=example
+  use Data::Dumper;
+  $Data::Dumper::Indent    = 1;
+  $Data::Dumper::Quotekeys = 0;
+
+  print Dumper $op->parsedWSDL;
+=cut
+
+sub parsedWSDL()
+{   my $self = shift;
+      +{ input  => $self->{input_def}{body}
+       , output => $self->{output_def}{body}
+       , faults => $self->{fault_def}{faults}
+       , style  => $self->style
+       };
 }
 
 1;

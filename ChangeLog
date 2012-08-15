@@ -1,6 +1,21 @@
 
 === version history of XML::Compile::SOAP
 
+version 2.29: Thu Aug 16 00:17:22 CEST 2012
+
+	Fixes:
+
+	- deprecated XML::LibXML::parse_string() must be replaced
+	  by XML::LibXML::load_xml(string).
+	  rt.cpan.org#78946 [chernomyrdin]
+
+	- treat XOP mime-type multipart/related case-insensitive
+	  [Ciaran Deignan]
+
+	Improvements:
+
+	- add ::SOAP11::Operation::parsedWSDL
+
 version 2.28: Fri Jun 22 20:19:53 CEST 2012
 
 	Fixes:

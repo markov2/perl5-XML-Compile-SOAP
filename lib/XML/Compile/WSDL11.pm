@@ -66,9 +66,10 @@ XML::Compile::WSDL11 - create SOAP messages defined by WSDL 1.1
 
 =chapter DESCRIPTION
 
-This module implements WSDL version 1.1.
-An WSDL file defines a set of messages to be send and received over
-(SOAP) connections.
+This module understands WSDL version 1.1.  An WSDL file defines a set of
+messages to be send and received over (SOAP) connections. This involves
+encoding of the message to be send into XML, sending the message to the
+server, collect the answer, and finally decoding the XML to Perl.
 
 As end-user, you do not have to worry about the complex details of the
 messages and the way to exchange them: it's all simple Perl for you.
@@ -530,9 +531,9 @@ M<operation()>, and then calls C<compileClient()> on that.
 
 The OPTIONS available include all of the options for:
 =over 4
-=item .
+=item *
 M<operation()> (i.e. C<service> and C<port>), and all of
-=item .
+=item *
 M<XML::Compile::SOAP::Operation::compileClient()> (there are many of
 these, for instance C<transport_hook> and C<server>)
 =back
@@ -542,10 +543,11 @@ C<<sloppy_integers => 0>>, hooks or typemaps this way. Use M<new(opts_rw)>
 and friends to declare those.
 
 =example
-  $wsdl->compileClient
+  my $call = $wsdl->compileClient
     ( operation => 'HelloWorld'
     , port      => 'PrefillSoap' # only needed when multiple ports
     );
+  my ($answer, $trace) = $call->($request);
 =cut
 
 sub compileClient(@)

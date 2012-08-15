@@ -276,3 +276,13 @@ __ANSWER
 my $answer = $client->(tickerSymbol => 'IBM');
 ok(defined $answer, 'got answer');
 cmp_deeply($answer, {body => {price => 3.14}});  # body is the name of the part
+
+#
+### check parsedWSDL
+#
+use Data::Dumper;
+$Data::Dumper::Indent    = 1;
+$Data::Dumper::Quotekeys = 0;
+
+print Dumper $op->parsedWSDL;
+

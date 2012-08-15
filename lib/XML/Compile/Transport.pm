@@ -129,8 +129,6 @@ Kind of communication, as defined by WSDL.
 beautified output.
 =cut
 
-my $parser = XML::LibXML->new;
-
 sub compileClient(@)
 {   my ($self, %args) = @_;
     my $call   = $self->_prepare_call(\%args);
@@ -157,7 +155,7 @@ sub compileClient(@)
 
         my $xmlin;
         if($textin)
-        {   $xmlin = eval {$parser->parse_string($$textin)};
+        {   $xmlin = eval {XML::LibXML->load_xml(string => $$textin)};
             if($@) { $trace->{error} = $@ }
             else   { $trace->{response_dom} = $xmlin }
         }
