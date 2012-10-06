@@ -4,11 +4,11 @@ use 5.008;
 
 WriteMakefile
  ( NAME	 	=> 'XML::Compile::SOAP'
- , VERSION	=> '2.29'
+ , VERSION	=> '2.30'
  , PREREQ_PM    =>
-   { XML::Compile         => 1.26
+   { XML::Compile         => 1.28
    , XML::Compile::Tester => 0.90
-   , XML::Compile::Cache  => 0.991
+   , XML::Compile::Cache  => 0.992
    , Log::Report          => 0.90
 
    , LWP             => 5.816

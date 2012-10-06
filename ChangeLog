@@ -1,6 +1,26 @@
 
 === version history of XML::Compile::SOAP
 
+version 2.30: Sat Oct  6 13:35:21 CEST 2012
+
+	Fixes:
+
+	- handle XOP decoding where there is no start-id is mentioned.
+	  Reported by [Ciaran Deignan]
+
+	- explain of operation sometimes missed a name-space declaration.
+	  rt.cpan.org#79786 [David Tindall Mcmath]
+
+	- ::WSDL::new(wsdl) was documented to accept multiple WSDLs,
+	  but only the first was taken.
+	  [Karen Etheridge]
+
+	Improvements:
+
+	- more reuse of the default LWP::UserAgent.
+
+	- explain show prefixed type for faults.
+
 version 2.29: Thu Aug 16 00:17:22 CEST 2012
 
 	Fixes:
@@ -14,7 +34,7 @@ version 2.29: Thu Aug 16 00:17:22 CEST 2012
 
 	Improvements:
 
-	- add ::SOAP11::Operation::parsedWSDL
+	- add ::SOAP11::Operation::parsedWSDL()
 
 version 2.28: Fri Jun 22 20:19:53 CEST 2012
 

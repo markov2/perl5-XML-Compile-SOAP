@@ -82,14 +82,15 @@ Collect the data from a M<HTTP::Message> object.
 sub fromMime($)
 {   my ($class, $http) = @_;
 
-    my $cid = $http->header('Content-ID') || 'NONE';
+    my $cid = $http->header('Content-ID') || '<NONE>';
     if($cid !~ s/^\s*\<(.*?)\>\s*$/$1/ )
     {   warning __x"part has illegal Content-ID: `{cid}'", cid => $cid;
         return ();
     }
 
+    my $content = $http->decoded_content(ref => 1) || $http->content(ref => 1);
     $class->new
-     ( bytes => $http->decoded_content(ref => 1)
+     ( bytes => $content
      , cid   => $cid
      , type  => scalar $http->content_type
      );

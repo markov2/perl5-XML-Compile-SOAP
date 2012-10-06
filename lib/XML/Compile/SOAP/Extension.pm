@@ -38,10 +38,8 @@ sub init($)
 =section WSDL11
 
 =ci_method wsdl11Init WSDL, ARGS
-
 Do not use this hook for adding WSDLs or Schemas, unless those are
 used to interpret WSDL or SOAP files.
-
 =cut
 
 ### Everywhere: when called on an object, it is the stub for the

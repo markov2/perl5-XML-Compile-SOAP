@@ -104,7 +104,8 @@ my $msg2_soap = <<__MSG2;
 <SOAP-ENV:Envelope xmlns:SOAP-ENV="$soap11_env">
   <SOAP-ENV:Body>
     <SOAP-ENV:Fault xmlns:SOAP-ENC="http://schemas.xmlsoap.org/soap/encoding/"
-         xmlns:xsd="http://www.w3.org/2001/XMLSchema">
+         xmlns:xsd="http://www.w3.org/2001/XMLSchema"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
       <faultcode>SOAP-ENV:Server.first</faultcode>
       <faultstring>my mistake</faultstring>
       <faultactor>http://schemas.xmlsoap.org/soap/actor/next</faultactor>

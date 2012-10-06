@@ -49,7 +49,7 @@ XML::Compile::SOAP - base-class for SOAP implementations
    , faults   => [ ... ]
    );
 
- my $http = XML::Compile::Transport::SOAPHTTP
+ my $transport = XML::Compile::Transport::SOAPHTTP
     ->new(address => $server);
  my $http = $transport->compileClient(action => ...);
 

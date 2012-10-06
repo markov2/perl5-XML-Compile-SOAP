@@ -25,7 +25,7 @@ XML::Compile::SOAP::Trace - help displaying trace details.
 
  $trace->printTimings;
  $trace->printTimings(\*STDERR);
- $trace->printRequest;
+ $trace->printRequest(pretty_print => 1);
  $trace->printResponse;
 
 =chapter DESCRIPTION

@@ -125,7 +125,7 @@ sub init($)
 
     $self->importDefinitions(WSDL11);
 
-    $self->addWSDL(ref $wsdl eq 'ARRAY' ? @$wsdl : $wsdl);
+    $self->addWSDL($_) for ref $wsdl eq 'ARRAY' ? @$wsdl : $wsdl;
     $self;
 }
 

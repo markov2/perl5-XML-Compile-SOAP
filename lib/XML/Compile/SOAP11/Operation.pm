@@ -446,7 +446,8 @@ sub explain($$$@)
         my ($kind, $value) = $part->{type} ? (type => $part->{type})
           : (element => $part->{element});
 
-        my $type = $schema->prefixed($value) || $value;
+        my $type = $schema->prefixFor($value)
+          ? $schema->prefixed($value) : $value;
 
         if($dir eq 'OUTPUT')
         {   push @main, ''
@@ -461,9 +462,10 @@ sub explain($$$@)
             push @struct, "    $fault => \$fault,";
         }
         else
-        {   push @postproc
+        {   my $nice = $schema->prefixed($type) || $type;
+            push @postproc
               , "    elsif(\$errname eq '$fault')"
-              , "    {   # \$details is a $type"
+              , "    {   # \$details is a $nice"
               , "    }";
         }
 
@@ -577,7 +579,7 @@ B<Be aware> that the structure returned is consided "internal"
 and strongly influenced by behavior of M<XML::Compile>; backwards
 compatibility will not be maintained at all cost.
 
-You can use M<XML::Compile::Schema->template()> format C<TREE> to get
+You can use M<XML::Compile::Schema::template()> format C<TREE> to get
 more details about the element types mentioned in this structure.
 
 =example
