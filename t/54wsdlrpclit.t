@@ -126,9 +126,9 @@ isa_ok($er, 'CODE');
 
 $server_expects = <<_EXPECTS;
 <?xml version="1.0" encoding="UTF-8"?>
-<SOAP-ENV:Envelope xmlns:SOAP-ENV="$soapenv" xmlns:hello="$NS">
+<SOAP-ENV:Envelope xmlns:SOAP-ENV="$soapenv">
   <SOAP-ENV:Body>
-   <hello:Greet>
+   <hello:Greet xmlns:hello="$NS">
      <hello:who xmlns:hello="$NS">World</hello:who>
      <hello:greeting xmlns:hello="$NS">Hello</hello:greeting>
    </hello:Greet>

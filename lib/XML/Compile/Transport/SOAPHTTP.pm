@@ -266,6 +266,10 @@ sub _prepare_call($)
         my $response = $hook->($request, $trace, $self)
             or return undef;
 
+	UNIVERSAL::isa($response, 'HTTP::Response')
+            or error __x"transport_hook must produce a HTTP::Response, got {resp}"
+                 , resp => $response;
+
         $trace->{http_response} = $response;
         if($response->is_error)
         {   error $response->message

@@ -60,11 +60,36 @@ was initiated.
 
 sub date() {scalar localtime shift->start}
 
-=method error
-Often contains an error message, when something went wrong.
+=method error [ERROR]
+Often contains an error message, when something went wrong.  The message
+is returned as M<Log::Report::Exception>.  Only the first error is returned,
+use M<errors()> to get all.
+
+[2.31] When an ERROR is provided, it is added to the internal list of errors.
+The ERROR parameter may be a M<Log::Report::Exception>, a
+M<Log::Report::Message> or a simple string.
 =cut
 
-sub error() {shift->{error}}
+sub error(;$)
+{   my $self   = shift;
+    my $errors = $self->{errors} ||= {};
+
+    foreach my $err (@_)
+    {   $err = __$err unless ref $err;
+        $err = Log::Report::Exception->new(reason => 'ERROR', message => $err)
+            unless $err->isa('Log::Report::Exception');
+        push @$errors, $err;
+    }
+
+    wantarray ? @$errors : $errors->[0];
+}
+
+=method errors
+[2.31] Return all errors, which are M<Log::Report::Exception> objects.
+See also M<error()>.
+=cut
+
+sub errors() { @{shift->{errors} || []} }
 
 =method elapse [KIND]
 Returns the time in seconds (with hires, sub-second detail) of a part of
@@ -212,9 +237,7 @@ sub printErrors(;$)
 {   my ($self, $fh) = @_;
     $fh ||= *STDERR;
 
-    if(my $e = $self->{error})   # Log::Report::Exception
-    {   print $fh $e->toString;
-    }
+    print $fh $_->toString for $self->errors;
 
     if(my $d = $self->{decode_errors})  # Log::Report::Dispatcher::Try object
     {   print $fh "Errors while decoding:\n";

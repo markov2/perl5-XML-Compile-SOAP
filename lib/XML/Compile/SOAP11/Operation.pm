@@ -236,7 +236,12 @@ Operations are often modified by SOAP extensions.
 See M<XML::Compile::SOAP::WSA>, for instance. Also demonstrated in
 the FAQ, M<XML::Compile::SOAP::FAQ>.
 
-=method addHeader ('INPUT'|'OUTPUT'|'FAULT'), LABEL, ELEM
+=method addHeader ('INPUT'|'OUTPUT'|'FAULT'), LABEL, ELEMENT
+Add a header definitions.  Many protocols on top of SOAP, like WSS, add
+headers to the operations which are not specified in the WSDL.
+
+[2.31] When you add a header with same LABEL again, it will get silently
+ignored unless the ELEMENT type differs.
 =cut
 
 sub addHeader($$$)
@@ -246,10 +251,21 @@ sub addHeader($$$)
       : $dir eq 'OUTPUT' ? 'output_def'
       : $dir eq 'FAULT'  ? 'fault_def'
       : panic "addHeader $dir";
+    my $headers = $self->{$defs}{header} ||= [];
+
+    if(my $already = first {$_->{part} eq $label} @$headers)
+    {   # the header is already defined, ignore second declaration
+        my $other_type = $already->{parts}[0]{element};
+        $other_type eq $elem
+            or error __x"header {label} already defined with type {type}"
+                 , label => $label, type => $other_type;
+        return $already;
+    }
 
     my %part = (part => $label, use => 'literal'
       , parts => [{name => $label, element => $elem}]);
-    push @{$self->{$defs}{header}}, \%part;
+
+    push @$headers, \%part;
     \%part;
 }
 

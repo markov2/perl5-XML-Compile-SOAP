@@ -158,9 +158,9 @@ isa_ok($er, 'CODE');
 
 $server_expects = <<_EXPECTS;
 <?xml version="1.0" encoding="UTF-8"?>
-<SOAP-ENV:Envelope xmlns:SOAP-ENV="$soapenv" xmlns:sonae="$NSEXP">
+<SOAP-ENV:Envelope xmlns:SOAP-ENV="$soapenv">
   <SOAP-ENV:Body>
-    <sonae:usingElement>
+    <sonae:usingElement xmlns:sonae="$NSEXP">
       <exp:list xmlns:exp="$NS">
         <item><id>1</id><name>aap</name></item>
         <item><id>2</id><name>noot</name></item>
@@ -209,9 +209,9 @@ isa_ok($tr, 'CODE');
 
 $server_expects = <<_REQUEST;
 <?xml version="1.0" encoding="UTF-8"?>
-<SOAP-ENV:Envelope xmlns:SOAP-ENV="$soapenv" xmlns:sonae="$NSEXP">
+<SOAP-ENV:Envelope xmlns:SOAP-ENV="$soapenv">
   <SOAP-ENV:Body>
-    <sonae:usingType>
+    <sonae:usingType xmlns:sonae="$NSEXP">
       <list>
         <item><id>1</id><name>aap</name></item>
         <item><id>2</id><name>noot</name></item>

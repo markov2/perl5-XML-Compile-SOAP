@@ -187,8 +187,8 @@ sub compileTransporter(@)
     return $send if $send;
 
     my $transp    = XML::Compile::Transport->plugin($proto)
-        or error __x"transporter type {proto} not supported (not loaded?)"
-             , proto => $proto;
+        or error __x"transporter type {proto} not supported (add 'use {pkg}'?)"
+             , proto => $proto, pkg => 'XML::Compile::Transport::SOAPHTTP';
 
     my $transport = $self->{transp_cache}{$proto}{$id}
                   = $transp->new(address => \@endpoints, %args);

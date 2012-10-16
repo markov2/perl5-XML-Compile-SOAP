@@ -93,9 +93,9 @@ sub fake_server($$)
 
    compare_xml($content, <<__EXPECTED, 'fake server received');
 <?xml version="1.0" encoding="UTF-8"?>
-<SOAP-ENV:Envelope xmlns:SOAP-ENV="$soapenv" xmlns:tns="$myNS">
+<SOAP-ENV:Envelope xmlns:SOAP-ENV="$soapenv">
   <SOAP-ENV:Body>
-    <tns:doSend>
+    <tns:doSend xmlns:tns="$myNS">
       <tns:Send xmlns:tns="$myNS">42</tns:Send>
     </tns:doSend>
   </SOAP-ENV:Body>

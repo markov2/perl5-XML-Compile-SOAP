@@ -1,6 +1,26 @@
 
 === version history of XML::Compile::SOAP
 
+version 2.31: Tue Oct 16 16:28:52 CEST 2012
+
+	Changes:
+
+	- writer: first create the Body, then the Header, so fields in the
+	  header (for instance Security) do know what the body will be.
+
+	- writer: rpc operation will have xmlns, not Envelope
+
+	Fixes:
+
+	- transport: capture XML and protocol errors in exceptions.
+
+	- ::Operation::addHeader() will silently ignore adding the same
+	  header again.
+
+	Improvements:
+
+	- trace object may capture multiple errors.  New method: errors()
+
 version 2.30: Sat Oct  6 13:35:21 CEST 2012
 
 	Fixes:
