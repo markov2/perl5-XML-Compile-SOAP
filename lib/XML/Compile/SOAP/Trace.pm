@@ -72,7 +72,7 @@ M<Log::Report::Message> or a simple string.
 
 sub error(;$)
 {   my $self   = shift;
-    my $errors = $self->{errors} ||= {};
+    my $errors = $self->{errors} ||= [];
 
     foreach my $err (@_)
     {   $err = __$err unless ref $err;

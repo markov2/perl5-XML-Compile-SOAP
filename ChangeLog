@@ -1,6 +1,12 @@
 
 === version history of XML::Compile::SOAP
 
+vserion 2.32: Mon Oct 22 21:38:04 CEST 2012
+
+	Fixes:
+
+	- ::Trace errors is ARRAY, not HASH.
+
 version 2.31: Tue Oct 16 16:28:52 CEST 2012
 
 	Changes:

@@ -367,6 +367,10 @@ sub _sender(@)
 
         @mtom = ();   # filled via hook
 
+        # first create the body, then the header.  This is in the reverse
+        # order of the schema, so needs a trick.  We ignore the existence
+        # of a header in the first pass, and use the created node of the
+        # body in the second.
         my $headless = $envelope->($doc, {Body => $data{Body}});
         $data{Body}  = ($headless->childNodes)[0];
         my $root     = $envelope->($doc, \%data);
