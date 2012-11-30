@@ -236,16 +236,24 @@ Operations are often modified by SOAP extensions.
 See M<XML::Compile::SOAP::WSA>, for instance. Also demonstrated in
 the FAQ, M<XML::Compile::SOAP::FAQ>.
 
-=method addHeader ('INPUT'|'OUTPUT'|'FAULT'), LABEL, ELEMENT
+=method addHeader ('INPUT'|'OUTPUT'|'FAULT'), LABEL, ELEMENT, OPTIONS
 Add a header definitions.  Many protocols on top of SOAP, like WSS, add
 headers to the operations which are not specified in the WSDL.
 
 [2.31] When you add a header with same LABEL again, it will get silently
 ignored unless the ELEMENT type differs.
+
+=option  mustUnderstand BOOLEAN
+=default mustUnderstand C<undef>
+[2.33] adds the mustUnderstand attribute.
+
+=option  destination ROLE
+=default destination C<undef>
+[2.33] adds the destination attribute,
 =cut
 
-sub addHeader($$$)
-{   my ($self, $dir, $label, $elem) = @_;
+sub addHeader($$$%)
+{   my ($self, $dir, $label, $elem, %opts) = @_;
     my $defs
       = $dir eq 'INPUT'  ? 'input_def'
       : $dir eq 'OUTPUT' ? 'output_def'
@@ -262,8 +270,13 @@ sub addHeader($$$)
         return $already;
     }
 
-    my %part = (part => $label, use => 'literal'
-      , parts => [{name => $label, element => $elem}]);
+    my %part =
+      ( part  => $label, use => 'literal'
+      , parts => [
+         { name => $label, element => $elem
+         , mustUnderstand => $opts{mustUnderstand}
+         , destination    => $opts{destination}
+         } ]);
 
     push @$headers, \%part;
     \%part;
