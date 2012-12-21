@@ -507,6 +507,10 @@ Hence, a typical client routine could contain
       print Dumper $answer;
   }
 
+Or
+
+  my ($answer, $trace) = $call->(message => $message);
+  $answer or die $trace->error;
 =cut
 
 1;
