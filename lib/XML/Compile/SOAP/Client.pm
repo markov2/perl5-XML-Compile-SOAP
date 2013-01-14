@@ -127,8 +127,9 @@ sub compileClient(@)
         {   $ans = try { $decode->($ans) };
             if($@)
             {   $trace->{decode_errors} = $@;
-                my $fatal = $trace->{errors} = [$@->wasFatal];
-                $fatal->message($fatal->message->concat("decode error: ", 1));
+                my $fatal = $@->wasFatal;
+                $trace->{errors} = [$fatal];
+                $fatal->message($fatal->message->concat('decode error: ', 1));
             }
 
             my $end = time;
