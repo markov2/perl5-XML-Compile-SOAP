@@ -5,8 +5,9 @@ package XML::Compile::SOAP11;
 use base 'XML::Compile::SOAP';
 
 use Log::Report 'xml-compile-soap', syntax => 'SHORT';
-use XML::Compile::Util       qw/pack_type unpack_type SCHEMA2001/;
 use XML::Compile::SOAP::Util qw/:soap11/;
+use XML::Compile::Util       qw/pack_type unpack_type type_of_node
+   SCHEMA2001 SCHEMA2001i/;
 
 # publish interface to WSDL
 use XML::Compile::SOAP11::Operation ();
@@ -63,18 +64,23 @@ sub _initSOAP11($)
     return $self
         if $schemas->{did_init_SOAP11}++;   # ugly
 
-    $schemas->importDefinitions
-      ( [SOAP11ENC, SOAP11ENV]
-      , element_form_default   => 'qualified'
-      , attribute_form_default => 'qualified'
-      );
-    $schemas->importDefinitions('soap-envelope-patch.xsd');
-
     $schemas->prefixes
       ( 'SOAP-ENV' => SOAP11ENV  # preferred names by spec
       , 'SOAP-ENC' => SOAP11ENC
       , xsd        => SCHEMA2001
+      , xsi        => SCHEMA2001i
       );
+
+    $schemas->importDefinitions
+      ( SOAP11ENV
+      , element_form_default   => 'qualified'
+      , attribute_form_default => 'qualified'
+      );
+    $schemas->importDefinitions
+      ( SOAP11ENC
+      , element_form_default   => 'qualified'
+      );
+    $schemas->importDefinitions('soap-envelope-patch.xsd');
 
     $self;
 }
@@ -237,6 +243,8 @@ sub _writer_faults($)
     while(my ($name, $fault) = each %$faults)
     {   my $part    = $fault->{part};
         my ($label, $type) = ($part->{name}, $part->{element});
+
+        # spec says: details ALWAYS namespace qualified!
         my $details = $self->_writer($type, elements_qualified => 'TOP'
          , include_namespaces => sub {$_[0] ne SOAP11ENV && $_[2]});
 
@@ -262,9 +270,28 @@ sub _writer_faults($)
 
 sub _reader_fault_reader()
 {   my $self = shift;
+
+    # Nasty, nasty: the spec requires name-space qualified on details,
+    # even when the schema does not specify that.
+    my $schemas = $self->schemas;
+    my $x = sub {
+       my ($xml, $reader, $path, $tag, $r) = @_;
+       my @childs = grep $_->isa('XML::LibXML::Element'), $xml->childNodes;
+       @childs or return ();
+
+       my %h;
+       foreach my $node (@childs)
+       {   my $type  = type_of_node($node);
+           push @{$h{_ELEMENT_ORDER}}, $type;
+           $h{$type} = $schemas->reader($type, elements_qualified=>'TOP')
+              ->($node);
+       }
+       ($tag => \%h);
+    };
+
     [ Fault => pack_type(SOAP11ENV, 'Fault')
     , $self->schemas->reader('SOAP-ENV:Fault'
-        , hooks => { type => 'SOAP-ENV:detail', after => 'ELEMENT_ORDER'})
+        , hooks => { type => 'SOAP-ENV:detail', replace => $x } )
     ];
 }
 
@@ -345,10 +372,24 @@ sub roleAbbreviation($) { $_[1] && $_[1] eq SOAP11NEXT ? 'NEXT' : $_[1] }
 #-------------------------------------
 
 =section Transcoding
+=cut
+
+#loaded from ::SOAP11::Encoding
+sub startEncoding(%)
+{   my ($self, %args) = @_;
+    require XML::Compile::SOAP11::Encoding;
+    shift->_init_encoding(\%args);
+}
+
+sub startDecoding(@)
+{   my ($self, %args) = @_;
+    require XML::Compile::SOAP11::Encoding;
+    $self->_init_decoding(\%args);
+}
+
 =subsection Encoding
 =subsection Decoding
 =cut
-#loaded from ::SOAP11::Encoding
 
 #-------------------------------------
 

@@ -1,4 +1,4 @@
-#!/usr/bin/perl
+#!/usr/bin/env perl
 # Test interpretation of WSDL.
 # The definitions are copied frm the the WSDL 1.1 technical report,
 # available from http://www.w3.org/TR/wsdl/

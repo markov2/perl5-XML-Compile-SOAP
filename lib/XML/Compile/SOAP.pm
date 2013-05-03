@@ -207,6 +207,11 @@ w.r.t. the header and fault ENTRIES) and an element type name or CODE
 reference.  The LABEL will appear in the Perl HASH only, to be able to
 refer to a body element in a simple way.
 
+=option  procedure TYPE
+=default procedure C<undef>
+Required in rpc style, when there is no C<body> which contains the
+procedure name (when the RPC info does not come from a WSDL)
+
 =option  faults ENTRIES|HASH
 =default faults []
 The SOAP1.1 and SOAP1.2 protocols define fault entries in the
@@ -226,7 +231,7 @@ C<mustUnderstand> attribute set to C<1> (soap1.1) or C<true> (soap1.2).
 Writers only.  Indicate who the target of the header entry is.
 By default, the end-point is the destination of each header element.
 
-The ARRAY contains a LIST of key-value pairs, specifing an entry label
+The ARRAY contains a LIST of key-value pairs, specifying an entry label
 followed by an I<actor> (soap1.1) or I<role> (soap1.2) URI.  You may use
 the predefined actors/roles, like 'NEXT'.  See M<roleURI()> and
 M<roleAbbreviation()>.
@@ -320,7 +325,7 @@ sub _sender(@)
     {   push @$hooks, $self->_writer_hook('SOAP-ENV:Body', @$body, @$faults);
     }
     elsif($style eq 'rpc')
-    {   my $procedure = $args{body}{procedure}
+    {   my $procedure = $args{procedure} || $args{body}{procedure}
             or error __x"sending operation requires procedure name with RPC";
         push @$hooks, $self->_writer_rpc_hook('SOAP-ENV:Body'
           , $procedure, $body, $faults);
@@ -437,12 +442,14 @@ sub _writer_rpc_hook($$$$$)
         my (@fchilds, @pchilds);
         while(@f)
         {   my ($k, $c) = (shift @f, shift @f);
-            if(my $v = delete $data{$k}) { push @fchilds, $c->($doc, $v) }
+            my $v = delete $data{$k};
+            push @fchilds, $c->($doc, $v) if defined $v;
         }
         my @p = @params;
         while(@p)
         {   my ($k, $c) = (shift @p, shift @p);
-            if(my $v = delete $data{$k}) { push @pchilds, $c->($doc, $v) }
+            my $v = delete $data{$k};
+            push @pchilds, $c->($doc, $v) if defined $v;
         }
         warning __x"unused values {names}", names => [keys %data]
             if keys %data;
@@ -855,7 +862,7 @@ documentation on how to use the encoded  RPC call in some other way... in
 text, if they are lucky; the WSDL file does not contain the prototype
 of the procedures, but that doesn't mean that they are free-format.
 
-B<Encoded RPC> messsages are shaped to the procedures which are
+B<Encoded RPC> messages are shaped to the procedures which are
 being called on the server.  The body of the sent message contains the
 ordered list of parameters to be passed as 'in' and 'in/out' values to the
 remote procedure.  The body of the returned message lists the result value
@@ -869,7 +876,7 @@ name clashes, which have frustrated many projects in the past when they
 grew over a certain size... at a certain size, it becomes too hard to
 think of good distinguishable names.  In such case, you must be happy
 when you can place those names in a context, and use the same naming in
-seperate contexts without confusion.
+separate contexts without confusion.
 
 That being said: XML supports both namespace- and non-namespace elements
 and schema's; and of cause many mixed cases.  It is by far preferred to

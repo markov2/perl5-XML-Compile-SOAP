@@ -1,4 +1,4 @@
-#!/usr/bin/perl
+#!/usr/bin/env perl
 # Test SOAP
 
 use warnings;
@@ -130,7 +130,7 @@ my %fault1
 
 my $xml2 = $sender->(%fault1);
 ok(defined $xml2, 'send message 2: fault1');
-compare_xml($xml2, $msg2_soap);
+compare_xml($xml2, $msg2_soap, 'compare sent');
 
 my $hash2 = $receiver->($msg2_soap);
 is(ref $hash2, 'HASH', 'produced HASH');
@@ -143,13 +143,14 @@ ok(defined $fault);
 like($fault->{faultcode}, qr/^\{.*\}Server.first$/, 'faultcode');
 like($fault->{faultactor}, qr/^http:/, 'faultactor');
 is($fault->{faultstring}, 'my mistake', 'faultstring');
+
 ok(defined $fault->{detail}, 'detail');
 is(ref $fault->{detail}, 'HASH');
 
 my @keys = keys %{$fault->{detail}};
 cmp_ok(scalar @keys, '==', 1);
 my $key = $keys[0];
-is($key, "fault_one");
+is($key, "{$TestNS}fault_one");
 my $one = $fault->{detail}{$key};
 ok(defined $one, 'has one');
 is(ref $one, 'HASH');
@@ -157,6 +158,8 @@ cmp_ok(keys(%$one), '==', 1);
 is($one->{help}, 'please ignore');
 
 ### test fault1
+#use Data::Dumper;
+#warn Dumper $hash2;
 
 ok(exists $hash2->{fault1}, 'decoded fault present');
 my $fault1 = $hash2->{fault1};

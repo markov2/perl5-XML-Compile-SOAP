@@ -19,7 +19,7 @@ XML::Compile::XOP::Include - Represents one XOP node.
   my $answer    = $call->(image => $xop_image);
 
 =chapter DESCRIPTION
-Represents one data-set which will be represented as seperate (binary)
+Represents one data-set which will be represented as separate (binary)
 object during transport.  This can only be used on data fields which
 are base64Binary.
 
@@ -29,7 +29,7 @@ M<XML::Compile::XOP> method to create them.
 The object is overloaded to produce the contained data when a scalar is
 required, for instance when you call functions like "length".  This means
 that, hopefully, the end-user does not see much of a difference between
-data which is transported inline or packaged seperately.
+data which is transported inline or packaged separately.
 
 =chapter OVERLOAD
 

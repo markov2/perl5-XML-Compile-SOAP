@@ -99,7 +99,7 @@ argument will return the total time elapsed.
 As KINDs are defined C<encode> (the time required by the translator
 build by XML::Compile::Schema to translate Perl into an XML::LibXML
 tree), C<transport>, and C<decode> (from XML::LibXML tree into Perl)>.
-The transport components are also provided seperately, as C<stringify>
+The transport components are also provided separately, as C<stringify>
 (by XML::LibXML to convert a tree into text), C<connect> (for the network
 message exchange by HTTP::Daemon), and C<parse> (parsing answer string
 into XML)

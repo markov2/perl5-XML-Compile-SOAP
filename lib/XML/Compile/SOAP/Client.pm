@@ -267,7 +267,7 @@ Now, calling the compiled function can be done like this:
 
 If the first arguments for the code ref is a HASH, then there may be
 a second which specifies the required character-set.  The default is
-C<UTF-8>, which is very much adviced.
+C<UTF-8>, which is very much advised.
 
 =subsection Parameter unpacking (Document Style)
 

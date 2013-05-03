@@ -27,7 +27,7 @@ XML::Compile::SOAP::Util - general purpose routines for XML::Compile::SOAP
 
 =chapter DESCRIPTION
 This module collects functions which are useful on many places in the
-SOAP implemention, just as M<XML::Compile::Util> does for general XML
+SOAP implementation, just as M<XML::Compile::Util> does for general XML
 implementations (often you will needs things from both).
 
 On the moment, only a long list of constant URIs are exported.

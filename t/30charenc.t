@@ -1,4 +1,4 @@
-#!/usr/bin/perl
+#!/usr/bin/env perl
 # Test charset conversion in http traffic
 
 use warnings;

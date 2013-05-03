@@ -8,7 +8,6 @@ package TestTools;
 use base 'Exporter';
 
 use Test::More;
-use Test::Deep   qw/cmp_deeply/;
 
 use Log::Report  qw/try/;
 use Data::Dumper qw/Dumper/;
@@ -60,7 +59,7 @@ sub reader_dump($$$)
     my $h = $r->($xml);
     ok(defined $h, 'processed via dumped source');
  
-    cmp_deeply($h, $hash, "dump and direct trees");
+    is_deeply($h, $hash, "dump and direct trees");
 }
 
 

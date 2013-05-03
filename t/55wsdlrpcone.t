@@ -1,4 +1,4 @@
-#!/usr/bin/perl
+#!/usr/bin/env perl
 # Test interpretation of RPC literal one-way, derived from 51wsdloneway-rpc.t
 
 use warnings;

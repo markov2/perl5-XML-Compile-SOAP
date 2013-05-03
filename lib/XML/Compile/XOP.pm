@@ -32,12 +32,12 @@ The SOAP Message Transmission Optimization Mechanism (MTOM) is designed
 for SOAP1.2, but also usable for SOAP1.1.  It optimizes the transport of
 binary information (like images) which are part of the XML message: in
 stead of base64 encoding them adding 25% to the size of the data, these
-binaries are added as pure binary attachement to the SOAP message.
+binaries are added as pure binary attachment to the SOAP message.
 
 In the official specification, the XML message will be created first
 with the base64 representation of the data in it. Only at transmission,
 a preprocessor XOP (XML-binary Optimized Packaging) extracts those
-components to be send seperately.  In Perl, we have to be more careful
+components to be send separately.  In Perl, we have to be more careful
 about performance.  Therefore, the path via encoding to base64 and then
 decoding it back to binary in the sender (and the reverse process for
 the receiver) is avoided.

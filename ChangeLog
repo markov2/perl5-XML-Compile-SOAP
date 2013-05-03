@@ -1,6 +1,16 @@
 
 === version history of XML::Compile::SOAP
 
+version 2.36: Fri May  3 10:04:52 CEST 2013
+	Fixes:
+	- writer rpc: do not ignore empty message parts [Henrik Tougaard]
+
+	Improvements:
+	- spell fixes. rt.cpan.org#83835 [Joenio Marques de Costa]
+	- remove dependency for Test::Deep
+	- moved ::WSDL11::_learn_prefixes to ::Cache
+	- doc: OODoc improvements produce nices DETAILS sections
+
 version 2.35: Mon Jan 14 11:45:07 CET 2013
 
 	Fixes:

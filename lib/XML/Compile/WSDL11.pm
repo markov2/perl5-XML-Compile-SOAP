@@ -236,32 +236,6 @@ The specification can be spread over multiple files, each of
 which must have a C<definition> root element.
 =cut
 
-sub _learn_prefixes($)
-{   my ($self, $node) = @_;
-
-    my $namespaces = $self->prefixes;
-  PREFIX:
-    foreach my $ns ($node->getNamespaces)  # learn preferred ns
-    {   my ($prefix, $uri) = ($ns->getLocalName, $ns->getData);
-        next if !defined $prefix || $namespaces->{$uri};
-
-        if(my $def = $self->prefix($prefix))
-        {   next PREFIX if $def->{uri} eq $uri;
-        }
-        else
-        {   $self->prefixes($prefix => $uri);
-            next PREFIX;
-        }
-
-        $prefix =~ s/0?$/0/;
-        while(my $def = $self->prefix($prefix))
-        {   next PREFIX if $def->{uri} eq $uri;
-            $prefix++;
-        }
-        $self->prefixes($prefix => $uri);
-    }
-}
-
 sub addWSDL($)
 {   my ($self, $data) = @_;
     defined $data or return ();
@@ -274,7 +248,7 @@ sub addWSDL($)
         or error __x"root element for WSDL is not 'wsdl:definitions'";
 
     $self->importDefinitions($node, details => \%details);
-    $self->_learn_prefixes($node);
+    $self->learnPrefixes($node);
 
     my $spec = $self->reader('wsdl:definitions')->($node);
     my $tns  = $spec->{targetNamespace}
@@ -725,7 +699,7 @@ sub operations(@)
 =method endPoint OPTIONS
 [2.20] Returns the address of the server, as specified by the WSDL. When
 there are no alternatives for service or port, you not not need to
-specify those paramters.
+specify those parameters.
 
 =option  service QNAME|PREFIXED
 =default service <undef>

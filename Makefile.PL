@@ -4,11 +4,11 @@ use 5.008;
 
 WriteMakefile
  ( NAME	 	=> 'XML::Compile::SOAP'
- , VERSION	=> '2.35'
+ , VERSION	=> '2.36'
  , PREREQ_PM    =>
-   { XML::Compile         => 1.28
+   { XML::Compile         => 1.33
    , XML::Compile::Tester => 0.90
-   , XML::Compile::Cache  => 0.992
+   , XML::Compile::Cache  => 0.993
    , Log::Report          => 0.90
 
    , LWP             => 5.816
@@ -16,7 +16,6 @@ WriteMakefile
    , File::Slurp     => 0
 
    , Test::More      => 0.54
-   , Test::Deep      => 0.095
    }
  , AUTHOR       => 'Mark Overmeer'
  , ABSTRACT     => 'SOAP and WSDL, client side'

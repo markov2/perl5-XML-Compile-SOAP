@@ -1,4 +1,4 @@
-#!/usr/bin/perl
+#!/usr/bin/env perl
 # Test Literal RPC
 # Example contributed by Daniel Ruoso
 

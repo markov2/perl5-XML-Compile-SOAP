@@ -1,4 +1,4 @@
-#!/usr/bin/perl
+#!/usr/bin/env perl
 # Test interpretation of WSDL one-way.
 
 use warnings;
