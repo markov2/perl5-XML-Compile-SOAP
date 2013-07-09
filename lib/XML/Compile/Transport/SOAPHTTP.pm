@@ -50,20 +50,23 @@ or compose XML, but only worries about the HTTP aspects.
 =chapter METHODS
 
 =c_method new OPTIONS
-The C<keep_alive> and C<timeout> options are used when an M<LWP::UserAgent>
-is created, and ignored when you provide such an object.  In the latter
-case, the values for those are inquired such that you can see the setting
-directly from the passed object.
+Create a SOAP-over-HTTP handler, implemented as a wrapper around
+M<LWP::UserAgent>.
 
-If you need to change UserAgent settings later, you can always directly
-access the M<LWP::UserAgent> object via M<userAgent()>.
+If you need to change UserAgent settings (for instance at runtime),
+you can always directly access the internal C<LWP::UserAgent> object
+via M<userAgent()>.
+
+B<Warning:> The C<keep_alive> and C<timeout> options are only used when
+an default internal C<LWP::UserAgent> is created; this is only once in a
+program.  Later instantiations of this ::SOAPHTTP will share that default
+agent, even though these passed parameters have different parameters.
+If that is not what you want, then pass your own C<user_agent> object to
+the constructor to avoid the use of the default.
 
 =option  user_agent LWP::UserAgent object
 =default user_agent <created when needed>
-If you pass your own user agent, you will be able to configure
-it. Otherwise, one will be created with all the defaults. Providing
-your own user agents -or at least have a look at the configuration-
-seems like a good idea.
+If you do not pass your own user agent, a default will be created for you.
 
 =option  keep_alive BOOLEAN
 =default keep_alive <true>

@@ -185,23 +185,36 @@ sub compileCalls(@)
       , binding => delete $args{binding}
       );
 
-    $self->{XCW_ccode} ||= {};
-    foreach my $op (@ops)
-    {   my $name  = $op->name;
-        my @opts  = %args;
-        my $dopts = $self->{XCW_dcopts} || {};
-        push @opts, ref $dopts eq 'ARRAY' ? @$dopts : %$dopts;
-
-        $self->{XCW_ccode}{$name} ||= $op->compileClient(@opts);
-    }
-
-    $self->{XCW_ccode};
+    $self->compileCall($_, %args) for @ops;
 }
 
-#--------------------------
+=method compileCall OPERATION, OPTIONS
+[2.37] The call to the OPERATION object (which extends
+M<XML::Compile::SOAP::Operation>) gets compiled and cached so it can
+be used with M<call()>.
 
-=method call OPERATION, DATA
-[2.20] Call the OPERATION (by name) with DATA (HASH or LIST of parameters).
+=example
+  my $op = $wsdl->operation(name => 'getInfo');
+  $wsdl->compileCall($op);
+
+  # as often as you need it
+  my ($answer, $trace) = $wsdl->call('getInfo')->(%request);
+
+=cut
+
+sub compileCall($@)
+{   my ($self, $op, @opts) = @_;
+    my $name  = $op->name;
+    error __x"attempt to compile operation {name} again", name => $name
+        if $self->{XCW_ccode}{$name};
+
+    my $dopts = $self->{XCW_dcopts} || {};
+    push @opts, ref $dopts eq 'ARRAY' ? @$dopts : %$dopts;
+    $self->{XCW_ccode}{$name} = $op->compileClient(@opts);
+}
+
+=method call OPNAME, DATA
+[2.20] Call the OPNAME (operation name) with DATA (HASH or LIST of parameters).
 This only works when you have called M<compileCalls()> beforehand,
 always during the initiation phase of the program.
 
@@ -375,8 +388,8 @@ sub operation(@)
             , portnames => join("\n    ", '', @portnames);
     }
 
-    # get plugin for operation # {
-    my $address   = first { $_ =~ m/address$/ } keys %$port
+    # get plugin for operation #
+    my $address   = first { /address$/ && $port->{$_}{location}} keys %$port
         or error __x"no address provided in service {service} port {port}"
              , service => $service->{name}, port => $port->{name};
 
@@ -393,7 +406,7 @@ sub operation(@)
 #warn Dumper $port, $self->prefixes;
     my ($prefix)  = $address =~ m/(\w+)_address$/;
     $prefix
-        or error __x"port address not prefixed; probably need to add a plugin";
+        or error __x"port address not prefixed; probably need to add a plugin XML::Compile::SOAP12";
 
     my $opns      = $self->findName("$prefix:");
     my $opclass   = XML::Compile::SOAP::Operation->plugin($opns);
@@ -501,7 +514,10 @@ sub operation(@)
 
 =method compileClient [NAME], OPTIONS
 Creates an M<XML::Compile::SOAP::Operation> temporary object using
-M<operation()>, and then calls C<compileClient()> on that.
+M<operation()>, and then calls C<compileClient()> on that.  This
+results in a code reference which will handle all client-server
+SOAP exchange.
+
 
 The OPTIONS available include all of the options for:
 =over 4
@@ -516,19 +532,27 @@ You B<cannot> pass options for M<XML::Compile::Schema::compile()>, like
 C<<sloppy_integers => 0>>, hooks or typemaps this way. Use M<new(opts_rw)>
 and friends to declare those.
 
+When you use M<compileCall()>, the compiled code references get cached
+for you.  In that case, you can use M<call()> to use them.
+
 =example
   my $call = $wsdl->compileClient
     ( operation => 'HelloWorld'
-    , port      => 'PrefillSoap' # only needed when multiple ports
+    , port      => 'PrefillSoap' # only required when multiple ports
     );
   my ($answer, $trace) = $call->($request);
+
+  # 'operation' keyword optional
+  my $call = $wsdl->compileClient('HelloWorld');
 =cut
 
 sub compileClient(@)
 {   my $self = shift;
     unshift @_, 'operation' if @_ % 2;
     my $op   = $self->operation(@_) or return ();
-    $op->compileClient(@_);
+
+    my $dopts = $self->{XCW_dcopts} || {};
+    $op->compileClient(@_, (ref $dopts eq 'ARRAY' ? @$dopts : %$dopts));
 }
 
 #---------------------
@@ -748,10 +772,11 @@ sub printIndex(@)
     my @args = @_;
 
     my %tree;
-    $tree{'service '.$_->serviceName}
-         {$_->version.' port '.$_->portName . ' (binding '.$_->bindingName.')'}
-         {$_->name} = $_
-         for $self->operations(@args);
+    foreach my $op ($self->operations(@args))
+    {   my $port = $op->version.' port '.$op->portName;
+        my $bind = '(binding '.$op->bindingName.')';
+        $tree{'service '.$op->serviceName}{"$port $bind"}{$op->name} = $_;
+    }
 
     foreach my $service (sort keys %tree)
     {   $fh->print("$service\n");

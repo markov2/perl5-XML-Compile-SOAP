@@ -2,11 +2,13 @@ use ExtUtils::MakeMaker;
 
 use 5.008;
 
+my $version = '2.37';
+
 WriteMakefile
  ( NAME	 	=> 'XML::Compile::SOAP'
- , VERSION	=> '2.36'
+ , VERSION	=> $version
  , PREREQ_PM    =>
-   { XML::Compile         => 1.33
+   { XML::Compile         => 1.35
    , XML::Compile::Tester => 0.90
    , XML::Compile::Cache  => 0.993
    , Log::Report          => 0.90

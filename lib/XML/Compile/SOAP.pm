@@ -111,6 +111,9 @@ The data is constructed in some ad-hoc way.
 Don't forget to have a look at the examples in the F<examples/> directory
 included in the distribution.
 
+Please support my development work by submitting bug-reports, patches
+and (if available) a donation.
+
 =chapter METHODS
 
 =section Constructors
@@ -723,7 +726,7 @@ sub _reader_body($$)
 
     my @rules;
     foreach my $part (@$parts)
-    {   my $label   = $part->{name};
+    {   my $label = $part->{name};
 
         my ($t, $code);
         if($part->{element})

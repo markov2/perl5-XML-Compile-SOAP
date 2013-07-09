@@ -1,7 +1,18 @@
 
 === version history of XML::Compile::SOAP
 
+version 2.37: Tue Jul  9 17:53:13 CEST 2013
+
+	Fixes:
+	- wsdl: compileClient now also respects declare(OPERATION)
+	- wsdl: SOAP12 operations became SOAP11 ports
+
+	Improvements:
+	- wsdl: new compileCall($operation), helping [Caleb Cushing]
+	- soaphttp: docs improvement about own user_agent. [Edward Savage]
+
 version 2.36: Fri May  3 10:04:52 CEST 2013
+
 	Fixes:
 	- writer rpc: do not ignore empty message parts [Henrik Tougaard]
 
