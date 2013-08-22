@@ -64,7 +64,7 @@ sub _initSOAP11($)
     return $self
         if $schemas->{did_init_SOAP11}++;   # ugly
 
-    $schemas->prefixes
+    $schemas->addPrefixes
       ( 'SOAP-ENV' => SOAP11ENV  # preferred names by spec
       , 'SOAP-ENC' => SOAP11ENC
       , xsd        => SCHEMA2001

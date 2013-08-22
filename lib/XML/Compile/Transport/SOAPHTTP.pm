@@ -239,8 +239,6 @@ sub _prepare_call($)
     # Ideally, we should change server when one fails, and stick to that
     # one as long as possible.
     my $server  = $self->address;
-    my $request = HTTP::Request->new($method => $server, $header);
-    $request->protocol('HTTP/1.1');
 
     # Create handler
 
@@ -256,7 +254,10 @@ sub _prepare_call($)
 
     $hook
     ? sub  # hooked code
-      { my $trace = $_[1];
+      { my $trace   = $_[1];
+
+        my $request = HTTP::Request->new($method => $server, $header);
+        $request->protocol('HTTP/1.1');
         $create_message->($request, $_[0], $_[2]);
  
         $trace->{http_request}  = $request;
@@ -286,7 +287,10 @@ sub _prepare_call($)
       }
 
     : sub  # real call
-      { my $trace = $_[1];
+      { my $trace   = $_[1];
+
+        my $request = HTTP::Request->new($method => $server, $header);
+        $request->protocol('HTTP/1.1');
         $create_message->($request, $_[0], $_[2]);
 
         $trace->{http_request}  = $request;

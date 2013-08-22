@@ -15,6 +15,7 @@ use XML::Compile::SOAP::Operation  ();
 use XML::Compile::Transport  ();
 
 use List::Util               qw/first/;
+use Scalar::Util             qw/blessed/;
 
 XML::Compile->addSchemaDirs(__FILE__);
 XML::Compile->knownNamespace(&WSDL11 => 'wsdl.xsd');
@@ -107,7 +108,7 @@ sub init($)
 
     $self->{index}   = {};
 
-    $self->prefixes(wsdl => WSDL11, soap => WSDL11SOAP, http => WSDL11HTTP);
+    $self->addPrefixes(wsdl => WSDL11, soap => WSDL11SOAP, http => WSDL11HTTP);
 
     # next modules should change into an extension as well...
     $_->can('_initWSDL11') && $_->_initWSDL11($self)
@@ -188,10 +189,13 @@ sub compileCalls(@)
     $self->compileCall($_, %args) for @ops;
 }
 
-=method compileCall OPERATION, OPTIONS
+=method compileCall OPERATION|OPNAME, OPTIONS
 [2.37] The call to the OPERATION object (which extends
 M<XML::Compile::SOAP::Operation>) gets compiled and cached so it can
 be used with M<call()>.
+
+[2.38] Alteratively to an OPERATION object, you may also specify an
+operation by name.
 
 =example
   my $op = $wsdl->operation(name => 'getInfo');
@@ -203,9 +207,11 @@ be used with M<call()>.
 =cut
 
 sub compileCall($@)
-{   my ($self, $op, @opts) = @_;
+{   my ($self, $oper, @opts) = @_;
+    my $op    = blessed $oper ? $oper : $self->operation($oper, @opts);
+
     my $name  = $op->name;
-    error __x"attempt to compile operation {name} again", name => $name
+    error __x"a compiled call for {name} already exists", name => $name
         if $self->{XCW_ccode}{$name};
 
     my $dopts = $self->{XCW_dcopts} || {};
@@ -253,7 +259,6 @@ sub addWSDL($)
 {   my ($self, $data) = @_;
     defined $data or return ();
 
-    defined $data or return;
     my ($node, %details) = $self->dataToXML($data);
     defined $node or return $self;
 
@@ -347,7 +352,7 @@ Required when more than one service is defined.
 =default port <only when just one port in WSDL>
 Required when more than one port is defined.
 
-=option action STRING
+=option  action STRING
 =default action <undef>
 Overrule the soapAction from the WSDL.
 
@@ -518,7 +523,6 @@ M<operation()>, and then calls C<compileClient()> on that.  This
 results in a code reference which will handle all client-server
 SOAP exchange.
 
-
 The OPTIONS available include all of the options for:
 =over 4
 =item *
@@ -679,21 +683,23 @@ By default operations from all ports.
 =default binding <undef>
 Only return operations which use the binding with the specified NAME.
 By default, all bindings are accepted.
+
 =cut
 
 sub operations(@)
 {   my ($self, %args) = @_;
-    my @ops;
     $args{produce} and die "produce option removed in 0.81";
 
-    foreach my $service ($self->findDef('service'))
+    my @ops;
+    my @services = $self->findDef('service');
+    foreach my $service (@services)
     {
         next if $args{service} && $args{service} ne $service->{name};
 
-        foreach my $port (@{$service->{wsdl_port} || []})
+        my @ports = @{$service->{wsdl_port} || []};
+        foreach my $port (@ports)
         {
             next if $args{port} && $args{port} ne $port->{name};
-
             my $bindtype = $port->{binding}
                 or error __x"no binding defined in port '{name}'"
                       , name => $port->{name};
@@ -705,12 +711,22 @@ sub operations(@)
                 or error __x"no type defined with binding `{name}'"
                     , name => $bindtype;
 
+            my %all_ops;
             foreach my $operation ( @{$binding->{wsdl_operation}||[]} )
-            {   push @ops, $self->operation
+            {   my $name = $operation->{name};
+                if($all_ops{$name}++)
+                {   panic __x"operation {name} found again; pick service from {services}"
+                      , services => [map $_->{name}, @services], _join => ', '
+                        if @services > 1 && !$args{service};
+                    panic __x"need one set of operations, pick port from {ports}"
+                       , ports => [ map $_->{name}, @ports ], _join => ', ';
+                }
+  
+                push @ops, $self->operation
                   ( service   => $service->{name}
                   , port      => $port->{name}
                   , binding   => $bindtype
-                  , operation => $operation->{name}
+                  , operation => $name
                   , portType  => $type
                   );
             }
@@ -725,11 +741,21 @@ sub operations(@)
 there are no alternatives for service or port, you not not need to
 specify those parameters.
 
+The endpoint in the WSDL is often wrong.  All compile functions accept
+the C<server> and C<endpoint> parameters to overrule the value.  With
+C<server>, only the hostname:port is being replaced.  With C<endpoint>,
+everything is replaced.
+
 =option  service QNAME|PREFIXED
 =default service <undef>
 
 =option  port    NAME
 =default port    <undef>
+
+=example
+ my $devel = URI->new($wsdl->endPoint);
+ $devel->path('/sdk');
+ my $call = $wsdl->compileCall($opname, endpoint => $devel);
 =cut
 
 sub endPoint(@)

@@ -57,7 +57,7 @@ sub _initWSDL11($)
 
     $wsdl->importDefinitions(WSDL11HTTP, element_form_default => 'qualified');
     $wsdl->importDefinitions(WSDL11MIME, element_form_default => 'qualified');
-    $wsdl->prefixes
+    $wsdl->addPrefixes
       ( http => WSDL11HTTP
       , mime => WSDL11MIME
       );

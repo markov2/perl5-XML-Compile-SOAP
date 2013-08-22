@@ -80,7 +80,7 @@ sub _initWSDL11($)
     trace "initialize SOAP11 operations for WSDL11";
 
     $wsdl->importDefinitions(WSDL11SOAP, element_form_default => 'qualified');
-    $wsdl->prefixes(soap => WSDL11SOAP);
+    $wsdl->addPrefixes(soap => WSDL11SOAP);
 
     $wsdl->declare(READER =>
       [ "soap:address", "soap:operation", "soap:binding"
@@ -130,7 +130,7 @@ sub _msg_parts($$$$$)
 
         my ($ns, $local) = unpack_type $msgname;
         my $rpc_ns    = $body->{namespace};
-        $wsdl->prefixes(call => $rpc_ns)   # hopefully no-one uses "call"
+        $wsdl->addPrefixes(call => $rpc_ns)   # hopefully no-one uses "call"
             if defined $rpc_ns && !$wsdl->prefixFor($rpc_ns);
 
         my $procedure

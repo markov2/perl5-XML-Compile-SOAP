@@ -3,7 +3,7 @@ use strict;
 
 package XML::Compile::SOAP;
 
-use Log::Report 'xml-compile-soap', syntax => 'SHORT';
+use Log::Report          'xml-compile-soap';
 use XML::Compile         ();
 use XML::Compile::Util   qw/pack_type unpack_type type_of_node/;
 use XML::Compile::Cache  ();
@@ -12,7 +12,7 @@ use XML::Compile::SOAP::Util qw/:xop10/;
 use Time::HiRes          qw/time/;
 use MIME::Base64         qw/decode_base64/;
 
-# XML::Compile::SOAP::WSA::Util often not installed
+# XML::Compile::WSA::Util often not installed
 use constant WSA10 => 'http://www.w3.org/2005/08/addressing';
 
 =chapter NAME
@@ -317,7 +317,9 @@ sub _sender(@)
 
     my @mtom;
     push @$hooks, $self->_writer_xop_hook(\@mtom);
-    my ($body,  $blabels) = $self->_writer_body  (\%args);
+    my ($body,  $blabels) = $args{create_body}
+       ? $args{create_body}->($self, %args)
+       : $self->_writer_body(\%args);
     my ($faults,$flabels) = $self->_writer_faults(\%args, $args{faults});
 
     my ($header,$hlabels) = $self->_writer_header(\%args);
@@ -375,13 +377,8 @@ sub _sender(@)
 
         @mtom = ();   # filled via hook
 
-        # first create the body, then the header.  This is in the reverse
-        # order of the schema, so needs a trick.  We ignore the existence
-        # of a header in the first pass, and use the created node of the
-        # body in the second.
-        my $headless = $envelope->($doc, {Body => $data{Body}});
-        $data{Body}  = ($headless->childNodes)[0];
-        my $root     = $envelope->($doc, \%data);
+        my $root = $envelope->($doc, \%data)
+            or return;
         $doc->setDocumentElement($root);
 
         return ($doc, \@mtom)

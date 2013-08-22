@@ -1,6 +1,23 @@
 
 === version history of XML::Compile::SOAP
 
+version 2.38: Thu Aug 22 16:20:29 CEST 2013
+
+	Fixes:
+	- soaphttp: do not reuse HTTP::Request object; we need fresh
+	  headers. rt.cpan.org#88019 [Bret Lambert]
+
+	Improvements:
+	- use ::Cache::addPrefixes()
+	- one set of operations should not include ops with the same name:
+	  tell user to be more specific when sets overlap.
+	- clean error when ::WSDL11::compileCalls() would select overlapping
+	  operation names
+	- remove trick to first generate body and the headers.
+	- example of changing ::WSDL::endPoint, with help of [Bret]
+	- ::WSDL::compileCall() now also works with an operation by name,
+	  not only as object.
+
 version 2.37: Tue Jul  9 17:53:13 CEST 2013
 
 	Fixes:
