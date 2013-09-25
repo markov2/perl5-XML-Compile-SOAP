@@ -141,6 +141,10 @@ sub _msg_parts($$$$$)
         $parts{body}  = {procedure => $procedure, %$port_op, use => 'literal',
            %$body, parts => \@parts};
     }
+    elsif($port_op->{message})
+    {   # missing <soap:body use="literal"> in <wsdl:input> or :output
+        error __x"operation {opname} has a message in its portType but no encoding in the binding", opname => $opname;
+    }
 
     my $bsh = $bind_op->{soap_header} || [];
     foreach my $header (ref $bsh eq 'ARRAY' ? @$bsh : $bsh)
@@ -308,6 +312,10 @@ sub compileHandler(@)
 
     my @ro    = (%{$self->{input_def}},  %{$self->{fault_def}});
     my @so    = (%{$self->{output_def}}, %{$self->{fault_def}});
+use Data::Dumper;
+{ local $self->{schemas};
+warn Dumper $self;
+}
 
     $args{encode}   ||= $soap->_sender(@so, %args);
     $args{decode}   ||= $soap->_receiver(@ro, %args);

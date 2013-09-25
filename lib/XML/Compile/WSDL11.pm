@@ -286,8 +286,19 @@ sub addWSDL($)
         $index->{$which}{pack_type $tns, $def->{name}} = $def;
 
         if($which eq 'service')
-        {   foreach my $port ( @{$def->{port} || []} )
-            {   $index->{port}{pack_type $tns, $port->{name}} = $port;
+        {   foreach my $port ( @{$def->{wsdl_port} || []} )
+            {   my $addr_label = first { /_address$/ } keys %$port
+                    or error __x"no address in port {port}"
+                        , port => $port->{name};
+                my $first_addr = $port->{$addr_label};
+                $first_addr    = $first_addr->[0] if ref $first_addr eq 'ARRAY';
+
+                # Is XML::Compile::SOAP<version> loaded?
+                ref $first_addr eq 'HASH'
+                    or error __x"soap namespace {ns} not loaded"
+                       , ns => $first_addr->namespaceURI;
+
+                $index->{port}{pack_type $tns, $port->{name}} = $port;
             }
         }
     }
@@ -393,7 +404,7 @@ sub operation(@)
             , portnames => join("\n    ", '', @portnames);
     }
 
-    # get plugin for operation #
+    # get plugin for operation
     my $address   = first { /address$/ && $port->{$_}{location}} keys %$port
         or error __x"no address provided in service {service} port {port}"
              , service => $service->{name}, port => $port->{name};

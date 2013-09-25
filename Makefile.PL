@@ -2,7 +2,7 @@ use ExtUtils::MakeMaker;
 
 use 5.008;
 
-my $version = '2.38';
+my $version = '2.39';
 
 WriteMakefile
  ( NAME	 	=> 'XML::Compile::SOAP'

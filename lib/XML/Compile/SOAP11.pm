@@ -150,7 +150,7 @@ sub _sender(@)
     my %destination = @{$args{destination} || []};
 
     my $understand  = $args{mustUnderstand};
-    my %understand  = map { ($_ => 1) }
+    my %understand  = map +($_ => 1),
         ref $understand eq 'ARRAY' ? @$understand
       : defined $understand ? $understand : ();
 
@@ -205,7 +205,7 @@ sub _writer_header($)
 
         my $actor = $part->{destination};
         if(ref $actor eq 'ARRAY')
-        {   $actor = join ' ', map {$self->roleURI($_)} @$actor }
+        {   $actor = join ' ', map $self->roleURI($_), @$actor }
         elsif(defined $actor)
         {   $actor =~ s/\b(\S+)\b/$self->roleURI($1)/ge }
 
@@ -254,7 +254,7 @@ sub _writer_faults($)
             $copy{faultactor} = $self->roleURI($copy{faultactor});
             my $det = delete $copy{detail};
             my @det = !defined $det ? () : ref $det eq 'ARRAY' ? @$det : $det;
-            $copy{detail}{$type} = [ map {$details->($doc, $_)} @det ];
+            $copy{detail}{$type} = [ map $details->($doc, $_), @det ];
             $wrfault->($doc, \%copy);
           };
 

@@ -1,6 +1,11 @@
 
 === version history of XML::Compile::SOAP
 
+version 2.39:
+	Improvements:
+	- check that all XML::Compile::SOAP* modules are loaded
+	  [Chase Whitener]
+
 version 2.38: Thu Aug 22 16:20:29 CEST 2013
 
 	Fixes:

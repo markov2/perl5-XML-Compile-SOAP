@@ -197,10 +197,9 @@ On the moment, only the first C<body> element is used to determine that.
 sub compileFilter(@)
 {   my ($self, %args) = @_;
     my $nodetype;
-    if(my $first    = $args{body}{parts}[0])
+    if(my $first  = $args{body}{parts}[0])
     {   $nodetype = $first->{element}
-#           or panic "cannot handle type parameter in server filter";
-            || $args{body}{procedure};  # rpc-literal "type"
+          || $args{body}{procedure};  # rpc-literal "type"
     }
 
     # called with (XML, INFO)
