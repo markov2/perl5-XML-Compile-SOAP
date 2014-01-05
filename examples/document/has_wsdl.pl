@@ -134,6 +134,7 @@ sub get_countries($)
 
     if($show_trace)
     {   $trace->printTimings;
+        $trace->printErrors;
         $trace->printRequest;
         $trace->printResponse;
     }

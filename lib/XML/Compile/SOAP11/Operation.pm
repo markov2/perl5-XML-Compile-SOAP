@@ -14,10 +14,7 @@ use XML::Compile::SOAP11::Server;
 use XML::Compile::SOAP::Extension;
 
 our $VERSION;         # OODoc adds $VERSION to the script
-$VERSION ||= 'undef';
-
-XML::Compile->knownNamespace(&WSDL11SOAP => 'wsdl-soap.xsd');
-__PACKAGE__->register(WSDL11SOAP, SOAP11ENV);
+$VERSION ||= '(devel)';
 
 # client/server object per schema class, because initiation options
 # can be different.  Class reference is key.
@@ -72,19 +69,6 @@ sub init($)
 
     XML::Compile::SOAP::Extension->soap11OperationInit($self, $args);
     $self;
-}
-
-sub _initWSDL11($)
-{   my ($class, $wsdl) = @_;
-
-    trace "initialize SOAP11 operations for WSDL11";
-
-    $wsdl->importDefinitions(WSDL11SOAP, element_form_default => 'qualified');
-    $wsdl->addPrefixes(soap => WSDL11SOAP);
-
-    $wsdl->declare(READER =>
-      [ "soap:address", "soap:operation", "soap:binding"
-      , "soap:body",    "soap:header",    "soap:fault" ]);
 }
 
 sub _fromWSDL11(@)
@@ -175,7 +159,7 @@ sub _select_parts($$$)
     @need or return @$parts;
 
     my @sel;
-    my %parts = map { ($_->{name} => $_) } @$parts;
+    my %parts = map +($_->{name} => $_), @$parts;
     foreach my $name (@need)
     {   my $part = $parts{$name}
             or error __x"message {msg} does not have a part named {part}"
@@ -245,7 +229,8 @@ Add a header definitions.  Many protocols on top of SOAP, like WSS, add
 headers to the operations which are not specified in the WSDL.
 
 [2.31] When you add a header with same LABEL again, it will get silently
-ignored unless the ELEMENT type differs.
+ignored unless the ELEMENT type differs. An ELEMENT is either a full
+type or a [3.00] prefixed type.
 
 =option  mustUnderstand BOOLEAN
 =default mustUnderstand C<undef>
@@ -257,7 +242,8 @@ ignored unless the ELEMENT type differs.
 =cut
 
 sub addHeader($$$%)
-{   my ($self, $dir, $label, $elem, %opts) = @_;
+{   my ($self, $dir, $label, $el, %opts) = @_;
+    my $elem = $self->schemas->findName($el);
     my $defs
       = $dir eq 'INPUT'  ? 'input_def'
       : $dir eq 'OUTPUT' ? 'output_def'
@@ -312,10 +298,6 @@ sub compileHandler(@)
 
     my @ro    = (%{$self->{input_def}},  %{$self->{fault_def}});
     my @so    = (%{$self->{output_def}}, %{$self->{fault_def}});
-use Data::Dumper;
-{ local $self->{schemas};
-warn Dumper $self;
-}
 
     $args{encode}   ||= $soap->_sender(@so, %args);
     $args{decode}   ||= $soap->_receiver(@ro, %args);

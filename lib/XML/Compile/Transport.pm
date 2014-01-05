@@ -242,8 +242,8 @@ can modify the outgoing message XML body and headers, carry out the data
 exchange using the UserAgent, and then examine the returned Reponse for
 content and headers using methods similar to the following:
 
- sub transport_hook($$)
- {   my ($request, $trace) = @_;
+ sub transport_hook($$$)
+ {   my ($request, $trace, $transporter) = @_;
      my $content = $request->content;
 
      # ... modify content if you need
@@ -260,7 +260,7 @@ content and headers using methods similar to the following:
      my $response = $ua->request($request);
 
      # ... check the response headers
-     $response->header('Name');
+     my $name = $response->header('Name');
 
      # ... use the response content
      my $received = $response->decoded_content || $response->content;
@@ -310,6 +310,40 @@ or
   my $wsdl = XML::Compile::WSDL11->new(...);
   $wsdl->compileClient('GetLastTracePrice',
       transport_hook => \&fake_server);
+
+
+=subsection Transport hook for basic authentication
+
+[Adapted from an example contributed by Kieron Johnson]
+This example shows a transport_hook for compileClient() to add to http
+headers for the basic http authentication.  The parameter can also be
+used for compileAll() and many other related functions.
+
+  my $call = $wsdl->compileClient($operation
+     , transport_hook => \&basic_auth );
+
+  # HTTP basic authentication encodes the username and password with
+  # Base64. The encoded source string has format: "username:password"
+  # With the below HTTP header being required:
+  #        "Authorization: Basic [encoded password]"
+
+  use MIME::Base64 'encode_base64';
+
+  my $user     = 'myuserid' ;
+  my $password = 'mypassword';
+
+  sub basic_auth($$)
+  {   my ($request, $trace) = @_;
+
+      # Encode userid and password
+      my $authorization = 'Basic '. encode_base64 "$user:$password";
+
+      # Modify http header to include basic authorisation
+      $request->header(Authorization => $authorization );
+
+      my $ua = $trace->{user_agent};
+      $ua->request($request);
+  }
 
 =cut
 

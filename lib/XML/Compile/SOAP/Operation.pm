@@ -143,9 +143,10 @@ Create the transporter code for a certain specific target.
 =default transporter <created>
 The routine which will be used to exchange the data with the server.
 This code is created by an M<XML::Compile::Transport::compileClient()>
-extension. By default, a transporter compatible to the protocol
-is created.  However, in most cases you want to reuse one (HTTP1.1)
-connection to a server.
+extension.
+
+By default, a transporter compatible to the protocol is created.  However,
+in most cases you want to reuse one (HTTP1.1) connection to a server.
 
 =option  transport_hook CODE
 =default transport_hook C<undef>
@@ -220,21 +221,6 @@ sub compileClient(@)  { panic "not implemented" }
 sub compileHandler(@) { panic "not implemented" }
 
 =section Helpers
-
-=c_method register URI, ENVNS
-Declare an operation type, but WSDL specific URI and envelope namespace.
-=cut
-
-{   my (%registered, %envelope);
-    sub register($)
-    { my ($class, $uri, $env) = @_;
-      $registered{$uri} = $class;
-      $envelope{$env}   = $class if $env;
-    }
-    sub plugin($)       { $registered{$_[1]} }
-    sub fromEnvelope($) { $envelope{$_[1]} }
-    sub registered($)   { values %registered }
-}
 
 =method explain WSDL, FORMAT, DIRECTION, OPTIONS
 Dump an annotated structure showing how the operation works, helping

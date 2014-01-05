@@ -15,7 +15,7 @@ XML::Compile::SOAP::Trace - help displaying trace details.
 
 =chapter SYNOPSIS
  my ($answer, $trace) = $call->(%params);
- #now $trace is a XML::Compile::SOAP::Trace
+ # now $trace is a XML::Compile::SOAP::Trace
 
  my $req = $trace->request;   # HTTP message which was sent
  my $res = $trace->response;  # HTTP message received
@@ -24,6 +24,7 @@ XML::Compile::SOAP::Trace - help displaying trace details.
  my $dura  = $trace->elapse;
 
  $trace->printTimings;
+ $trace->printErrors;
  $trace->printTimings(\*STDERR);
  $trace->printRequest(pretty_print => 1);
  $trace->printResponse;

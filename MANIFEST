@@ -14,6 +14,10 @@ examples/rpc-literal/element.pl
 examples/rpc-literal/element.wsdl
 examples/rpc-literal/type.pl
 examples/rpc-literal/type.wsdl
+examples/salesforce/sf-info.pl
+examples/temperature/convert.wsdl
+examples/temperature/soap-lite.pl
+examples/temperature/xml-compile-soap.pl
 lib/XML/Compile/Operation.pm
 lib/XML/Compile/SOAP.pm
 lib/XML/Compile/SOAP/Client.pm
@@ -23,8 +27,6 @@ lib/XML/Compile/SOAP/Operation.pm
 lib/XML/Compile/SOAP/Server.pm
 lib/XML/Compile/SOAP/Trace.pm
 lib/XML/Compile/SOAP/Util.pm
-lib/XML/Compile/SOAP10.pm
-lib/XML/Compile/SOAP10/Operation.pm
 lib/XML/Compile/SOAP11.pm
 lib/XML/Compile/SOAP11/Client.pm
 lib/XML/Compile/SOAP11/Encoding.pm
@@ -35,11 +37,7 @@ lib/XML/Compile/SOAP11/xsd/soap-envelope-patch.xsd
 lib/XML/Compile/SOAP11/xsd/soap-envelope.xsd
 lib/XML/Compile/Transport.pm
 lib/XML/Compile/Transport/SOAPHTTP.pm
-lib/XML/Compile/WSDL11.pm
-lib/XML/Compile/WSDL11/xsd/wsdl-http.xsd
-lib/XML/Compile/WSDL11/xsd/wsdl-mime.xsd
 lib/XML/Compile/WSDL11/xsd/wsdl-soap.xsd
-lib/XML/Compile/WSDL11/xsd/wsdl.xsd
 lib/XML/Compile/XOP.pm
 lib/XML/Compile/XOP/Include.pm
 lib/XML/Compile/XOP/xsd/200411-xmlmime.xsd
@@ -49,12 +47,6 @@ t/10soap.t
 t/11soapfault.t
 t/12soapmust.t
 t/30charenc.t
-t/50wsdl.t
-t/51wsdloneway.t
-t/52wsdlfault.t
-t/53wsdlrpclit.t
-t/54wsdlrpclit.t
-t/55wsdlrpcone.t
 t/60xop.t
 t/TestTools.pm
 xt/99pod.t

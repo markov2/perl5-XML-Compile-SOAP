@@ -1,10 +1,27 @@
 
 === version history of XML::Compile::SOAP
 
-version 2.39:
+version 3.00: Mon Jan  6 00:55:08 CET 2014
+	Changes:
+	- split-off WSDL11 into own distribution.
+	- default mime-type for SOAP 1.1 is text/xml
+	- removed SOAP10
+
+	Fixes:
+	- headers and body elements which appear more than once will
+	  be put in an ARRAY.
+
 	Improvements:
 	- check that all XML::Compile::SOAP* modules are loaded
 	  [Chase Whitener]
+	- and one more check [Reiber Christian]
+	- example how to add BasicAuthentication headers
+	- added examples/temperature, based on answer to request of [fort_d]
+	- moved WSDL11 initialization from ::Operation to ::SOAP11
+	- moved module registration from ::Operation to ::SOAP
+	- ::Extensions can now register soap12 routines.
+	- add examples/salesforce/, contribute by [Ciaran Deignan]
+	- ::Operation:addHeader() now also accepts ELEMENTs in prefixed form
 
 version 2.38: Thu Aug 22 16:20:29 CEST 2013
 

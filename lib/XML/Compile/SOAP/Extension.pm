@@ -51,6 +51,7 @@ sub wsdl11Init($$)
     $_->wsdl11Init(@_) for @ext;
 }
 
+#--------
 =section SOAP11
 
 =ci_method soap11OperationInit OPERATION, ARGS
@@ -84,6 +85,39 @@ sub soap11HandlerWrapper($$$)
     $cb;
 }
 
-1;
+#--------
+=section SOAP12
+
+=ci_method soap12OperationInit OPERATION, ARGS
+ARGS is a reference.
+=cut
+
+sub soap12OperationInit($$)
+{   ref shift and return;
+    $_->soap12OperationInit(@_) for @ext;
+}
+
+=method soap12ClientWrapper OPERATION, CALL, ARGS
+=cut
+
+sub soap12ClientWrapper($$$)
+{   ref shift and return $_[1];
+    my ($op, $call, $args) = @_;
+    $call = $_->soap12ClientWrapper($op, $call, $args) for @ext;
+    $call;
+}
+
+=method soap12HandlerWrapper OPERATION, CALLBACK, ARGS
+Called before the handler is created, to influence the encoder and
+decoder. Returned is a wrapped callback, or the same.
+=cut
+
+sub soap12HandlerWrapper($$$)
+{   my ($thing, $op, $cb, $args) = @_;
+    ref $thing and return $cb;
+    $cb = $_->soap12HandlerWrapper($op, $cb, $args) for @ext;
+    $cb;
+}
+
 
 1;
