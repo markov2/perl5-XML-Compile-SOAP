@@ -2,7 +2,7 @@ use ExtUtils::MakeMaker;
 
 use 5.008;
 
-my $version = '3.00';
+my $version = '3.01';
 
 my $prereq =
    { XML::Compile         => '1.42'
@@ -29,6 +29,9 @@ WARNING: with XML::Compile::SOAP11 v3.00, the WSDL11 code got
 ******************************************************************
 __CHANGES_300
 }
+
+eval "require XML::Compile::SOAP::Daemon";
+$@ or $prereq->{'XML::Compile::SOAP::Daemon'} = '3.00';
 
 WriteMakefile
  ( NAME	 	=> 'XML::Compile::SOAP'

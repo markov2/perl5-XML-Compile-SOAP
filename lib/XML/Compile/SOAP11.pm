@@ -17,7 +17,7 @@ __PACKAGE__->register
   );
 
 =chapter NAME
-XML::Compile::SOAP11 - base for SOAP1.1 implementation
+XML::Compile::SOAP11 - SOAP 1.1 protocol
 
 =chapter SYNOPSIS
  # use either XML::Compile::SOAP11::Client or ::Server
