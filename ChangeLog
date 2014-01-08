@@ -1,7 +1,13 @@
 
 === version history of XML::Compile::SOAP
 
-version 3.01:
+version 3.02: Wed Jan  8 01:04:45 CET 2014
+
+	Fixes:
+	- auto check whether WSDL11 must be upgraded. [Caleb Cushing]
+
+version 3.01: Mon Jan  6 23:19:14 CET 2014
+
 	Improvements:
 	- upgrade daemon if installed.
 	- drop support for very old Perl's

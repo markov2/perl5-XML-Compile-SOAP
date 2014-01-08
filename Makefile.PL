@@ -2,7 +2,7 @@ use ExtUtils::MakeMaker;
 
 use 5.008;
 
-my $version = '3.01';
+my $version = '3.02';
 
 my $prereq =
    { XML::Compile         => '1.42'
@@ -18,9 +18,10 @@ my $prereq =
    };
 
 eval "require XML::Compile::WSDL11";
-#warn $@;
-unless($@)
+if($@ !~ /can't locate/i)
 {   my $v = $XML::Compile::WSDL11::VERSION || '3.00';
+    $prereq->{'XML::Compile::WSDL11'} = '3.00';
+
     if($v < 3.00) { warn <<'__CHANGES_300'; sleep 10 }
 ******************************************************************
 WARNING: with XML::Compile::SOAP11 v3.00, the WSDL11 code got
