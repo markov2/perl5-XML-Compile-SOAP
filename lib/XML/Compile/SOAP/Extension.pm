@@ -35,15 +35,16 @@ sub init($)
     $self;
 }
 
+#--------
 =section WSDL11
 
 =ci_method wsdl11Init WSDL, ARGS
-Do not use this hook for adding WSDLs or Schemas, unless those are
-used to interpret WSDL or SOAP files.
+Do not use this hook for adding WSDLs or schemas, unless those are
+used to interpret WSDL or SOAP files correctly.
 =cut
 
-### Everywhere: when called on an object, it is the stub for the
-### extension. Only when called as class method, it will walk all
+### For all methods named below: when called on an object, it is the stub
+### for the extension. Only when called as class method, it will walk all
 ### extension objects.
 
 sub wsdl11Init($$)

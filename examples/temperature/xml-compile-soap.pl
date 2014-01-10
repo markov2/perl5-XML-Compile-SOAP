@@ -10,7 +10,10 @@ use XML::Compile::Transport::SOAPHTTP;
 # XML::Compile does not like dynamic things.  WSDL collected with
 #    wget http://www.webservicex.net/ConvertTemperature.asmx?WSDL
 my $wsdlfn = 'convert.wsdl';
-my $wsdl = XML::Compile::WSDL11->new($wsdlfn);
+my $wsdl = XML::Compile::WSDL11->new
+  ( $wsdlfn
+# , server_type => 'BEA'   or  'SharePoint' or
+  );
 
 my $request =
   { Temperature => 12
@@ -21,7 +24,7 @@ my $request =
 my ($answer, $trace);
 
 if(0)
-{   ### eiter compile explicitly
+{   ### either compile explicitly
     my $convert = $wsdl->compileClient
      ( 'ConvertTemp'
      , port => 'ConvertTemperatureSoap'
@@ -31,9 +34,7 @@ if(0)
 }
 else
 {   ### or compile/use implictly
-
-#   $wsdl->compileCalls(port => 'ConvertTemperatureSoap');
-    $wsdl->compileCalls;
+    $wsdl->compileCalls(port => 'ConvertTemperatureSoap');
     ($answer, $trace) = $wsdl->call(ConvertTemp => $request);
 }
 

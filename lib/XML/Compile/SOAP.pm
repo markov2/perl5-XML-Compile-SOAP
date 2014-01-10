@@ -145,11 +145,11 @@ sub new($@)
 
 sub init($)
 {   my ($self, $args) = @_;
-    $self->{XCS_mime}  = $args->{media_type} || 'application/soap+xml';
+    $self->{XCS_mime}   = $args->{media_type} || 'application/soap+xml';
 
     my $schemas = $self->{XCS_schemas} = $args->{schemas}
      || XML::Compile::Cache->new(allow_undeclared => 1
-        , any_element => 'ATTEMPT', any_attribute => 'ATTEMPT');
+          , any_element => 'ATTEMPT', any_attribute => 'ATTEMPT');
 
     UNIVERSAL::isa($schemas, 'XML::Compile::Cache')
         or panic "schemas must be a Cache object";
@@ -899,6 +899,36 @@ being called on the server.  The body of the sent message contains the
 ordered list of parameters to be passed as 'in' and 'in/out' values to the
 remote procedure.  The body of the returned message lists the result value
 of the procedure, followed by the ordered 'out' and 'in/out' parameters.
+
+=section Supported servers
+
+Only the commercial hype speaks about SOAP in very positive words.
+However, the "industry quality" of these modern "technologies" clearly
+demonstrates the lack of education and experience most programmers and
+designers have.  This is clearly visible in many, many bugs you will
+encounter when working with schemas and WSDLs.
+
+Interoperability of SOAP clients and servers is more "trial and error"
+and "manually fixing" than it should be.  For instance, a server may
+report internal server errors back to the client... but a WSDL does not
+tell you which namespace/schema is used for these errors.  Both BEA and
+SharePoint servers produce illegal SOAP responses!  It is a sad story.
+
+To be able to install some fixes, you can specify a server type via
+M<XML::Compile::SOAP::Operation::new(server_type)> or
+M<XML::Compile::WSDL11::new(server_type)>.
+The following server types are currently understood:
+
+=over 4
+=item * C<BEA>, Oracle
+=item * C<SharePoint>, MicroSoft
+=item * C<XML::Compile::Daemon>
+=back
+
+Examples:
+
+  my $wsdl = XML::Compile::WSDL11->new($wsdlfn, server_type => 'SharePoint');
+  my $op   = XML::Compile::SOAP11::Operation->new(..., server_type => 'BEA');
 
 =section Naming types and elements
 

@@ -2,7 +2,7 @@ use ExtUtils::MakeMaker;
 
 use 5.008;
 
-my $version = '3.02';
+my $version = '3.03';
 
 my $prereq =
    { XML::Compile         => '1.42'
@@ -18,9 +18,11 @@ my $prereq =
    };
 
 eval "require XML::Compile::WSDL11";
-if($@ !~ /can't locate/i)
+if($@ !~ /can\'t locate/i)
 {   my $v = $XML::Compile::WSDL11::VERSION || '3.00';
-    $prereq->{'XML::Compile::WSDL11'} = '3.00';
+
+    # results in dependency loop, which CPAN.pm cannot handle
+    #$prereq->{'XML::Compile::WSDL11'} = '3.00';
 
     if($v < 3.00) { warn <<'__CHANGES_300'; sleep 10 }
 ******************************************************************

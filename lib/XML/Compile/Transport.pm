@@ -109,7 +109,7 @@ contains trace information.
 
 =option  hook CODE
 =default hook <undef>
-See section L<DETAILS/Use of the transport hook>.
+See section L</Use of the transport hook>.
 When defined, the hook will be called, in stead of transmitting the
 message.  The hook will gets three parameters passed in: the textual
 representation of the XML message to be transmitted, the trace HASH with

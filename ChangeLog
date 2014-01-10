@@ -1,6 +1,16 @@
 
 === version history of XML::Compile::SOAP
 
+version 3.03: Fri Jan 10 15:42:22 CET 2014
+
+	Fixes:
+	- remove dependency to WSDL again, because CPAN.pm cannot
+	  handle cyclic dependencies.
+
+	Improvements:
+	- add server schemas, currently for BEA, SharePoint, and
+	  XML::Compile::Daemon servers.
+
 version 3.02: Wed Jan  8 01:04:45 CET 2014
 
 	Fixes:
