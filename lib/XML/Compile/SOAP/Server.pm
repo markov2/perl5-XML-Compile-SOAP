@@ -37,7 +37,7 @@ message exchange protocols must implement.
 This object can not be instantiated, but is only used as secundary
 base class.  The primary must contain the C<new>.
 
-=c_method new OPTIONS
+=c_method new %options
 
 =option  role URI
 =default role 'NEXT'
@@ -63,7 +63,7 @@ sub init($)
 
 =section Accessors
 
-=method role
+=method role 
 Returns the URI of the role (actor) of this server.
 =cut
 
@@ -73,7 +73,7 @@ sub role() {shift->{role}}
 
 =section Actions
 
-=method compileHandler OPTIONS
+=method compileHandler %options
 Returns an HTTP status code and an M<XML::LibXML::Document> pair.
 
 =requires name STRING
@@ -179,7 +179,7 @@ sub compileHandler(@)
     };
 }
 
-=method compileFilter OPTIONS
+=method compileFilter %options
 This routine returns a CODE reference which can be used for
 M<compileHandler(selector)>; so see whether a certain message has arrived.
 On the moment, only the first C<body> element is used to determine that.
@@ -208,7 +208,7 @@ sub compileFilter(@)
     : sub { !defined $_[1]->{body}[0] };  # empty body
 }
 
-=c_method faultWriter
+=c_method faultWriter 
 Returns a CODE reference which can be used to produce faults.
 =cut
 

@@ -33,10 +33,8 @@ data which is transported inline or packaged separately.
 
 =chapter OVERLOAD
 
-=overload "" (stringification)
-
+=overload  ""
 This object stringifies to its binary content.
-
 =cut
 
 use overload '""'     => 'content'
@@ -46,7 +44,7 @@ use overload '""'     => 'content'
 
 =section Constructors
 
-=c_method new OPTIONS
+=c_method new %options
 You have to specify either a C<file> or C<byte> source.  Otherwise, the
 constructor will return C<undef>.
 
@@ -75,7 +73,7 @@ sub new(@)
     bless \%args, $class;
 }
 
-=c_method fromMime OBJECT
+=c_method fromMime $object
 Collect the data from a M<HTTP::Message> object.
 =cut
 
@@ -98,14 +96,14 @@ sub fromMime($)
 
 =section Accessors
 
-=method cid
+=method cid 
 Returns the Content-ID.
 =cut
 
 sub cid { shift->{cid} }
 
-=method content [BYREF]
-Returns the content, when BYREF (boolean) is true, then the value is
+=method content [$byref]
+Returns the content, when $byref (boolean) is true, then the value is
 returned by reference.
 =cut
 
@@ -122,10 +120,10 @@ sub content(;$)
 
 =section Processing
 
-=method xmlNode DOCUMENT, PATH, TAG
-The DOCUMENT will be used to construct the node from.  The PATH
+=method xmlNode $document, $path, $tag
+The $document will be used to construct the node from.  The $path
 is an indicator for the location of the node within the data
-structure (used in error messages).  The TAG is the prefixed name
+structure (used in error messages).  The $tag is the prefixed name
 for the node to be created.
 
 Returned is an XML node to be included in the output tree.
@@ -143,9 +141,9 @@ sub xmlNode($$$$)
     $node;
 }
 
-=method mimePart [HEADERS]
+=method mimePart [$headers]
 Produce the message part which contains a normal mime representation
-of a binary file.  You may provide an initial HEADERS (M<HTTP::Headers>)
+of a binary file.  You may provide an initial $headers (M<HTTP::Headers>)
 object, or an ARRAY of headers to instantiate such an object.
 =cut
 
@@ -162,7 +160,7 @@ sub mimePart(;$)
     $mime;
 }
 
-=method write FILENAME|FILEHANDLE
+=method write $filename|$fh
 Write the content to the specified FILE.
 =cut
 

@@ -36,7 +36,7 @@ as produced by a SOAP call (client side).
 =chapter METHODS
 
 =section Constructors
-=c_method new OPTIONS
+=c_method new %options
 Called by the SOAP call implementation; not for normal users.
 =cut
 
@@ -47,27 +47,27 @@ sub new($)
 
 =section Accessors
 
-=method start
+=method start 
 Returns the (platform dependent) time value which represent the moment
 that the call was initiated.  See M<Time::HiRes> method C<time>.
 =cut
 
 sub start() {shift->{start}}
 
-=method date
+=method date 
 Returns the date string which represent the moment that the call
 was initiated.
 =cut
 
 sub date() {scalar localtime shift->start}
 
-=method error [ERROR]
+=method error [$error]
 Often contains an error message, when something went wrong.  The message
 is returned as M<Log::Report::Exception>.  Only the first error is returned,
 use M<errors()> to get all.
 
-[2.31] When an ERROR is provided, it is added to the internal list of errors.
-The ERROR parameter may be a M<Log::Report::Exception>, a
+[2.31] When an $error is provided, it is added to the internal list of errors.
+The $error parameter may be a M<Log::Report::Exception>, a
 M<Log::Report::Message> or a simple string.
 =cut
 
@@ -85,14 +85,14 @@ sub error(;$)
     wantarray ? @$errors : $errors->[0];
 }
 
-=method errors
+=method errors 
 [2.31] Return all errors, which are M<Log::Report::Exception> objects.
 See also M<error()>.
 =cut
 
 sub errors() { @{shift->{errors} || []} }
 
-=method elapse [KIND]
+=method elapse [$kind]
 Returns the time in seconds (with hires, sub-second detail) of a part of
 the SOAP communication. Some values may be C<undef>.  Elapse without
 argument will return the total time elapsed.
@@ -116,7 +116,7 @@ sub elapse($)
     defined $kind ? $self->{$kind.'_elapse'} : $self->{elapse};
 }
 
-=method request
+=method request 
 Returns the M<HTTP::Request> object used for this SOAP call.  This might
 be quite useful during debugging, because a lot of the processing is
 hidden for the user... but you may want to see or log what is actually
@@ -125,7 +125,7 @@ begin send.
 
 sub request() {shift->{http_request}}
 
-=method response
+=method response 
 Returns the M<HTTP::Response> object, returned by the remote server.  In
 some erroneous cases, the client library will create an error response
 without any message was exchanged.
@@ -133,7 +133,7 @@ without any message was exchanged.
 
 sub response() {shift->{http_response}}
 
-=method responseDOM
+=method responseDOM 
 Returns the M<XML::LibXML::Document> top node of the response: the parsed
 text of the content of the received HTTP message.
 =cut
@@ -142,7 +142,7 @@ sub responseDOM() {shift->{response_dom}}
 
 =section Printing
 
-=method printTimings [FILEHANDLE]
+=method printTimings [$fh]
 Print an overview on various timings to the selected filehandle.
 =cut
 
@@ -170,7 +170,7 @@ sub printTimings(;$)
     select $oldfh if $oldfh;
 }
 
-=method printRequest [FILEHANDLE], OPTIONS
+=method printRequest [$fh], %options
 
 =option  pretty_print 0|1|2
 =default pretty_print 0
@@ -199,7 +199,7 @@ sub printRequest(;$%)
     }
 }
 
-=method printResponse [FILEHANDLE], OPTIONS
+=method printResponse [$fh], %options
 =option  pretty_print 0|1|2
 =default pretty_print 0
 Use M<XML::Compile::Transport::compileClient(xml_format)> if you want
@@ -228,7 +228,7 @@ sub printResponse(;$%)
     }
 }
 
-=method printErrors [FILEHANDLE]
+=method printErrors [$fh]
 The filehandle defaults to STDERR.
 
 If you want to see more output, try adding C<<use Log::Report mode => 3;>>

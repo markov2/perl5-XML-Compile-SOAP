@@ -46,7 +46,7 @@ the receiver) is avoided.
 
 =section Constructors
 
-=c_method new OPTIONS
+=c_method new %options
 
 =option  xmlmime_version URI
 =default xmlmime_version XMIME11
@@ -72,9 +72,9 @@ sub init($)
     $self;
 }
 
-=method file (FILENAME|FILEHANDLE), OPTIONS
+=method file <$filename|$fh>, %options
 Create a M<XML::Compile::XOP::Include> object which sources from a
-FILE specified by NAME or HANDLE.  With the OPTIONS, you can overrule
+FILE specified by NAME or HANDLE.  With the %options, you can overrule
 defaults generated for the "Include" object.
 
 =example use of file()
@@ -85,10 +85,10 @@ defaults generated for the "Include" object.
   my $data = $xop->file($fn, type => $fn);
   # $data is a XML::Compile::XOP::Include
 
-=method bytes (STRING|SCALAR), OPTIONS
+=method bytes <STRING|SCALAR>, %options
 Create a M<XML::Compile::XOP::Include> object which sources from a
 STRING (representing bytes) or a SCALAR reference to such a string.
-With the OPTIONS, you can overrule defaults generated for the "Include"
+With the %options, you can overrule defaults generated for the "Include"
 object.
 
 =example use of bytes()

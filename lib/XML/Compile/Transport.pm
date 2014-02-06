@@ -47,7 +47,7 @@ in parallel.
 
 =section Constructors
 
-=c_method new OPTIONS
+=c_method new %options
 
 =option  charset STRING
 =default charset 'utf-8'
@@ -74,19 +74,19 @@ sub init($)
 
 =section Accessors
 
-=method charset
+=method charset 
 Returns the charset to be used when sending,
 =cut
 
 sub charset() {shift->{charset}}
 
-=method addresses
+=method addresses 
 Returns a list of all server contact addresses (URIs)
 =cut
 
 sub addresses() { @{shift->{addrs}} }
 
-=method address
+=method address 
 Get a server address to contact. If multiple addresses were specified,
 than one is chosen at random.
 =cut
@@ -100,7 +100,7 @@ sub address()
 
 =section Handlers
 
-=method compileClient OPTIONS
+=method compileClient %options
 Compile a client handler.  Returned is a subroutine which is called
 with a text represenation of the XML request, or an XML::LibXML tree.
 In SCALAR context, an XML::LibXML parsed tree of the answer message
@@ -194,7 +194,7 @@ sub _prepare_call($) { panic "not implemented" }
 
 =chapter Helpers
 
-=c_method register URI
+=c_method register $uri
 Declare an transporter type.
 =cut
 

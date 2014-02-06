@@ -37,7 +37,7 @@ and server in M<XML::Compile::SOAP11::Server>.
 
 =section Constructors
 
-=method new OPTIONS
+=method new %options
 To simplify the URIs of the actors, as specified with the C<destination>
 option, you may use the STRING C<NEXT>.  It will be replaced by the
 right URI.
@@ -110,7 +110,7 @@ sub envType($) { pack_type SOAP11ENV, $_[1] }
 
 =section Single message
 
-=method compileMessage ('SENDER'|'RECEIVER'), OPTIONS
+=method compileMessage <'SENDER'|'RECEIVER'>, %options
 
 =option  headerfault ENTRIES
 =default headerfault []
@@ -300,8 +300,9 @@ sub _reader_fault_reader()
        foreach my $node (@childs)
        {   my $type  = type_of_node($node);
            push @{$h{_ELEMENT_ORDER}}, $type;
-           $h{$type} = $schemas->reader($type, elements_qualified=>'TOP')
-              ->($node);
+           my $dec   = try { $schemas->reader($type, elements_qualified=>'TOP')
+              ->($node) };
+           $h{$type} = $dec // $node;
        }
        ($tag => \%h);
     };

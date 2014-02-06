@@ -117,7 +117,7 @@ and (if available) a donation.
 
 =section Constructors
 
-=method new OPTIONS
+=method new %options
 Create a new SOAP object.  You have to instantiate either the SOAP11 or
 SOAP12 sub-class of this, because there are quite some differences (which
 can be hidden for you)
@@ -166,8 +166,8 @@ sub _initSOAP($)
     $thing;
 }
 
-=c_method register URI, ENVNS
-Declare an operation type, being an (WSDL specific) URI and envelope
+=c_method register $uri, $envns
+Declare an operation type, being an (WSDL specific) $uri and envelope
 namespace.
 =cut
 
@@ -184,14 +184,14 @@ namespace.
 
 #--------------------
 =section Accessors
-=method version
-=method mediaType
+=method version 
+=method mediaType 
 =cut
 
 sub version()   {panic "not implemented"}
 sub mediaType() {shift->{XCS_mime}}
 
-=method schemas
+=method schemas 
 Returns the M<XML::Compile::Cache> object which contains the
 knowledge about the types.
 =cut
@@ -201,7 +201,7 @@ sub schemas() {shift->{XCS_schemas}}
 #--------------------
 =section Single message
 
-=method compileMessage ('SENDER'|'RECEIVER'), OPTIONS
+=method compileMessage <'SENDER'|'RECEIVER'>, %options
 The payload is defined explicitly, where all headers and bodies are
 described in detail.  When you have a WSDL file, these ENTRIES are
 generated automatically, but can be modified and extended (WSDL files
@@ -213,7 +213,7 @@ the type where it belongs to.  The element of an entry (the value) is
 defined as an C<any> element in the schema, and therefore you will need
 to explicitly specify the element to be processed.
 
-As OPTIONS, you can specify any listed here, but also anything which is
+As %options, you can specify any listed here, but also anything which is
 accepted by M<XML::Compile::Schema::compile()>, like
 C<< sloppy_integers => 1 >> and hooks.  These are applied to all header
 and body elements (not to the SOAP wrappers)
@@ -294,7 +294,7 @@ sub compileMessage($@)
          , dir => $direction;
 }
 
-=ci_method messageStructure XML
+=ci_method messageStructure $xml
 Returns a HASH with some collected information from a complete SOAP
 message (XML::LibXML::Document or XML::LibXML::Element).  Currenty,
 the HASH contains a C<header> and a C<body> key, with each an ARRAY
@@ -841,10 +841,10 @@ sub _writer(@) { shift->schemas->writer(@_) }
 
 =section Transcoding
 
-=method roleURI URI|STRING
+=method roleURI $uri|STRING
 Translates actor/role/destination abbreviations into URIs. Various
 SOAP protocol versions have different pre-defined STRINGs, which can
-be abbreviated for readibility.  Returns the unmodified URI in
+be abbreviated for readibility.  Returns the unmodified $uri in
 all other cases.
 
 SOAP11 only defines C<NEXT>.  SOAP12 defines C<NEXT>, C<NONE>, and
@@ -853,14 +853,14 @@ C<ULTIMATE>.
 
 sub roleURI($) { panic "not implemented" }
 
-=method roleAbbreviation URI
-Translate a role URI into a simple string, if predefined.  See
+=method roleAbbreviation $uri
+Translate a role $uri into a simple string, if predefined.  See
 M<roleURI()>.
 =cut
 
 sub roleAbbreviation($) { panic "not implemented" }
 
-=method replyMustUnderstandFault TYPE
+=method replyMustUnderstandFault $type
 Produce an error structure to be returned to the sender.
 =cut
 

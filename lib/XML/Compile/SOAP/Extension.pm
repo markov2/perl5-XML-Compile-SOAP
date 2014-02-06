@@ -23,7 +23,7 @@ M<XML::Compile::SOAP::WSA>)
 
 =section Constructors
 
-=c_method new OPTIONS
+=c_method new %options
 =cut
 
 sub new($@) { my $class = shift; (bless {}, $class)->init( {@_} ) }
@@ -38,9 +38,9 @@ sub init($)
 #--------
 =section WSDL11
 
-=ci_method wsdl11Init WSDL, ARGS
+=ci_method wsdl11Init $wsdl, $args
 Do not use this hook for adding WSDLs or schemas, unless those are
-used to interpret WSDL or SOAP files correctly.
+used to interpret $wsdl or SOAP files correctly.
 =cut
 
 ### For all methods named below: when called on an object, it is the stub
@@ -55,8 +55,8 @@ sub wsdl11Init($$)
 #--------
 =section SOAP11
 
-=ci_method soap11OperationInit OPERATION, ARGS
-ARGS is a reference.
+=ci_method soap11OperationInit $operation, $args
+$args is a reference.
 =cut
 
 sub soap11OperationInit($$)
@@ -64,7 +64,7 @@ sub soap11OperationInit($$)
     $_->soap11OperationInit(@_) for @ext;
 }
 
-=method soap11ClientWrapper OPERATION, CALL, ARGS
+=method soap11ClientWrapper $operation, $call, $args
 =cut
 
 sub soap11ClientWrapper($$$)
@@ -74,7 +74,7 @@ sub soap11ClientWrapper($$$)
     $call;
 }
 
-=method soap11HandlerWrapper OPERATION, CALLBACK, ARGS
+=method soap11HandlerWrapper $operation, $callback, $args
 Called before the handler is created, to influence the encoder and
 decoder. Returned is a wrapped callback, or the same.
 =cut
@@ -89,8 +89,8 @@ sub soap11HandlerWrapper($$$)
 #--------
 =section SOAP12
 
-=ci_method soap12OperationInit OPERATION, ARGS
-ARGS is a reference.
+=ci_method soap12OperationInit $operation, $args
+$args is a reference.
 =cut
 
 sub soap12OperationInit($$)
@@ -98,7 +98,7 @@ sub soap12OperationInit($$)
     $_->soap12OperationInit(@_) for @ext;
 }
 
-=method soap12ClientWrapper OPERATION, CALL, ARGS
+=method soap12ClientWrapper $operation, $call, $args
 =cut
 
 sub soap12ClientWrapper($$$)
@@ -108,7 +108,7 @@ sub soap12ClientWrapper($$$)
     $call;
 }
 
-=method soap12HandlerWrapper OPERATION, CALLBACK, ARGS
+=method soap12HandlerWrapper $operation, $callback, $args
 Called before the handler is created, to influence the encoder and
 decoder. Returned is a wrapped callback, or the same.
 =cut

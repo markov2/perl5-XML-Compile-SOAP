@@ -44,7 +44,7 @@ a server.
 
 =section Constructors
 
-=c_method new OPTIONS
+=c_method new %options
 =requires name
 
 =requires kind
@@ -128,13 +128,13 @@ sub _server_type($)
 
 #----------------
 =section Accessors
-=method kind
-=method name
-=method schemas
-=method version
-=method serviceName
-=method bindingName
-=method portName
+=method kind 
+=method name 
+=method schemas 
+=method version 
+=method serviceName 
+=method bindingName 
+=method portName 
 =cut
 
 sub schemas()   {shift->{schemas}}
@@ -149,7 +149,7 @@ sub serviceName() {shift->{servname}}
 sub portName()    {shift->{portname}}
 sub portTypeName(){shift->{porttypename}}
 
-=method soapAction
+=method soapAction 
 Used for the C<soapAction> header in HTTP transport, for routing
 messages through firewalls.
 =cut
@@ -165,17 +165,17 @@ server). The C<OUTPUT> is used by the server in its message back.
 =cut
 # wsaAction is implement in XML::Compile::SOAP::WSA
 
-=method serverClass
+=method serverClass 
 Returns the class name which implements the Server side for this protocol.
 
-=method clientClass
+=method clientClass 
 Returns the class name which implements the Client side for this protocol.
 =cut
 
 sub serverClass {panic}
 sub clientClass {panic}
 
-=method endPoints
+=method endPoints 
 Returns the list of alternative URLs for the end-point, which should
 be defined within the service's port declaration.
 =cut
@@ -186,7 +186,7 @@ sub endPoints() { @{shift->{endpoints}} }
 
 =section Handlers
 
-=method compileTransporter OPTIONS
+=method compileTransporter %options
 
 Create the transporter code for a certain specific target.
 
@@ -254,13 +254,13 @@ sub compileTransporter(@)
       );
 }
 
-=method compileClient OPTIONS
+=method compileClient %options
 Returns one CODE reference which handles the conversion from a perl
 data-structure into a request message, the transmission of the
 request, the receipt of the answer, and the decoding of that answer
 into a Perl data-structure.
 
-=method compileHandler OPTIONS
+=method compileHandler %options
 Returns a code reference which translates in incoming XML message
 into Perl a data-structure, then calls the callback.  The result of
 the callback is encoded from Perl into XML and returned.
@@ -274,17 +274,41 @@ sub compileHandler(@) { panic "not implemented" }
 #---------------
 =section Helpers
 
-=method explain WSDL, FORMAT, DIRECTION, OPTIONS
+=method explain $wsdl, $format, $direction, %options
 Dump an annotated structure showing how the operation works, helping
-developers to understand the schema. FORMAT is C<PERL> or C<XML>.
+developers to understand the schema. $format is C<PERL> or C<XML>.
 
-The DIRECTION is C<INPUT>, it will return the message which the client
+The $direction is C<INPUT>, it will return the message which the client
 sends to the server (input for the server). The C<OUTPUT> message is
 sent as response by the server.
 =cut
 
 sub explain($$$@)
 {   my ($self, $wsdl, $format, $dir, %args) = @_;
+    panic "not implemented for ".ref $self;
+}
+
+=method parsedWSDL %options
+[2.29] For some purposes, it is useful to get access to the parsed WSDL
+structure.
+
+B<Be aware> that the structure returned is consided "internal"
+and strongly influenced by behavior of M<XML::Compile>; backwards
+compatibility will not be maintained at all cost.
+
+You can use M<XML::Compile::Schema::template()> format C<TREE> to get
+more details about the element types mentioned in this structure.
+
+=example
+  use Data::Dumper;
+  $Data::Dumper::Indent    = 1;
+  $Data::Dumper::Quotekeys = 0;
+
+  print Dumper $op->parsedWSDL;
+=cut
+
+sub parsedWSDL(%)
+{   my $self = shift;
     panic "not implemented for ".ref $self;
 }
 

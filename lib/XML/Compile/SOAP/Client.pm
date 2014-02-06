@@ -31,7 +31,7 @@ sub init($) { shift }
 
 =section Handlers
 
-=method compileClient OPTIONS
+=method compileClient %options
 
 =option  name STRING
 =default name <undef>

@@ -46,7 +46,7 @@ or compose XML, but only worries about the HTTP aspects.
 
 =chapter METHODS
 
-=c_method new OPTIONS
+=c_method new %options
 Create a SOAP-over-HTTP handler, implemented as a wrapper around
 M<LWP::UserAgent>.
 
@@ -97,9 +97,9 @@ sub initWSDL11($)
 
 =section Accessors
 
-=method userAgent [AGENT|(undef, OPTIONS)]
+=method userAgent [$agent|<undef, %options>]
 Returns the User Agent which will be used.  You may change the
-configuration of the AGENT (the returned M<LWP::UserAgent> object)
+configuration of the $agent (the returned M<LWP::UserAgent> object)
 or provide one yourself.  See also M<new(user_agent)>.
 
 Changes to the agent configuration can be made before or after the
@@ -124,7 +124,7 @@ sub userAgent(;$)
 
 =section Handlers
 
-=method compileClient OPTIONS
+=method compileClient %options
 
 Compile an HTTP client handler.  Returned is a subroutine which is called
 with a text represenation of the XML request, or an XML::LibXML tree.
@@ -435,7 +435,7 @@ sub _prepare_for_no_answer($)
       };
 }
 
-=ci_method headerAddVersions HEADER
+=ci_method headerAddVersions $header
 Adds some lines about module versions, which may help debugging
 or error reports.  This is called when a new client or server
 is being created.

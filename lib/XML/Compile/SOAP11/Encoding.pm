@@ -63,7 +63,7 @@ SOAP defines encodings, especially for SOAP-RPC.
 
 =subsection Encoding
 
-=method startEncoding OPTIONS
+=method startEncoding %options
 This needs to be called before any encoding routine, because it
 initializes the internals.  Each call will reset all compiled
 cached translator routines.
@@ -90,9 +90,9 @@ sub _init_encoding($)
     $self;
 }
 
-=method prefixed TYPE|(NAMESPACE,LOCAL)
-Translate a NAMESPACE-LOCAL combination (which may be represented as
-a packed TYPE) into a prefixed notation.
+=method prefixed $type|<$ns,$local>
+Translate a $ns-$local combination (which may be represented as
+a packed $type) into a prefixed notation.
 =cut
 
 sub prefixed($;$)
@@ -100,7 +100,7 @@ sub prefixed($;$)
     $self->schemas->prefixed(@_);
 }
 
-=method enc LOCAL, VALUE, [ID]
+=method enc $local, $value, [$id]
 In the SOAP specification, encoding types are defined: elements
 which do not have a distinguishable name but use the type of the
 data as name.  Yep, ugly!
@@ -124,15 +124,15 @@ sub enc($$$)
          ->($self->{enc}{doc}, {_ => $value, id => $id} );
 }
 
-=method typed TYPE, NAME, VALUE
+=method typed $type, $name, $value
 A "typed" element shows its type explicitly, via the "xsi:type" attribute.
-The VALUE will get processed via an auto-generated XML::Compile writer,
+The $value will get processed via an auto-generated XML::Compile writer,
 so validated.  The processing is cashed.
 
-When VALUE already is an M<XML::LibXML::Element>, then no processing
-nor value checking will be performed.  The NAME will be ignored.
+When $value already is an M<XML::LibXML::Element>, then no processing
+nor value checking will be performed.  The $name will be ignored.
 
-If the TYPE is not qualified, then it is interpreted as basic type, as
+If the $type is not qualified, then it is interpreted as basic type, as
 defined by the selected schema.  If you explicitly
 need a non-namespace typed item, then use an empty namespace.  In any
 case, the type must be defined and the value is validated.
@@ -169,8 +169,8 @@ sub typed($$$)
     $el;
 }
 
-=method struct TYPE, CHILDS
-Create a structure, an element with children.  The CHILDS must be fully
+=method struct $type, $childs
+Create a structure, an element with children.  The $childs must be fully
 prepared M<XML::LibXML::Element> objects.
 =cut
 
@@ -183,14 +183,14 @@ sub struct($@)
     $struct;
 }
 
-=method element TYPE, NAME, VALUE
-Create an element.  The NAME is for node, where a namespace component
+=method element $type, $name, $value
+Create an element.  The $name is for node, where a namespace component
 is translated into a prefix.  When you wish for a C<type> attribute,
 use M<typed()>.
 
-When the TYPE does not contain a namespace indication, it is taken
-in the selected schema namespace.  If the VALUE already is a
-M<XML::LibXML::Element>, then that one is used (and the NAME ignored).
+When the $type does not contain a namespace indication, it is taken
+in the selected schema namespace.  If the $value already is a
+M<XML::LibXML::Element>, then that one is used (and the $name ignored).
 =cut
 
 sub element($$$)
@@ -210,10 +210,10 @@ sub element($$$)
     $el;
 }
 
-=method href NAME, ELEMENT, [ID]
-Create a reference element with NAME to the existing ELEMENT.  When the
-ELEMENT does not have an "id" attribute yet, then ID will be used.  In
-case not ID was specified, then one is generated.
+=method href $name, $element, [$id]
+Create a reference element with $name to the existing $element.  When the
+$element does not have an "id" attribute yet, then $id will be used.  In
+case not $id was specified, then one is generated.
 =cut
 
 my $id_count = 0;
@@ -231,12 +231,12 @@ sub href($$$)
     $el;
 }
 
-=method nil [TYPE], NAME
-Create an element with NAME which explicitly has the C<xsi:nil> attribute.
-If the NAME is full (has a namespace to it), it will be translated into
+=method nil [$type], $name
+Create an element with $name which explicitly has the C<xsi:nil> attribute.
+If the $name is full (has a namespace to it), it will be translated into
 a QNAME, otherwise, it is considered not namespace qualified.
 
-If a TYPE is given, then an explicit type parameter is added.
+If a $type is given, then an explicit type parameter is added.
 =cut
 
 sub nil($;$)
@@ -256,23 +256,23 @@ sub nil($;$)
     $el;
 }
 
-=method array (NAME|undef), ITEM_TYPE, ARRAY-of-ELEMENTS, OPTIONS
+=method array <$name|undef>, $item_type, $elements, %options
 Arrays can be a mess: a mixture of anything and nothing.  Therefore,
 you have to help the generation more than you may wish for.  This
 method produces an one dimensional array, M<multidim()> is used for
 multi-dimensional arrays.
 
-The NAME is the packed type of the array itself.  When undef,
+The $name is the packed type of the array itself.  When undef,
 the C<< {soap-enc-ns}Array >> will be used (the action soap
 encoding namespace will be used).
 
-The ITEM_TYPE specifies the type of each element within the array.
+The $item_type specifies the type of each element within the array.
 This type is used to create the C<arrayType> attribute, however
 doesn't tell enough about the items themselves: they may be
 extensions to that type.
 
-Each of the ELEMENTS must be an M<XML::LibXML::Node>, either
-self-constructed, or produced by one of the builder methods in
+Each of the $elements (passed as ARRAY) must be an M<XML::LibXML::Node>,
+either self-constructed, or produced by one of the builder methods in
 this class, like M<enc()> or M<typed()>.
 
 Returned is the XML::LibXML::Element which represents the
@@ -360,14 +360,14 @@ sub array($$$@)
     $el;
 }
 
-=method multidim (NAME|undef), ITEM_TYPE, ARRAY-of-ELEMENTS, OPTIONS
+=method multidim <$name|undef>, $item_type, $elements, %options
 A multi-dimensional array, less flexible than a single dimensional
 array, which can be created with M<array()>.
 
-The array must be square: in each of the dimensions, the length of
-each row must be the same.  On the other hand, it may be sparse
-(contain undefs).  The size of each dimension is determined by the
-length of its first element.
+The table of $elements (ARRAY of ARRAYs) must be full: in each of the
+dimensions, the length of each row must be the same.  On the other
+hand, it may be sparse (contain undefs).  The size of each dimension is
+determined by the length of its first element.
 
 =option  id STRING
 =default id C<undef>
@@ -463,7 +463,7 @@ sub _flatten_multidim($$$)
 
 =subsection Decoding
 
-=method startDecoding OPTIONS
+=method startDecoding %options
 Each call to this method will restart the cache of the decoding
 internals.
 
@@ -503,8 +503,8 @@ sub _init_decoding($)
     $self;
 }
 
-=method dec XMLNODES
-Decode the XMLNODES (list of M<XML::LibXML::Element> objects).  Use
+=method dec $xmlnodes
+Decode the $xmlnodes (list of M<XML::LibXML::Element> objects).  Use
 Data::Dumper to figure-out what the produced output is: it is a guess,
 so may not be perfect (do not use RPC but document style soap for
 good results).
@@ -811,8 +811,8 @@ sub _dec_array_multi_slice($$$)
         1..$rows ]
 }
 
-=method decSimplify TREE, OPTIONS
-Simplify the TREE of output produced by M<dec()> to contain only
+=method decSimplify $tree, %options
+Simplify the $tree of output produced by M<dec()> to contain only
 data.  Of course, this will remove useful information.
 
 From each of the HASHes in the tree, the C<_NAME>, C<_TYPE>, C<id>,
