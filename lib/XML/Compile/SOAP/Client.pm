@@ -29,6 +29,7 @@ base class.  The primary must contain the C<new>.
 sub new(@) { panic __PACKAGE__." only secundary in multiple inheritance" }
 sub init($) { shift }
 
+#--------------
 =section Handlers
 
 =method compileClient %options
@@ -119,7 +120,7 @@ sub compileClient(@)
     }
 
     my $output_handler = sub {
-        my ($ans, $trace) = @_;
+        my ($ans, $trace, $xops) = @_;
         wantarray or return
             UNIVERSAL::isa($ans, 'XML::LibXML::Node') ? $decode->($ans) : $ans;
 
@@ -140,7 +141,7 @@ sub compileClient(@)
         {   $trace->{elapse} = $trace->{transport_end} - $trace->{start}
                 if defined $trace->{transport_end};
         }
-        ($ans, XML::Compile::SOAP::Trace->new($trace));
+        ($ans, XML::Compile::SOAP::Trace->new($trace), $xops);
     };
 
     $args{async}
@@ -152,7 +153,7 @@ sub compileClient(@)
               , name => $name;
 
         my $callback = delete $data->{_callback}
-            or error __x"opertaion `{name}' is async, so requires _callback";
+            or error __x"operation `{name}' is async, so requires _callback";
 
         my $trace = {start => time};
         my ($req, $mtom) = $encode->($data, $charset);
@@ -175,10 +176,12 @@ sub compileClient(@)
 
         my $trace = {start => time};
         my ($req, $mtom) = $encode->($data, $charset);
-        my $ans = $transport->($req, $trace, $mtom);
+        my ($ans, $xops) = $transport->($req, $trace, $mtom);
+        wantarray || !$xops || ! keys %$xops
+            or warning "loosing received XOPs";
 
         $trace->{encode_elapse} = $trace->{transport_start} - $trace->{start};
-        $output_handler->($ans, $trace);
+        $output_handler->($ans, $trace, $xops);
       };
 }
 

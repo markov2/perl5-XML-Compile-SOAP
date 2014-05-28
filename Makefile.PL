@@ -2,7 +2,7 @@ use ExtUtils::MakeMaker;
 
 use 5.008;
 
-my $version = '3.04';
+my $version = '3.05';
 
 my $prereq =
    { XML::Compile         => '1.42'
@@ -10,11 +10,11 @@ my $prereq =
    , XML::Compile::Cache  => 0.995
    , Log::Report          => '1.00'
 
-   , LWP             => 5.816
-   , Time::HiRes     => 0
-   , File::Slurp     => 0
+   , LWP               => 5.816
+   , Time::HiRes       => 0
+   , File::Slurp::Tiny => 0
 
-   , Test::More      => 0.54
+   , Test::More        => 0.54
    };
 
 eval "require XML::Compile::WSDL11";
@@ -34,7 +34,8 @@ __CHANGES_300
 }
 
 eval "require XML::Compile::SOAP::Daemon";
-$@ or $prereq->{'XML::Compile::SOAP::Daemon'} = '3.00';
+$prereq->{'XML::Compile::SOAP::Daemon'} = '3.00'
+    unless $@ || $ENV{MARKOV_DEVEL};
 
 WriteMakefile
  ( NAME	 	=> 'XML::Compile::SOAP'

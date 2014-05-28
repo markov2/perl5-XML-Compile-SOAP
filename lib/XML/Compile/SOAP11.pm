@@ -258,20 +258,16 @@ sub _writer_faults($)
       , include_namespaces => sub {$_[0] ne SOAP11ENV});
 
     while(my ($name, $fault) = each %$faults)
-    {   my $part    = $fault->{part};
-        my ($label, $type) = ($part->{name}, $part->{element});
-
-        # spec says: details ALWAYS namespace qualified!
-        my $details = $self->_writer($type, elements_qualified => 'TOP'
-         , include_namespaces => sub {$_[0] ne SOAP11ENV && $_[2]});
+    {   my $part = $fault->{part};
+        my ($elem, $details) = $self->_write_one_fault($args, $part);
 
         my $code = sub
           { my ($doc, $data)  = (shift, shift);
             my %copy = %$data;
             $copy{faultactor} = $self->roleURI($copy{faultactor});
-            my $det = delete $copy{detail};
-            my @det = !defined $det ? () : ref $det eq 'ARRAY' ? @$det : $det;
-            $copy{detail}{$type} = [ map $details->($doc, $_), @det ];
+            my $det  = delete $copy{detail};
+            my @det  = !defined $det ? () : ref $det eq 'ARRAY' ? @$det : $det;
+            $copy{detail}{$elem} = [ map $details->($doc, $_), @det ];
             $wrfault->($doc, \%copy);
           };
 
@@ -280,6 +276,35 @@ sub _writer_faults($)
     }
 
     (\@rules, \@flabels);
+}
+
+sub _write_one_fault($$)
+{   my ($self, $args, $part) = @_;
+
+    # spec says: details ALWAYS namespace qualified!
+    if(my $elem = $part->{element})
+    {   my $writer = $self->{writer} ||=
+            $self->_writer($elem, elements_qualified => 'TOP'
+                , include_namespaces => sub {$_[0] ne SOAP11ENV && $_[2]});
+        return ($elem, $writer);
+    }
+
+    if(my $type = $part->{type})
+    {   $args->{style} eq 'rpc'
+            or error __x"part {name} uses `type', only for rpc not {style}"
+                 , name => $part->{name}, style => $args->{style};
+
+        my $elem   = $part->{name};
+        my $writer = $part->{writer} ||= $self->schemas->compileType
+          ( WRITER  => $part->{type}, %$args
+          , element => $part->{name}
+          , include_namespaces => sub {$_[0] ne SOAP11ENV && $_[2]}
+          );
+       return ($elem, $writer);
+    }
+
+    error __x"fault part {name} has neither `element' nor `type' specified"
+       , name => $part->{name};
 }
 
 ##########
@@ -318,7 +343,7 @@ sub _reader_faults($$)
 
     my %names;
     while(my ($name, $def) = each %$faults)
-    {   $names{$def->{part}{element}} = $name;
+    {   $names{$def->{part}{element} || $name} = $name;
     }
 
     sub

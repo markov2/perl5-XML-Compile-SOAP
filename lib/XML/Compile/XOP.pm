@@ -27,6 +27,9 @@ XML::Compile::XOP - MTOM and XOP handler
   my $xop_image = $xop->bytes($binary_image);
   my $answer    = $call->(image => $xop_image);
 
+  # returned XOPs in SOAP
+  my ($answer, $trace, $xop) = $wsdl->call($operation)->(%data);
+
 =chapter DESCRIPTION
 The SOAP Message Transmission Optimization Mechanism (MTOM) is designed
 for SOAP1.2, but also usable for SOAP1.1.  It optimizes the transport of

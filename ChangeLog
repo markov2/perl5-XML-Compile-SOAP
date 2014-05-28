@@ -1,6 +1,19 @@
 
 === version history of XML::Compile::SOAP
 
+version 3.05: Wed May 28 09:29:16 CEST 2014
+
+	Fixes:
+	- support rpc-literal fault parts based on type, not only element.
+	  reported by [Rob De Langhe]
+	- handle returned XOP objects.  Patch by [Christopher Taranto]
+
+	Improvements:
+	- use File::Slurp::Tiny to replace File::Slurp
+	  rt.cpan.org#92920 [Karen Etheridge]
+	- do not include ::Daemon in META.yml
+	  rt.cpan.org#95507 [Nikolay Martynov]
+
 version 3.04: Thu Feb  6 17:05:32 CET 2014
 
 	Improvements:

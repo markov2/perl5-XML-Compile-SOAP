@@ -6,7 +6,7 @@ package XML::Compile::XOP::Include;
 use Log::Report 'xml-compile-soap', syntax => 'SHORT';
 use XML::Compile::SOAP::Util qw/:xop10/;
 use HTTP::Message            ();
-use File::Slurp              qw/read_file write_file/;
+use File::Slurp::Tiny        qw/read_file write_file/;
 
 =chapter NAME
 XML::Compile::XOP::Include - Represents one XOP node.
