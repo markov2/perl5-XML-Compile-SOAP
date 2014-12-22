@@ -175,7 +175,9 @@ sub printTimings(;$)
 =option  pretty_print 0|1|2
 =default pretty_print 0
 Use M<XML::Compile::Transport::compileClient(xml_format)> if you want
-the messages to be shown readible.
+the messages to be shown readible.  The digits reflect XML::LibXML
+format settings: '0' is unchanged, '1' will show indented formatting,
+and '2' has even more whitespace in it.
 =cut
 
 sub printRequest(;$%)

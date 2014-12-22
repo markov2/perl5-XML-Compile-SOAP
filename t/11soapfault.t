@@ -103,7 +103,7 @@ my $msg2_soap = <<__MSG2;
 <?xml version="1.0" encoding="UTF-8"?>
 <SOAP-ENV:Envelope xmlns:SOAP-ENV="$soap11_env">
   <SOAP-ENV:Body>
-    <SOAP-ENV:Fault xmlns:SOAP-ENC="http://schemas.xmlsoap.org/soap/encoding/"
+    <SOAP-ENV:Fault
          xmlns:xsd="http://www.w3.org/2001/XMLSchema"
          xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
       <faultcode>SOAP-ENV:Server.first</faultcode>

@@ -60,46 +60,39 @@ sub init($)
 }
 
 sub _initSOAP11($)
-{   my ($thing, $schemas) = @_;
-    $thing->_initSOAP($schemas);
+{   my ($self, $schemas) = @_;
 
-    return $thing
+    return $self
         if $schemas->{did_init_SOAP11}++;   # ugly
 
-    $schemas->addPrefixes
-      ( 'SOAP-ENV' => SOAP11ENV  # preferred names by spec
-      , 'SOAP-ENC' => SOAP11ENC
-      );
+    $self->_initSOAP($schemas);
 
     (my $xsddir = __FILE__) =~ s!\.pm$!/xsd!;
-    $schemas->importDefinitions
-      ( "$xsddir/soap-envelope.xsd"
-      , element_form_default   => 'qualified'
-      , attribute_form_default => 'qualified'
-      );
-    $schemas->importDefinitions
-      ( "$xsddir/soap-encoding.xsd"
-      , element_form_default   => 'qualified'
-      );
-    $schemas->importDefinitions
-      ( "$xsddir/soap-envelope-patch.xsd"
-      );
-    $thing;
+    $schemas->addPrefixes('SOAP-ENV' => SOAP11ENV);
+    $schemas->importDefinitions("$xsddir/soap-envelope.xsd");
+
+    $self->_initRpcEnc11($schemas, $xsddir)
+        if $self->can('_initRpcEnc11');
+
+    $self;
 }
 
 sub _initWSDL11($)
 {   my ($class, $wsdl) = @_;
+
+    return $class
+        if $wsdl->{did_init_SOAP11_WSDL}++;   # ugly
+
     trace "initialize SOAP11 for WSDL11";
-    $class->_initSOAP11($wsdl);
 
     (my $xsddir = __FILE__) =~ s!SOAP11\.pm$!WSDL11/xsd!;
-    my $xsd     = "$xsddir/wsdl-soap.xsd";
-    $wsdl->importDefinitions($xsd, element_form_default => 'qualified');
+    $wsdl->importDefinitions("$xsddir/wsdl-soap.xsd");
     $wsdl->addPrefixes(soap => WSDL11SOAP);
 
     $wsdl->declare(READER =>
       [ "soap:address", "soap:operation", "soap:binding"
       , "soap:body",    "soap:header",    "soap:fault" ]);
+    $class;
 }
 
 sub version    { 'SOAP11' }
@@ -284,8 +277,8 @@ sub _write_one_fault($$)
     # spec says: details ALWAYS namespace qualified!
     if(my $elem = $part->{element})
     {   my $writer = $self->{writer} ||=
-            $self->_writer($elem, elements_qualified => 'TOP'
-                , include_namespaces => sub {$_[0] ne SOAP11ENV && $_[2]});
+            $self->_writer($elem
+              , include_namespaces => sub {$_[0] ne SOAP11ENV && $_[2]});
         return ($elem, $writer);
     }
 
@@ -325,8 +318,7 @@ sub _reader_fault_reader()
        foreach my $node (@childs)
        {   my $type  = type_of_node($node);
            push @{$h{_ELEMENT_ORDER}}, $type;
-           my $dec   = try { $schemas->reader($type, elements_qualified=>'TOP')
-              ->($node) };
+           my $dec   = try { $schemas->reader($type)->($node) };
            $h{$type} = $dec // $node;
        }
        ($tag => \%h);
@@ -409,27 +401,10 @@ sub replyMustUnderstandFault($)
 }
 
 sub roleURI($) { $_[1] && $_[1] eq 'NEXT' ? SOAP11NEXT : $_[1] }
-
 sub roleAbbreviation($) { $_[1] && $_[1] eq SOAP11NEXT ? 'NEXT' : $_[1] }
 
 #-------------------------------------
-
-=section Transcoding
-=cut
-
-#loaded from ::SOAP11::Encoding
-sub startEncoding(%)
-{   my ($self, %args) = @_;
-    require XML::Compile::SOAP11::Encoding;
-    shift->_init_encoding(\%args);
-}
-
-sub startDecoding(@)
-{   my ($self, %args) = @_;
-    require XML::Compile::SOAP11::Encoding;
-    $self->_init_decoding(\%args);
-}
-
+# docs of ::SOAP11::Encoding inserted here
 =subsection Encoding
 =subsection Decoding
 =cut

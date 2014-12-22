@@ -114,16 +114,15 @@ sub _msg_parts($$$$$)
 
         my ($ns, $local) = unpack_type $msgname;
         my $rpc_ns    = $body->{namespace};
-        $wsdl->addPrefixes(call => $rpc_ns)   # hopefully no-one uses "call"
-            if defined $rpc_ns && !$wsdl->prefixFor($rpc_ns);
+        $wsdl->addNicePrefix(call => $rpc_ns);
 
         my $procedure
-            = $style eq 'rpc' ? pack_type($rpc_ns, $opname)
-            : @parts==1 && $parts[0]{type} ? $msgname
-            : $local; 
+           = $style eq 'rpc' ? pack_type($rpc_ns, $opname)
+           : @parts==1 && $parts[0]{type} ? $msgname
+           : $local; 
 
-        $parts{body}  = {procedure => $procedure, %$port_op, use => 'literal',
-           %$body, parts => \@parts};
+        $parts{body}  = {procedure => $procedure, %$port_op, use => 'literal'
+           , %$body, parts => \@parts};
     }
     elsif($port_op->{message})
     {   # missing <soap:body use="literal"> in <wsdl:input> or :output
@@ -573,14 +572,16 @@ sub explain($$$@)
     if($dir eq 'INPUT')
     {   push @header
           , '# Compile only once in your code, usually during initiation:'
-          , "my \$call = \$wsdl->compileClient('$opname');"
-          , '# ... then call it as often as you need.';
+          , "#   my \$call = \$wsdl->compileClient('$opname');"
+          , '# then call it as often as you need.  Alternatively'
+          , '#   $wsdl->compileCalls();   # once'
+          , "#   \$response = \$wsdl->call('$opname', \$request);";
     }
     else #OUTPUT
     {   push @header
           , '# As part of the initiation phase of your server:'
           , 'my $daemon = XML::Compile::SOAP::HTTPDaemon->new;'
-          , '$deamon->operationsFromWSDL'
+          , '$daemon->operationsFromWSDL'
           , '  ( $wsdl'
           , '  , callbacks =>'
           , "     { $opname => \\&handle_$opname}"

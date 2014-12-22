@@ -1,6 +1,19 @@
 
 === version history of XML::Compile::SOAP
 
+version 3.06: Mon Dec 22 08:43:11 CET 2014
+
+	Fixes:
+	- accept multiple rpc name-spaces.
+
+	Improvements:
+	- typo in generated daemon example [Cs Metsys]
+	- new method ::SOAP::Operation::longName()
+	- remove soap-env-patch: not needed anymore
+	- remove overrule of *form_default on standard schemas: not needed
+	  anymore.
+	- rpc-encoding partially supported
+
 version 3.05: Wed May 28 09:29:16 CEST 2014
 
 	Fixes:

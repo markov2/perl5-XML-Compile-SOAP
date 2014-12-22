@@ -76,6 +76,7 @@ Most server implementations show some problems.  Also, servers may produce
 responses using their own namespaces (like for error codes).  When you know
 which server you are talking to, the quircks of the specific server type can
 be loaded.  Read more in the L<XML::Compile::SOAP/"Supported servers">.
+
 =cut
 
 sub new(@) { my $class = shift; (bless {}, $class)->init( {@_} ) }
@@ -181,6 +182,16 @@ be defined within the service's port declaration.
 =cut
 
 sub endPoints() { @{shift->{endpoints}} }
+
+=method longName
+[3.06] prefix the service name before the operation name, to make it
+really unique.  A C<#> is used as separator.
+=cut
+
+sub longName()
+{   my $self = shift;
+    ($self->serviceName // '') . '#' . $self->name;
+}
 
 #-------------------------------------------
 

@@ -2,13 +2,13 @@ use ExtUtils::MakeMaker;
 
 use 5.008;
 
-my $version = '3.05';
+my $version = '3.06';
 
 my $prereq =
-   { XML::Compile         => '1.42'
+   { XML::Compile         => '1.48'
    , XML::Compile::Tester => '0.90'
-   , XML::Compile::Cache  => 0.995
-   , Log::Report          => '1.00'
+   , XML::Compile::Cache  => '1.03'
+   , Log::Report          => '1.05'
 
    , LWP               => 5.816
    , Time::HiRes       => 0
@@ -49,7 +49,7 @@ WriteMakefile
 ### used by oodist during production of distribution
 sub MY::postamble { <<'__POSTAMBLE' }
 
-EXTENDS		= ../XMLCompile:../XMLDaemon:../XMLTester:../XMLCache:../XMLWSDL:../XMLSOAP12:../SOAPAnyEvent:../XMLWSA
+EXTENDS		= ../XMLCompile:../XMLDaemon:../XMLTester:../XMLCache:../XMLWSDL:../XMLSOAP12:../XMLSOAPEv:../XMLWSA
 
 # for DIST
 RAWDIR          = ../public_html/xml-compile-soap/raw

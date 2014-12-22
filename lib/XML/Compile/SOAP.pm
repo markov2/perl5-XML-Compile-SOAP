@@ -5,7 +5,8 @@ package XML::Compile::SOAP;
 
 use Log::Report          'xml-compile-soap';
 use XML::Compile         ();
-use XML::Compile::Util   qw(SCHEMA2001 SCHEMA2001i unpack_type type_of_node);
+use XML::Compile::Util   qw(SCHEMA2001 SCHEMA2001i pack_type
+   unpack_type type_of_node);
 use XML::Compile::Cache  ();
 use XML::Compile::SOAP::Util qw/:xop10/;
 
@@ -163,6 +164,7 @@ sub _initSOAP($)
         if $schemas->{did_init_SOAP}++;   # ugly
 
     $schemas->addPrefixes(xsd => SCHEMA2001, xsi => SCHEMA2001i);
+
     $thing;
 }
 
@@ -196,7 +198,10 @@ Returns the M<XML::Compile::Cache> object which contains the
 knowledge about the types.
 =cut
 
-sub schemas() {shift->{XCS_schemas}}
+sub schemas() {
+use Carp 'cluck';
+ref $_[0] or cluck;
+shift->{XCS_schemas}}
 
 #--------------------
 =section Single message
@@ -357,8 +362,12 @@ sub _sender(@)
     elsif($style eq 'rpc')
     {   my $procedure = $args{procedure} || $args{body}{procedure}
             or error __x"sending operation requires procedure name with RPC";
-        push @$hooks, $self->_writer_rpc_hook($self->envType('Body')
-          , $procedure, $body, $faults);
+
+        my $use = $args{use} || $args{body}{use} || 'literal';
+        my $bt  = $self->envType('Body');
+        push @$hooks, $use eq 'literal'
+           ? $self->_writer_body_rpclit_hook($bt, $procedure, $body, $faults)
+           : $self->_writer_body_rpcenc_hook($bt, $procedure, $body, $faults);
     }
     else
     {   error __x"unknown style `{style}'", style => $style;
@@ -374,19 +383,19 @@ sub _sender(@)
     {   my ($values, $charset) = ref $_[0] eq 'HASH' ? @_ : ( {@_}, undef);
         my %copy  = %$values;  # do not destroy the calling hash
         my $doc   = delete $copy{_doc}
-                 || XML::LibXML::Document->new('1.0', $charset || 'UTF-8');
+          || XML::LibXML::Document->new('1.0', $charset || 'UTF-8');
 
         my %data;
-        $data{$_}   = delete $copy{$_} for qw/Header Body/;
+        $data{$_}  = delete $copy{$_} for qw/Header Body/;
         $data{Body} ||= {};
 
         foreach my $label (@$hlabels)
-        {   defined $copy{$label} or next;
+        {   exists $copy{$label} or next;
             $data{Header}{$label} ||= delete $copy{$label};
         }
 
         foreach my $label (@$blabels, @$flabels)
-        {   defined $copy{$label} or next;
+        {   exists $copy{$label} or next;
             $data{Body}{$label} ||= delete $copy{$label};
         }
 
@@ -448,14 +457,14 @@ sub _writer_hook($$@)
    +{ type => $type, replace => $code };
 }
 
-sub _writer_rpc_hook($$$$$)
+sub _writer_body_rpclit_hook($$$$$)
 {   my ($self, $type, $procedure, $params, $faults) = @_;
     my @params   = @$params;
     my @faults   = @$faults;
     my $schemas  = $self->schemas;
 
     my $proc     = $schemas->prefixed($procedure);
-    my ($prefix) = split /:/, $proc;
+    my ($prefix) = split /\:/, $proc;
     my $prefdef  = $schemas->prefix($prefix);
     my $proc_ns  = $prefdef->{uri};
     $prefdef->{used} = 0;
@@ -507,7 +516,7 @@ sub _writer_header($)
         my $label   = $part->{name};
         my $element = $part->{element};
         my $code    = $part->{writer}
-         || $self->_writer($element, %$args, elements_qualified => 'TOP'
+         || $self->_writer($element, %$args
               , include_namespaces => sub {$_[0] ne $soapenv && $_[2]});
 
         push @rules, $label => $code;
@@ -522,12 +531,13 @@ sub _writer_body($)
     my (@rules, @blabels);
 
     my $body  = $args->{body} || $args->{fault};
-    my $use   = $body->{use} || 'literal';
-    $use eq 'literal'
-        or error __x"RPC encoded not supported by this version";
+    my $use   = $body->{use}  || 'literal';
+#   $use eq 'literal'
+#       or error __x"RPC encoded not supported by this version";
 
     my $parts = $body->{parts} || [];
     my $style = $args->{style};
+    local $args->{is_rpc_enc} = $style eq 'rpc' && $use eq 'encoded';
 
     foreach my $part (@$parts)
     {   my $label  = $part->{name};
@@ -556,9 +566,11 @@ sub _writer_body_element($$)
     my $element = $part->{element};
     my $soapenv = $self->envelopeNS;
 
-    $part->{writer}
-       ||= $self->_writer($element, %$args, elements_qualified => 'TOP'
-            , include_namespaces => sub {$_[0] ne $soapenv && $_[2]});
+    $part->{writer} ||= $self->_writer
+      ( $element, %$args
+      , include_namespaces  => sub {$_[0] ne $soapenv && $_[2]}
+      , xsi_type_everywhere => $args->{is_rpc_enc}
+      );
 }
 
 sub _writer_body_type($$)
@@ -573,12 +585,11 @@ sub _writer_body_type($$)
 
     my $soapenv = $self->envelopeNS;
 
-    $part->{writer} =
-        $self->schemas->compileType
-          ( WRITER  => $part->{type}, %$args
-          , element => $part->{name}
-          , include_namespaces => sub {$_[0] ne $soapenv && $_[2]}
-          );
+    $part->{writer} = $self->schemas->compileType
+      ( WRITER  => $part->{type}, %$args, element => $part->{name}
+      , include_namespaces => sub {$_[0] ne $soapenv && $_[2]}
+      , xsi_type_everywhere => $args->{is_rpc_enc}
+      );
 }
 
 sub _writer_faults($) { ([], []) }
@@ -623,11 +634,14 @@ sub _receiver(@)
     my $style  = $args{style} || 'document';
     my $kind   = $args{kind}  || 'request-response';
     if($style eq 'rpc')
-    {   if($kind ne 'one-way' && $kind ne 'notification')
-        {   my $procedure = $args{body}{procedure}
+    {   my $procedure = $args{procedure} || $args{body}{procedure}
             or error __x"receiving operation requires procedure name with RPC";
-            $body  = $self->_reader_body_rpc_wrapper($procedure, $body);
-        }
+
+        my $use = $args{use} || $args{body}{use} || 'literal';
+#warn "RPC READER BODY $use";
+        $body = $use eq 'literal'
+           ? $self->_reader_body_rpclit_wrapper($procedure, $body)
+           : $self->_reader_body_rpcenc_wrapper($procedure, $body);
     }
     elsif($style ne 'document')
     {   error __x"unknown style `{style}'", style => $style;
@@ -704,9 +718,9 @@ sub _reader_hook($$)
  
 }
 
-sub _reader_body_rpc_wrapper($$)
+sub _reader_body_rpclit_wrapper($$)
 {   my ($self, $procedure, $body) = @_;
-    my %trans = map { ($_->[1] => [ $_->[0], $_->[2] ]) } @$body;
+    my %trans = map +($_->[1] => [ $_->[0], $_->[2] ]), @$body;
 
     # this should use key_rewrite, but there is no $wsdl here
     # my $label = $wsdl->prefixed($procedure);
@@ -716,7 +730,7 @@ sub _reader_body_rpc_wrapper($$)
       { my $xml = shift or return {};
         my %h;
         foreach my $child ($xml->childNodes)
-        {   next unless $child->isa('XML::LibXML::Element');
+        {   $child->isa('XML::LibXML::Element') or next;
             my $type = type_of_node $child;
             if(my $t = $trans{$type})
                  { $h{$t->[0]} = $t->[1]->($child) }
@@ -737,8 +751,7 @@ sub _reader_header($)
     {   my $part    = $h->{parts}[0];
         my $label   = $part->{name};
         my $element = $part->{element};
-        my $code    = $part->{reader}
-          ||= $self->_reader($element, %$args, elements_qualified => 'TOP');
+        my $code    = $part->{reader} ||= $self->_reader($element, %$args);
         push @rules, [$label, $element, $code];
     }
 
@@ -769,6 +782,8 @@ sub _reader_body($$)
         push @rules, [ $label, $t, $code ];
     }
 
+#use Data::Dumper;
+#warn "RULES=", Dumper \@rules, $parts;
     \@rules;
 }
 
@@ -776,10 +791,9 @@ sub _reader_body_element($$)
 {   my ($self, $args, $part) = @_;
 
     my $element = $part->{element};
-    my $code    = $part->{reader}
-       || $self->_reader($element, %$args, elements_qualified => 'TOP');
+    my $code    = $part->{reader} || $self->_reader($element, %$args);
 
-    return ($element, $code);
+    ($element, $code);
 }
 
 sub _reader_body_type($$)
@@ -991,7 +1005,7 @@ harder... you may try hooks or something more along these lines:
    my $message = { ..., $type => $node };
 
    my $call = $wsdl->compileClient('myOpToCall');
-   my ($answer, $trace) =  $call->(_doc => $doc, message => $message);
+   my ($answer, $trace) = $call->(_doc => $doc, message => $message);
 
 Here, C<$type> is the type of the element which needs to be filled in
 on a spot where the schema defines an "ANY" element. You need to include

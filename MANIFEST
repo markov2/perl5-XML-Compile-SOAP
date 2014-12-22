@@ -40,7 +40,6 @@ lib/XML/Compile/SOAP11/Encoding.pm
 lib/XML/Compile/SOAP11/Operation.pm
 lib/XML/Compile/SOAP11/Server.pm
 lib/XML/Compile/SOAP11/xsd/soap-encoding.xsd
-lib/XML/Compile/SOAP11/xsd/soap-envelope-patch.xsd
 lib/XML/Compile/SOAP11/xsd/soap-envelope.xsd
 lib/XML/Compile/Transport.pm
 lib/XML/Compile/Transport/SOAPHTTP.pm
