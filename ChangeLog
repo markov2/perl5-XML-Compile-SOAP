@@ -1,6 +1,18 @@
 
 === version history of XML::Compile::SOAP
 
+version 3.07: Thu Jan 15 14:36:54 CET 2015
+
+	Fixes:
+	- FAQ: how to set the HTTP timeout.
+	- silence rpc-encoded without namespace.
+	  rt.cpan.org#101383 [Breno G. de Oliveira]
+
+	Improvements:
+	- lower http "received status" messages from 'info' to 'trace'
+	- ::SOAPHTTP new method defaultUserAgent()
+	- force people to upgrade LWP
+
 version 3.06: Mon Dec 22 08:43:11 CET 2014
 
 	Fixes:

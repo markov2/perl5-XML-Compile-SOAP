@@ -114,11 +114,18 @@ sub userAgent(;$)
 
     $self->{user_agent} ||= $default_ua ||= LWP::UserAgent->new
       ( requests_redirectable => [ qw/GET HEAD POST M-POST/ ]
-      , parse_head => 0
-      , protocols_allowed => [ qw/http https/ ]
+      , protocols_allowed     => [ qw/http https/ ]
+      , parse_head            => 0
       , @_
       );
 }
+
+=ci_method defaultUserAgent
+[3.07] Returns the used M<LWP::UserAgent>, available after the compilation
+of the SOAP call(s).
+=cut
+
+sub defaultUserAgent() { $default_ua }
 
 #-------------------------------------------
 
@@ -294,7 +301,6 @@ sub _prepare_call($)
 
         $trace->{http_request}  = $request;
 
-#warn $request->as_string;
         my $response = $ua->request($request)
             or return undef;
 
@@ -331,7 +337,7 @@ sub _prepare_simple_call($)
         lc($ct) ne 'multipart/related'
             or error __x"remote system uses XOP, use XML::Compile::XOP";
  
-        info "received ".$response->status_line;
+        trace "received ".$response->status_line;
 
         $ct =~ m,[/+]xml$,i
             or error __x"answer is not xml but `{type}'", type => $ct;
@@ -422,7 +428,7 @@ sub _prepare_for_no_answer($)
       { my $response = shift;
         my $ct       = $response->content_type || '';
 
-        info "received ".$response->status_line;
+        trace "received ".$response->status_line;
 
         my $content = '';
         if($ct =~ m,[/+]xml$,i)

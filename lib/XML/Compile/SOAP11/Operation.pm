@@ -113,8 +113,8 @@ sub _msg_parts($$$$$)
         my @parts     = $class->_select_parts($wsdl, $msgname, $body->{parts});
 
         my ($ns, $local) = unpack_type $msgname;
-        my $rpc_ns    = $body->{namespace};
-        $wsdl->addNicePrefix(call => $rpc_ns);
+        my $rpc_ns    = $body->{namespace} // '';
+        $wsdl->addNicePrefix(call => $rpc_ns) if $rpc_ns;
 
         my $procedure
            = $style eq 'rpc' ? pack_type($rpc_ns, $opname)

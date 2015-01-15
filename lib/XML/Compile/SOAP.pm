@@ -634,7 +634,8 @@ sub _receiver(@)
     my $style  = $args{style} || 'document';
     my $kind   = $args{kind}  || 'request-response';
     if($style eq 'rpc')
-    {   my $procedure = $args{procedure} || $args{body}{procedure}
+    {   my $procedure = $args{procedure} || $args{body}{procedure};
+        keys %{$args{body}}==0 || $procedure
             or error __x"receiving operation requires procedure name with RPC";
 
         my $use = $args{use} || $args{body}{use} || 'literal';
@@ -888,8 +889,8 @@ sub replyMustUnderstandFault($) { panic "not implemented" }
 
 Although the specifications of SOAP1.1 and WSDL1.1 are thin, the number
 of special constructs are many. And, of course, all are poorly documented.
-Both SOAP and WSDL have 1.2 versions, which will clear things up a lot,
-but are not used that often yet.
+SOAP 1.2 has a much better specification, but is not used a lot.  I have
+not seen WSDL2 in real life.
 
 WSDL defines two kinds of messages: B<document> style SOAP and B<rpc>
 style SOAP.  In document style SOAP, the messages are described in

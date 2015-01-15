@@ -76,7 +76,7 @@ to reach to that LWP::UserAgent.
 Michael Ludwig contributed the following example (slightly adapted)
 Of course, select your own preferences carefully.
 
-  my $ua = LWP::UserAgent->new;
+  my $ua = LWP::UserAgent->new(timeout => 10);
 
   # First the HTTP logic
   # defaults when https is used
@@ -88,10 +88,13 @@ Of course, select your own preferences carefully.
 
   # Now, we need the SOAP logic
   my $trans = XML::Compile::Transport::SOAPHTTP
-    ->new(user_agent => $ua, timeout => 10, address => $srv_url);
+    ->new(user_agent => $ua, address => $srv_url);
 
   # Finally the message, with explicit transporter
   my $call = $wsdl->compileClient($opname, transport => $trans);
+
+  # Or more operations at the same time
+  # $wsdl->compileCalls(transport => $trans);
 
   # $answer is the decoded XML content.
   my($answer, $trace) = $call->( \%parms );
@@ -105,7 +108,8 @@ you can also ask the operation itself. Here a different implementation:
 
   my $op    = $wsdl->operation($opname);
   my $srv   = ($op->addresses)[0];
-  my $trans = XML::Compile::Transport::SOAPHTTP->new(address => $srv);
+  my $trans = XML::Compile::Transport::SOAPHTTP->new(address => $srv
+    , timeout => 15, ssl_opts => { verify_hostname => 0 });
 
   # Now configure the userAgent
   my $ua    = $trans->userAgent;
