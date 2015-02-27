@@ -331,21 +331,22 @@ C<new> option C<opts_rw> and friends.
 sub compileClient(@)
 {   my ($self, %args) = @_;
 
-    my $soap = $soap11_client{$self->{schemas}}
+    my $client = $soap11_client{$self->{schemas}}
       ||= XML::Compile::SOAP11::Client->new(schemas => $self->{schemas});
-    my $style = $args{style} ||= $self->style;
-    my $kind  = $args{kind}  ||= $self->kind;
+    my $style  = $args{style} ||= $self->style;
+    my $kind   = $args{kind}  ||= $self->kind;
 
-    my @so   = (%{$self->{input_def}},  %{$self->{fault_def}});
-    my @ro   = (%{$self->{output_def}}, %{$self->{fault_def}});
+    my @so     = (%{$self->{input_def}},  %{$self->{fault_def}});
+    my @ro     = (%{$self->{output_def}}, %{$self->{fault_def}});
 
-    my $call = $soap->compileClient
+    my $call   = $client->compileClient
       ( name      => $self->name
       , kind      => $kind
-      , encode    => $soap->_sender(@so, %args)
-      , decode    => $soap->_receiver(@ro, %args)
+      , encode    => $client->_sender(@so, %args)
+      , decode    => $client->_receiver(@ro, %args)
       , transport => $self->compileTransporter(%args)
       , async     => $args{async}
+      , soap      => $args{soap}
       );
 
     XML::Compile::SOAP::Extension->soap11ClientWrapper($self, $call, \%args);

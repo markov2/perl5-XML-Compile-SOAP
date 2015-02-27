@@ -1,6 +1,11 @@
 
 === version history of XML::Compile::SOAP
 
+version 3.08: Fri Feb 27 13:16:45 CET 2015
+
+	Fixes:
+	- pass soap object to ::Transporter::compileClient [Sean Baker]
+
 version 3.07: Thu Jan 15 14:36:54 CET 2015
 
 	Fixes:

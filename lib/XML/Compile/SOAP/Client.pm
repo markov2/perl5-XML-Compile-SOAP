@@ -63,6 +63,11 @@ If you pass a M<XML::Compile::Transport::SOAPHTTP> object, the
 compileClient will be called for you.  This is possible in case you do
 not have any configuration options to pass with the compileClient().
 
+=option  soap OBJECT|'SOAP11'|'SOAP12'
+=default soap 'SOAP11'
+When the transport parameter is an object, this is used to wrap the
+SOAP content according to the matching transporter regulation.
+
 =option  async BOOLEAN
 =default async <false>
 If true, a whole different code-reference is returned. Each time it
@@ -111,7 +116,7 @@ sub compileClient(@)
 
     if(ref $transport eq 'CODE') { ; }
     elsif(UNIVERSAL::isa($transport, 'XML::Compile::Transport::SOAPHTTP'))
-    {   $transport = $transport->compileClient;
+    {   $transport = $transport->compileClient(soap => $args{soap});
     }
     else
     {   error __x"transport for client {name} is code ref or {type} object, not {is}"
