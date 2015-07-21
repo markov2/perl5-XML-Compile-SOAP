@@ -570,23 +570,17 @@ foreach my $d (@$data)
     \%h;
 }
 
-sub _dec_reader($@)
-{   my ($self, $type) = @_;
+sub _dec_reader($$@)
+{   my ($self, $node, $type) = @_;
 
-    my ($typens, $typelocal) = unpack_type $type;
+    my ($prefix, $local) = $type =~ m/^(.*?)\:(.*)/ ? ($1, $2) : ('',$type);
+    my $ns   = $node->lookupNamespaceURI($prefix) // '';
+    my $exp  = pack_type $ns, $local;
 
-    my $schemans = SCHEMA2001;
-    if(   $typens ne $schemans
-       && !$self->schemas->namespaces->find(element => $type))
-    {   # work-around missing element
-        $self->schemas->importDefinitions(<<__FAKE_SCHEMA);
-<schema xmlns="$schemans" targetNamespace="$typens" xmlns:d="$typens">
-<element name="$typelocal" type="d:$typelocal" />
-</schema>
-__FAKE_SCHEMA
-    }
-
-    $self->schemas->reader($type, @_);
+    $self->schemas->compileType(READER => pack_type($ns, $local)
+      , element => type_of_node($node)
+      , @_
+      );
 }
 
 sub _dec($;$$$)
@@ -647,16 +641,12 @@ sub _dec($;$$$)
 sub _dec_typed($$$)
 {   my ($self, $node, $type, $index) = @_;
 
-    my ($prefix, $local) = $type =~ m/^(.*?)\:(.*)/ ? ($1, $2) : ('',$type);
-    my $ns   = length $prefix ? $node->lookupNamespaceURI($prefix) : '';
-    my $full = pack_type $ns, $local;
-
-    my $read = $self->_dec_reader($full)
-        or return $node;
+    my $full = type_of_node $node;
+    my $read = $self->_dec_reader($node, $type);
 
     my $child = $read->($node);
     my $data  = ref $child eq 'HASH' ? $child : { _ => $child };
-    $data->{_TYPE} = $full;
+    $data->{_TYPE} = $type;
     $data->{_NAME} = type_of_node $node;
 
     my $id = $node->getAttribute('id');
@@ -668,12 +658,10 @@ sub _dec_typed($$$)
 sub _dec_other($$)
 {   my ($self, $node, $basetype) = @_;
     my $local = $node->localName;
-    my $ns    = $node->namespaceURI || '';
-    my $elem  = pack_type $ns, $local;
 
     my $data;
-    my $type  = $basetype || $elem;
-    my $read  = try { $self->_dec_reader($type) };
+    my $type  = $basetype || type_of_node $node;
+    my $read  = try { $self->_dec_reader($node, $type) };
     if($@)
     {   # warn $@->wasFatal->message;  #--> element not found
         # Element not known, so we must autodetect the type
@@ -685,8 +673,10 @@ sub _dec_other($$)
                 $dims = ($2 =~ tr/,//) + 1;
             }
             my $dec_childs =  $self->_dec(\@childs, $childbase, 0, $dims);
-            $local = '_' if $local eq 'Array';  # simplifies better
-            $data  = { $local => $dec_childs } if $dec_childs;
+
+            my $key   = $local;
+            $key      = '_' if $key eq 'Array';  # simplifies better
+            $data     = { $key => $dec_childs } if $dec_childs;
         }
         else
         {   $data->{_} = $node->textContent;
@@ -700,7 +690,7 @@ sub _dec_other($$)
         $data->{_TYPE} = $basetype if $basetype;
     }
 
-    $data->{_NAME} = $elem;
+    $data->{_NAME} = type_of_node $node;
 
     my $id = $node->getAttribute('id');
     $data->{id} = $id if defined $id;
@@ -710,7 +700,7 @@ sub _dec_other($$)
 
 sub _dec_soapenc($$)
 {   my ($self, $node, $type) = @_;
-    my $reader = $self->_dec_reader($type)
+    my $reader = $self->_dec_reader($node, $type)
        or return $node;
     my $data = $reader->($node);
     $data = { _ => $data } if ref $data ne 'HASH';

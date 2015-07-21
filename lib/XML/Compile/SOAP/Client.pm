@@ -168,7 +168,7 @@ sub compileClient(@)
           , sub { $callback->($output_handler->(@_)) }
           );
       }
-    : sub # Synchronous call (f.i. XML::Compile::Transfer::SOAPHTTP
+    : sub # Synchronous call, f.i. XML::Compile::Transfer::SOAPHTTP
       { my ($data, $charset)
           = UNIVERSAL::isa($_[0], 'HASH') ? @_
           : @_%2==0 ? ({@_}, undef)

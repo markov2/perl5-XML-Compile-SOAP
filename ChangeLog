@@ -1,6 +1,15 @@
 
 === version history of XML::Compile::SOAP
 
+version 3.09: Tue Jul 21 14:11:55 CEST 2015
+
+	Fixes:
+	- SOAP11::Encoding should use compileType()
+	  rt.cpan.org#105170 [Nick Wellnhofer]
+
+	Improvements:
+	- FAQ on use of SSL.
+
 version 3.08: Fri Feb 27 13:16:45 CET 2015
 
 	Fixes:

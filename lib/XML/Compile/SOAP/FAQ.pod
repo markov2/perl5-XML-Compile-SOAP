@@ -156,3 +156,20 @@ In your program, you typically start with
   my $wsdl = XML::Compile::WSDL11->new($wsdl_filename);
   $wsdl->importDefinitions([glob "*.xsd"]);
 
+=head2 Using SSL
+
+Abeltje contributed an SSL usage example, which then got adapted to this:
+
+   use LWP::UserAgent;
+
+   my $wsdl = XML::Compile::WSDL11->new($wsdlfn);
+
+   # LWP 6.00 introduces ssl_opts
+   @ENV{keys %lwp5_ssl} = values %lwp5_ssl
+       if LWP::UserAgent->VERSION < 6;
+   my $ua = LWP::UserAgent->new(ssl_opts => \%lwp6_ssl);
+
+   $wsdl->compileCalls(user_agent => $ua);
+
+Do not forget to explicitly install C<LWP::Protocol::https> !!!
+
