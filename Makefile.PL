@@ -2,7 +2,7 @@ use ExtUtils::MakeMaker;
 
 use 5.008;
 
-my $version = '3.09';
+my $version = '3.10';
 
 my $prereq =
    { XML::Compile         => '1.50'

@@ -163,8 +163,7 @@ sub compileHandler(@)
                    , $self->faultNoAnswerProduced($name));
         }
 
-        my $rc = (delete $answer->{_RETURN_CODE})
-              || ($answer->{Fault} ? RC_BAD_REQUEST : RC_OK);
+        my $rc     = (delete $answer->{_RETURN_CODE}) || RC_OK;
         my $rc_txt = delete $answer->{_RETURN_TEXT} || 'Answer included';
 
         my $xmlout = try { $encode->($answer) };

@@ -1,6 +1,16 @@
 
 === version history of XML::Compile::SOAP
 
+version 3.10: Tue 11 Aug 11:37:49 CEST 2015
+
+	Changes:
+	- when the response is a Fault, we do not return Bad Request,
+	  but OK.  WCF (Microsoft .NET) apparently interprets headers
+	  of SOAP1.1 messages as SOAP1.2 (only with some settings?)
+
+	Fixes:
+	- XOP: escape double-quote in start-info [Grégory Bougourd]
+
 version 3.09: Tue Jul 21 14:11:55 CEST 2015
 
 	Fixes:

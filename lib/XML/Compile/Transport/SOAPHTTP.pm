@@ -354,6 +354,7 @@ sub _prepare_simple_call($)
 
 sub _prepare_xop_call($)
 {   my ($self, $content_type) = @_;
+
     my ($simple_create, $simple_parse)
       = $self->_prepare_simple_call($content_type);
 
@@ -366,16 +367,18 @@ sub _prepare_xop_call($)
         my $bound      = "MIME-boundary-".int rand 10000;
         (my $start_cid = $mtom->[0]->cid) =~ s/^.*\@/xml@/;
 
+        my $si         = "$content_type";
+        $si            =~ s/\"/\\"/g;
         $request->header(Content_Type => <<__CT);
 multipart/related;
  boundary="$bound";
  type="$mime_xop";
  start="<$start_cid>";
- start-info="$content_type"
+ start-info="$si"
 __CT
 
         my $base = HTTP::Message->new
-          ( [ Content_Type => qq{$mime_xop; charset="$charset"; type="$content_type"}
+          ( [ Content_Type => qq{$mime_xop; charset="$charset"; type="$si"}
             , Content_Transfer_Encoding => '8bit'
             , Content_ID  => "<$start_cid>"
             ] );
