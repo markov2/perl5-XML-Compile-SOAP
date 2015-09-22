@@ -529,6 +529,7 @@ containing as much info as could be extracted from the tree.
 sub rpcDecode(@)
 {   my $self  = shift;
     my @nodes = grep $_->isa('XML::LibXML::Element'), @_;
+main::stamp('decoding');
     my $data  = $self->_dec(\@nodes);
 
 #XXX MO: no idea why this is needed:
@@ -539,6 +540,7 @@ foreach my $d (@$data)
 #use Data::Dumper;
 #warn "RAW DATA=", Dumper $data;
  
+main::stamp('get ids');
     my ($index, $hrefs) = ({}, []);
     $self->_dec_find_ids_hrefs($index, $hrefs, \$data);
     $self->_dec_resolve_hrefs($index, $hrefs);
@@ -556,7 +558,7 @@ foreach my $d (@$data)
         next if defined $root && $root==0;
         push @roots, $data->[$i];
     }
-    
+
     # address parameters by name
     # On the top-level, we can strip on level.  Some elements may appear
     # more than once.
@@ -571,16 +573,13 @@ foreach my $d (@$data)
 }
 
 sub _dec_reader($$@)
-{   my ($self, $node, $type) = @_;
+{   my ($self, $node, $type) = splice @_, 0, 3;
 
     my ($prefix, $local) = $type =~ m/^(.*?)\:(.*)/ ? ($1, $2) : ('',$type);
     my $ns   = $node->lookupNamespaceURI($prefix) // '';
-    my $exp  = pack_type $ns, $local;
 
-    $self->schemas->compileType(READER => pack_type($ns, $local)
-      , element => type_of_node($node)
-      , @_
-      );
+    $self->schemas->reader(pack_type($ns, $local)
+      , element => type_of_node($node), is_type => 1, @_);
 }
 
 sub _dec($;$$$)
@@ -642,6 +641,7 @@ sub _dec_typed($$$)
 {   my ($self, $node, $type, $index) = @_;
 
     my $full = type_of_node $node;
+main::stamp("dec typed $full");
     my $read = $self->_dec_reader($node, $type);
 
     my $child = $read->($node);
