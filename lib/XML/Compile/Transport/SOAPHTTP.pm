@@ -378,7 +378,7 @@ multipart/related;
 __CT
 
         my $base = HTTP::Message->new
-          ( [ Content_Type => qq{$mime_xop; charset="$charset"; type="$si"}
+          ( [ Content_Type => qq{$mime_xop; charset="$charset"; type="$content_type"}
             , Content_Transfer_Encoding => '8bit'
             , Content_ID  => "<$start_cid>"
             ] );

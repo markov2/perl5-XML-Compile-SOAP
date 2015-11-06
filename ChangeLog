@@ -1,6 +1,21 @@
 
 === version history of XML::Compile::SOAP
 
+version 3.13: Fri  6 Nov 09:39:09 CET 2015
+
+	Fixes:
+	- mime-type of XOP part got broken.
+	  rt.cpan.org #107586 [Derek Hausauer]
+
+	Improvements:
+	- detect need for upgrade of XML::Compile::SOAP::Daemon
+	- fix some encoding related regression tests
+
+version 3.12: Tue 22 Sep 12:09:36 CEST 2015
+
+	Fixes:
+	- oops, remove debug statements
+
 version 3.11: Tue 22 Sep 12:03:34 CEST 2015
 
 	Fixes:

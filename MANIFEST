@@ -54,5 +54,6 @@ t/11soapfault.t
 t/12soapmust.t
 t/30charenc.t
 t/60xop.t
+t/70enc11.t
 t/TestTools.pm
 xt/99pod.t

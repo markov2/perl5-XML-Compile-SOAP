@@ -2,10 +2,10 @@ use ExtUtils::MakeMaker;
 
 use 5.008;
 
-my $version = '3.11';
+my $version = '3.12';
 
 my $prereq =
-   { XML::Compile         => '1.50'
+   { XML::Compile         => '1.51'
    , XML::Compile::Tester => '0.90'
    , XML::Compile::Cache  => '1.03'
    , Log::Report          => '1.05'
@@ -31,6 +31,20 @@ WARNING: with XML::Compile::SOAP11 v3.00, the WSDL11 code got
    to that module as well.
 ******************************************************************
 __CHANGES_300
+}
+
+
+eval "require XML::Compile::SOAP::Daemon";
+if($@ !~ /can\'t locate/i)
+{   my $v = $XML::Compile::SOAP::Daemon::VERSION || '3.08';
+
+    if($v < 3.07) { warn <<'__CHANGES_307'; sleep 10 }
+******************************************************************
+WARNING: with XML::Compile::SOAP11 v3.00, the ::SOAP::Daemon code
+   required some backwards compatibility (internal) changes.  You
+   need to update XML::Compile::SOAP::Daemon
+******************************************************************
+__CHANGES_307
 }
 
 eval "require XML::Compile::SOAP::Daemon";

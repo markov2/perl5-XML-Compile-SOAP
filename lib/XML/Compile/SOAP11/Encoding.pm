@@ -98,6 +98,19 @@ SOAP defines encodings, especially for SOAP-RPC.
 =subsection Encoding
 =cut
 
+=method startEncoding %options
+=option  doc XML::LibXML::Document node
+=default doc <created internally with utf8>
+
+=cut
+
+sub startEncoding(%)
+{   my ($self, %args) = @_;
+    my $doc = $args{doc} || XML::LibXML::Document->new('1.0', 'UTF-8');
+    $self->{enc} = {doc => $doc};
+    $self;
+}
+
 # Currently only support 1-dim arrays
 
 sub _enc_array_hook(@)
@@ -529,7 +542,6 @@ containing as much info as could be extracted from the tree.
 sub rpcDecode(@)
 {   my $self  = shift;
     my @nodes = grep $_->isa('XML::LibXML::Element'), @_;
-main::stamp('decoding');
     my $data  = $self->_dec(\@nodes);
 
 #XXX MO: no idea why this is needed:
@@ -537,10 +549,7 @@ foreach my $d (@$data)
 {   next unless $d->{_NAME};
     $d = { $d->{_NAME} => $d };
 }
-#use Data::Dumper;
-#warn "RAW DATA=", Dumper $data;
  
-main::stamp('get ids');
     my ($index, $hrefs) = ({}, []);
     $self->_dec_find_ids_hrefs($index, $hrefs, \$data);
     $self->_dec_resolve_hrefs($index, $hrefs);
@@ -551,6 +560,9 @@ main::stamp('get ids');
     ref $data eq 'ARRAY'
         or return $data;
 
+    @$data > 1
+        or return $data->[0];
+
     # find the root element(s)
     my @roots;
     for(my $i = 0; $i < @_ && $i < @$data; $i++)
@@ -559,27 +571,40 @@ main::stamp('get ids');
         push @roots, $data->[$i];
     }
 
+    my $root_type = @roots ? $roots[0]->{_TYPE} : undef;
+
     # address parameters by name
     # On the top-level, we can strip on level.  Some elements may appear
     # more than once.
     my %h;
     foreach my $param (@roots ? @roots : @$data)
-    {   my ($k, $v) = %$param;
+    {   delete $param->{_TYPE};
+        my ($k, $v) = %$param;
            if(!$h{$k})    { $h{$k} = $v }
         elsif(ref $h{$k}) { push @{$h{$k}}, $v }
         else              { $h{$k} = [ $h{$k}, $v ] }
     }
+
+    $h{_TYPE} = $root_type
+        if $root_type;
+
     \%h;
 }
 
 sub _dec_reader($$@)
 {   my ($self, $node, $type) = splice @_, 0, 3;
 
-    my ($prefix, $local) = $type =~ m/^(.*?)\:(.*)/ ? ($1, $2) : ('',$type);
-    my $ns   = $node->lookupNamespaceURI($prefix) // '';
+    # We must decode the prefix from the $node context
+    if(substr($type, 0, 1) ne '{')
+    {   my ($prefix, $local) = $type =~ m/^(.*?)\:(.*)/ ? ($1, $2) : ('',$type);
+        $type = pack_type $node->lookupNamespaceURI($prefix) // '', $local;
+    }
 
-    $self->schemas->reader(pack_type($ns, $local)
-      , element => type_of_node($node), is_type => 1, @_);
+    my $r = try {
+       $self->schemas->reader($type
+         , element => type_of_node($node), is_type => 1, @_);
+    };
+    $r || sub { shift };
 }
 
 sub _dec($;$$$)
@@ -640,10 +665,8 @@ sub _dec($;$$$)
 sub _dec_typed($$$)
 {   my ($self, $node, $type, $index) = @_;
 
-    my $full = type_of_node $node;
-main::stamp("dec typed $full");
-    my $read = $self->_dec_reader($node, $type);
-
+    my $full  = type_of_node $node;
+    my $read  = $self->_dec_reader($node, $type);
     my $child = $read->($node);
     my $data  = ref $child eq 'HASH' ? $child : { _ => $child };
     $data->{_TYPE} = $type;
