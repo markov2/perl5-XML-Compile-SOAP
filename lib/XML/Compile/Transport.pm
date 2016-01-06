@@ -250,7 +250,7 @@ content and headers using methods similar to the following:
      my $new_content = encode "utf-8", $anything;
      $request->content($new_content);
      $request->header(Content_Length => length $new_content);
-     $request->header(Content_Type => 'text/plain; charset="utf-8");
+     $request->header(Content_Type => 'text/plain; charset=utf-8');
 
      # ... update the headers
      $request->header(Name => "value");

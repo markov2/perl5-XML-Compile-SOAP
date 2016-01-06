@@ -13,7 +13,7 @@ Also read M<XML::Compile::FAQ>.
 
 =head2 Modifing the messages
 
-=head3 add header fields
+=head3 add XML header fields
 
 Although WSDLs offer a nice way to define header-fields explicitly, quite
 a number of applications require fields which are not described. Also
@@ -54,7 +54,7 @@ With C<soap11ClientWrapper()> and C<soap11HandlerWrapper()>
 you can influence the client respectively server processing, for
 instance to fill-in default values.
 
-=head3 Adding HTTP headers
+=head3 adding HTTP headers
 
 Some applications require to add headers to the HTTP headers sent or
 check headers which are received. SOAP is not about HTTP, so you have
@@ -133,6 +133,27 @@ When you only need to add simple authentication to the headers, you
 may use the magic of LWP: provide your server address into
 
   http://user:password@example.com/service
+
+=head3 add Basic Auth HTTP header
+
+An simple example for the previous section, is the often needed basic
+authentication.  You need something like this:
+
+   my $ua = LWP::UserAgent->new(timeout => 10);
+   my $call = $wsdl->compileClient($operation, user_agent => $ua
+    , transport_hook => \&basic_auth);
+
+
+   sub basic_auth($$)
+   {   my ($request, $trace) = @_;
+       $request->authorization_basic($user, $password);
+       $ua->request($request);     # returns $response
+   }
+
+That's all.  When you use M<XML::Compile::Cache> to maintain the
+calls (adviced), it would look like this:
+
+   $wsdl->compileCalls(user_agent => $ua, transport_hook => \&basic_auth);
 
 =head2 Collection XSD imports
 

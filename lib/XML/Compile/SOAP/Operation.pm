@@ -201,7 +201,7 @@ sub longName()
 
 Create the transporter code for a certain specific target.
 
-=option  transporter CODE
+=option  transporter CODE|XML::SOAP::Transport-object
 =default transporter <created>
 The routine which will be used to exchange the data with the server.
 This code is created by an M<XML::Compile::Transport::compileClient()>
@@ -209,6 +209,9 @@ extension.
 
 By default, a transporter compatible to the protocol is created.  However,
 in most cases you want to reuse one (HTTP1.1) connection to a server.
+
+[3.14] You may provide a M<XML::SOAP::Transport> object as well.  Its
+compileClient() will be called for you.
 
 =option  transport_hook CODE
 =default transport_hook C<undef>
@@ -230,8 +233,8 @@ used when no explicit C<endpoint> is provided.
 sub compileTransporter(@)
 {   my ($self, %args) = @_;
 
-    my $send      = delete $args{transporter} || delete $args{transport};
-    return $send if $send;
+    my $transp    = delete $args{transporter} || delete $args{transport};
+    return $transp if ref $transp eq 'CODE';
 
     my $proto     = $self->transport;
     my @endpoints;
@@ -246,15 +249,17 @@ sub compileTransporter(@)
     }
 
     my $id        = join ';', sort @endpoints;
-    $send         = $self->{transp_cache}{$proto}{$id};
+    my $send      = $self->{transp_cache}{$proto}{$id};
     return $send if $send;
 
-    my $transp    = XML::Compile::Transport->plugin($proto)
-        or error __x"transporter type {proto} not supported (add 'use {pkg}'?)"
+    unless($transp)
+    {   my $type = XML::Compile::Transport->plugin($proto)
+         or error __x"transporter type {proto} not supported (add 'use {pkg}'?)"
              , proto => $proto, pkg => 'XML::Compile::Transport::SOAPHTTP';
+        $transp  = $type->new(address => \@endpoints, %args);
+    }
 
-    my $transport = $self->{transp_cache}{$proto}{$id}
-                  = $transp->new(address => \@endpoints, %args);
+    my $transport = $self->{transp_cache}{$proto}{$id} = $transp;
 
     $transport->compileClient
       ( name     => $self->name

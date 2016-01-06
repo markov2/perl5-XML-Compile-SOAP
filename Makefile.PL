@@ -2,7 +2,7 @@ use ExtUtils::MakeMaker;
 
 use 5.008;
 
-my $version = '3.13';
+my $version = '3.14';
 
 my $prereq =
    { XML::Compile         => '1.51'
@@ -40,16 +40,14 @@ if($@ !~ /can\'t locate/i)
 
     if($v < 3.07) { warn <<'__CHANGES_307'; sleep 10 }
 ******************************************************************
-WARNING: with XML::Compile::SOAP11 v3.00, the ::SOAP::Daemon code
+WARNING: with XML::Compile::SOAP11 v3.08, the ::SOAP::Daemon code
    required some backwards compatibility (internal) changes.  You
    need to update XML::Compile::SOAP::Daemon
 ******************************************************************
 __CHANGES_307
-}
 
-eval "require XML::Compile::SOAP::Daemon";
-$prereq->{'XML::Compile::SOAP::Daemon'} = '3.00'
-    unless $@ || $ENV{MARKOV_DEVEL};
+   sleep 10
+}
 
 WriteMakefile
  ( NAME	 	=> 'XML::Compile::SOAP'

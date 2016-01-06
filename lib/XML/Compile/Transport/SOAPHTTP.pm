@@ -210,14 +210,15 @@ sub _prepare_call($)
     $self->headerAddVersions($header);
 
     my $content_type;
+
     if($version eq 'SOAP11')
     {   $mime  ||= ref $soap ? $soap->mimeType : 'text/xml';
-        $content_type = qq{$mime; charset="$charset"};
+        $content_type = qq{$mime; charset=$charset};
     }
     elsif($version eq 'SOAP12')
     {   $mime  ||= ref $soap ? $soap->mimeType : 'application/soap+xml';
         my $sa   = defined $action ? qq{; action="$action"} : '';
-        $content_type = qq{$mime; charset="$charset"$sa};
+        $content_type = qq{$mime; charset=$charset$sa};
         $header->header(Accept => $mime);  # not the HTML answer
     }
     else
@@ -378,7 +379,7 @@ multipart/related;
 __CT
 
         my $base = HTTP::Message->new
-          ( [ Content_Type => qq{$mime_xop; charset="$charset"; type="$content_type"}
+          ( [ Content_Type => qq{$mime_xop; charset="$charset"; type="$si"}
             , Content_Transfer_Encoding => '8bit'
             , Content_ID  => "<$start_cid>"
             ] );

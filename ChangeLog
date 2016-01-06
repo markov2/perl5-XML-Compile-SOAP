@@ -1,6 +1,20 @@
 
 === version history of XML::Compile::SOAP
 
+version 3.14: Wed  6 Jan 14:56:04 CET 2016
+
+	Fixes:
+	- remove enforcement of ::Daemon upgrade, added in the
+	  previous release: cyclic redundancy.
+	  rt.cpan.org#110233 [Alan Mizrahi]
+	- Apache XCF does not understand quotes around charset in XOP
+	  rt.cpan.org #107586 [Derek Hausauer]
+
+	Improvements:
+	- compile{Client|Calls|All} option transporter can now also
+	  be a XML::SOAP::Transport-object (so, you do not need to
+	  call compileClient() on it explicitly.
+
 version 3.13: Fri  6 Nov 09:39:09 CET 2015
 
 	Fixes:
