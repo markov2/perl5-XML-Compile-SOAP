@@ -1,6 +1,14 @@
 
 === version history of XML::Compile::SOAP
 
+version 3.15: Wed  6 Jan 17:13:07 CET 2016
+
+	Fixes:
+	- regression test charset
+	  rt.cpan.org#110950 [Mark Gardner]
+	- version in README
+	  rt.cpan.org#110951 [Mark Gardner]
+
 version 3.14: Wed  6 Jan 14:56:04 CET 2016
 
 	Fixes:
