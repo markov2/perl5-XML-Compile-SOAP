@@ -1,6 +1,16 @@
 
 === version history of XML::Compile::SOAP
 
+version 3.16: Tue 15 Mar 08:31:43 CET 2016
+
+	Fixes:
+	- document style can have fault parts with "type" [Heiko Jansen]
+	- apache's Coyote requires encodingStyle in rpc messange [Heiko Jansen]
+	- typos rt.cpan.org#112910 [Nick Morrott]
+
+	Improvements:
+	- refer to the new ::SOAPHTTP_MojoUA module.
+
 version 3.15: Wed  6 Jan 17:13:07 CET 2016
 
 	Fixes:

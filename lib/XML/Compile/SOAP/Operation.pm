@@ -45,9 +45,9 @@ a server.
 =section Constructors
 
 =c_method new %options
-=requires name
+=requires name STRING
 
-=requires kind
+=requires kind 'one-way'|...
 This returns the type of operation this is.  There are four kinds, which
 are returned as strings C<one-way>, C<request-response>, C<sollicit-response>,
 and C<notification>.  The latter two are initiated by a server, the former
@@ -74,7 +74,7 @@ protocols, this defines the soapAction header.
 =default server_type C<undef>
 Most server implementations show some problems.  Also, servers may produce
 responses using their own namespaces (like for error codes).  When you know
-which server you are talking to, the quircks of the specific server type can
+which server you are talking to, the quirks of the specific server type can
 be loaded.  Read more in the L<XML::Compile::SOAP/"Supported servers">.
 
 =cut
@@ -201,7 +201,7 @@ sub longName()
 
 Create the transporter code for a certain specific target.
 
-=option  transporter CODE|XML::SOAP::Transport-object
+=option  transporter CODE|XML::Compile::Transport-object
 =default transporter <created>
 The routine which will be used to exchange the data with the server.
 This code is created by an M<XML::Compile::Transport::compileClient()>
@@ -210,7 +210,7 @@ extension.
 By default, a transporter compatible to the protocol is created.  However,
 in most cases you want to reuse one (HTTP1.1) connection to a server.
 
-[3.14] You may provide a M<XML::SOAP::Transport> object as well.  Its
+[3.14] You may provide a M<XML::Compile::Transport> object as well.  Its
 compileClient() will be called for you.
 
 =option  transport_hook CODE

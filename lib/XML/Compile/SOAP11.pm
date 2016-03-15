@@ -283,11 +283,7 @@ sub _write_one_fault($$)
     }
 
     if(my $type = $part->{type})
-    {   $args->{style} eq 'rpc'
-            or error __x"part {name} uses `type', only for rpc not {style}"
-                 , name => $part->{name}, style => $args->{style};
-
-        my $elem   = $part->{name};
+    {   my $elem   = $part->{name};
         my $writer = $part->{writer} ||= $self->schemas->compileType
           ( WRITER  => $part->{type}, %$args
           , element => $part->{name}

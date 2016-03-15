@@ -8,7 +8,7 @@ use XML::Compile         ();
 use XML::Compile::Util   qw(SCHEMA2001 SCHEMA2001i pack_type
    unpack_type type_of_node);
 use XML::Compile::Cache  ();
-use XML::Compile::SOAP::Util qw/:xop10/;
+use XML::Compile::SOAP::Util qw/:xop10 SOAP11ENC/;
 
 use Time::HiRes          qw/time/;
 use MIME::Base64         qw/decode_base64/;
@@ -493,6 +493,8 @@ sub _writer_body_rpclit_hook($$$$$)
 
         my $proc = $doc->createElement($proc);
         $proc->setNamespace($proc_ns, $prefix, 0);
+        $proc->setAttribute("SOAP-ENV:encodingStyle", SOAP11ENC);
+
         $proc->appendChild($_) for @pchilds;
 
         my $node = $doc->createElement($tag);
@@ -993,7 +995,7 @@ to create a test-server in a few minutes... or production server.
 Don't forget to have a look at the examples in the F<examples/> directory
 included in the distribution.
 
-=section Use of wildcards (any/anyAttribute)
+=section Use of wildcards (any and anyAttribute)
 
 Start reading about wildcards in M<XML::Compile>. When you receive a
 message which contains "ANY" elements, an attempt will be made to decode

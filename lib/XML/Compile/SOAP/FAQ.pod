@@ -151,7 +151,7 @@ authentication.  You need something like this:
    }
 
 That's all.  When you use M<XML::Compile::Cache> to maintain the
-calls (adviced), it would look like this:
+calls (advised), it would look like this:
 
    $wsdl->compileCalls(user_agent => $ua, transport_hook => \&basic_auth);
 

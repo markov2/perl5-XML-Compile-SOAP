@@ -26,7 +26,7 @@ This module defines the exchange of (XML) messages. The module does not
 known how to parse or compose XML, but only worries about the transport
 aspects.
 
-On the moment, there are two transporter implementations:
+On the moment, there are three transporter implementations:
 
 =over 4
 
@@ -37,9 +37,13 @@ exchanged using HTTP with SOAP encapsulation (SOAP also defines a
 transport protocol over HTTP without encapsulation)
 
 =item M<XML::Compile::Transport::SOAPHTTP_AnyEvent>
-This requires the installation of an additional module. The user
-provides a callback to handle responses. Many queries can be spawned
-in parallel.
+Event-driven implementation, based on AnyEvent.  The user provides a
+callback to handle responses. Many queries can be spawned in parallel,
+in a single process.  Find this in a separate distribution.
+
+=item M<XML::Compile::Transport::SOAPHTTP_MojoUA>
+Event-driven implementation,  which fits in the Mojolicious infrastructure.
+Find this in a separate distribution.
 
 =back
 
@@ -239,7 +243,7 @@ quite some programming skills.
 The C<transport_hook> routine is called with a C<$trace> hash, one of
 whose entries is the UserAgent which was set up for the data transfer. You
 can modify the outgoing message XML body and headers, carry out the data
-exchange using the UserAgent, and then examine the returned Reponse for
+exchange using the UserAgent, and then examine the returned Response for
 content and headers using methods similar to the following:
 
  sub transport_hook($$$)
