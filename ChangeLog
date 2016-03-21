@@ -1,6 +1,15 @@
 
 === version history of XML::Compile::SOAP
 
+version 3.17: Mon 21 Mar 15:00:39 CET 2016
+
+	Changes:
+	- moved BEA and Sharepoint schemas to a new XML::Compile::Licensed
+	  distribution, to avoid license related complications on Debian.
+	  Discovered by [Nick Morrott]
+	- remove examples/temperature/convert.xsd from the distribution:
+	  license not clear.
+
 version 3.16: Tue 15 Mar 08:31:43 CET 2016
 
 	Fixes:

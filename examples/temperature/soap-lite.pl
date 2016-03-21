@@ -7,7 +7,7 @@ use SOAP::Lite; # +trace => 'all';
 
 my $soap = SOAP::Lite
     ->uri('http://www.webserviceX.NET/')
-    ->on_action(sub { join "/", "http://www.webserviceX.NET", $_[1] } )
+    ->on_action(sub { "http://www.webserviceX.NET/$_[1]" } )
     ->proxy("http://www.webservicex.net/ConvertTemperature.asmx?WSDL");
 
 my $method = SOAP::Data->name('ConvertTemp')

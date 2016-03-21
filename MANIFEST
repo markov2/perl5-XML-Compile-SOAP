@@ -15,7 +15,6 @@ examples/rpc-literal/element.wsdl
 examples/rpc-literal/type.pl
 examples/rpc-literal/type.wsdl
 examples/salesforce/sf-info.pl
-examples/temperature/convert.wsdl
 examples/temperature/soap-lite.pl
 examples/temperature/xml-compile-soap.pl
 lib/XML/Compile/Operation.pm
@@ -27,12 +26,6 @@ lib/XML/Compile/SOAP/Operation.pm
 lib/XML/Compile/SOAP/Server.pm
 lib/XML/Compile/SOAP/Trace.pm
 lib/XML/Compile/SOAP/Util.pm
-lib/XML/Compile/SOAP/xsd/bea/README
-lib/XML/Compile/SOAP/xsd/bea/bea_wli_sb_context-fix.xsd
-lib/XML/Compile/SOAP/xsd/bea/bea_wli_sb_context.xsd
-lib/XML/Compile/SOAP/xsd/sharepoint/README.sharepoint
-lib/XML/Compile/SOAP/xsd/sharepoint/sharepoint-serial.xsd
-lib/XML/Compile/SOAP/xsd/sharepoint/sharepoint-soap.xsd
 lib/XML/Compile/SOAP/xsd/xcdaemon/xcdaemon.xsd
 lib/XML/Compile/SOAP11.pm
 lib/XML/Compile/SOAP11/Client.pm

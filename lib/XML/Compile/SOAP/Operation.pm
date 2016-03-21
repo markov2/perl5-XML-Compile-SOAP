@@ -13,18 +13,11 @@ use List::Util     qw(first);
 use File::Basename qw(dirname);
 
 my %servers =
-  ( BEA =>          # Oracle's BEA
-      { xsddir => 'bea'
-      , xsds   => [ qw(bea_wli_sb_context.xsd bea_wli_sb_context-fix.xsd) ]
-      }
-  , SharePoint =>   # MicroSoft's SharePoint
-      { xsddir => 'sharepoint'
-      , xsds   => [ qw(sharepoint-soap.xsd sharepoint-serial.xsd) ]
-      }
-  , 'XML::Compile::Daemon' =>  # my own server implementation
+  ( 'XML::Compile::Daemon' =>  # my own server implementation
       { xsddir => 'xcdaemon'
       , xsds   => [ qw(xcdaemon.xsd) ]
       }
+    # more in XML::Compile::Licensed
   );
 
 =chapter NAME
@@ -118,11 +111,21 @@ sub _server_type($)
     my $schemas = $self->schemas;
     return if $schemas->{"did_init_server_$type"}++;
 
-    my $def    = $servers{$type}
-        or error __x"soap server type `{type}' is not supported (yet), please contribute"
-          , type => $type;
+    my ($def, $xsddir);
+    if($def = $servers{$type})
+    {   $xsddir = File::Spec->catdir(dirname(__FILE__), 'xsd', $def->{xsddir});
+    }
+    else
+    {   eval "require XML::Compile::Licensed";
+        if($@)
+        {   error __x"soap server type `{type}' is not supported (yet); installing XML::Compile::Licensed may help"
+             , type => $type;
+        }
+        ($xsddir, $def) = XML::Compile::Licensed->soapServer($type)
+            or error __x"soap server type `{type}' is not supported (yet)"
+             , type => $type;
+    }
 
-    my $xsddir = File::Spec->catdir(dirname(__FILE__), 'xsd', $def->{xsddir});
     $schemas->importDefinitions(File::Spec->catfile($xsddir, $_))
         for @{$def->{xsds}};
 }

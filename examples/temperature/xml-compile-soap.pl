@@ -9,6 +9,8 @@ use XML::Compile::Transport::SOAPHTTP;
 
 # XML::Compile does not like dynamic things.  WSDL collected with
 #    wget http://www.webservicex.net/ConvertTemperature.asmx?WSDL
+# rename the downloaded file into convert.wsdl
+
 my $wsdlfn = 'convert.wsdl';
 my $wsdl = XML::Compile::WSDL11->new
   ( $wsdlfn
@@ -18,7 +20,7 @@ my $wsdl = XML::Compile::WSDL11->new
 my $request =
   { Temperature => 12
   , FromUnit    => 'degreeCelsius'
-  , ToUnit      => 'degreeCelsius'
+  , ToUnit      => 'kelvin'
   };
 
 my ($answer, $trace);

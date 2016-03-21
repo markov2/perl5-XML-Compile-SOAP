@@ -932,8 +932,10 @@ tell you which namespace/schema is used for these errors.  Both BEA and
 SharePoint servers produce illegal SOAP responses!  It is a sad story.
 
 To be able to install some fixes, you can specify a server type via
-M<XML::Compile::SOAP::Operation::new(server_type)> or
-M<XML::Compile::WSDL11::new(server_type)>.
+M<XML::Compile::SOAP::Operation::new(server_type)>,
+M<XML::Compile::WSDL11::new(server_type)>, or
+[3.06] M<XML::Compile::WSDL11::operations(server_type)>.
+
 The following server types are currently understood:
 
 =over 4
@@ -946,6 +948,13 @@ Examples:
 
   my $wsdl = XML::Compile::WSDL11->new($wsdlfn, server_type => 'SharePoint');
   my $op   = XML::Compile::SOAP11::Operation->new(..., server_type => 'BEA');
+  my @op   = XML::Compile::WSDL11->operations(server_type => 'SharePoint')
+
+[3.17] B<Be warned:> the licenses of some server_type schema's are unknown
+or unclear.  At least, they touch commercial products hence can better
+not be released in a (Debian) Linux distribution, even not as non-free.
+Therefore, you need to install M<XML::Compile::Licensed> from CPAN
+yourself.
 
 =section Naming types and elements
 
