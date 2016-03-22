@@ -1,6 +1,11 @@
 
 === version history of XML::Compile::SOAP
 
+version 3.18: Tue 22 Mar 09:04:22 CET 2016
+
+	Fixes:
+	- 3.17 had an unclean release [Nick Morrott]
+
 version 3.17: Mon 21 Mar 15:00:39 CET 2016
 
 	Changes:

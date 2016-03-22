@@ -1,10 +1,11 @@
 
-==== README to examples/namesservice/
+==== README to examples/document/
+
+Thomas Bayer granted use of his example under the ASF2 License.
 
 This directory contains four examples based on the same existing remote
 server.  Sorry, the server thomas-bayer.com is not available anymore:
-the examples with the remote service will not work!  Thomas Bayer granted
-use of his example under the ASF2 License.
+the examples with the remote service will not work!
 
 The server published a nice WSDL file, and a separate schema, which
 have been beautified a bit but nothing more.
