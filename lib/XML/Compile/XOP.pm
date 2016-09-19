@@ -29,6 +29,7 @@ XML::Compile::XOP - MTOM and XOP handler
 
   # returned XOPs in SOAP
   my ($answer, $trace, $xop) = $wsdl->call($operation)->(%data);
+  print $_->string for @$xop;   # See XML::Compile::XOP::Include
 
 =chapter DESCRIPTION
 The SOAP Message Transmission Optimization Mechanism (MTOM) is designed

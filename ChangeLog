@@ -1,6 +1,15 @@
 
 === version history of XML::Compile::SOAP
 
+version 3.19: Mon Sep 19 23:02:10 CEST 2016
+
+ 	Fixes:
+	- typo rt.cpan.org#113270 [Debian]
+	- include examples in the manual page.
+
+	Improvements:
+	- XOP charset [Kit Peters]
+
 version 3.18: Tue 22 Mar 09:04:22 CET 2016
 
 	Fixes:

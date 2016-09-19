@@ -9,7 +9,7 @@ my @ext;
 =chapter NAME
 XML::Compile::SOAP::Extension - plugins for standards
 
-=chapter SYNOPSYS
+=chapter SYNOPSIS
  # only as base-class
 
 =chapter DESCRIPTION

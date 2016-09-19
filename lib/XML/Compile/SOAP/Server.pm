@@ -80,7 +80,7 @@ Returns an HTTP status code and an M<XML::LibXML::Document> pair.
 The identification for this action, for instance used for logging.  When
 the action is created via a WSDL, the portname will be used here.
 
-It is a pitty that the portname is not passed in the SOAP message,
+It is a pity that the portname is not passed in the SOAP message,
 because it is not so easy to detect which handler must be called.
 
 =option  decode CODE

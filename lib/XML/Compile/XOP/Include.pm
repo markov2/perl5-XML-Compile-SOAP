@@ -7,6 +7,7 @@ use Log::Report 'xml-compile-soap', syntax => 'SHORT';
 use XML::Compile::SOAP::Util qw/:xop10/;
 use HTTP::Message            ();
 use File::Slurp::Tiny        qw/read_file write_file/;
+use Encode                   qw/decode FB_CROAK/;
 
 =chapter NAME
 XML::Compile::XOP::Include - Represents one XOP node.
@@ -88,9 +89,10 @@ sub fromMime($)
 
     my $content = $http->decoded_content(ref => 1) || $http->content(ref => 1);
     $class->new
-     ( bytes => $content
-     , cid   => $cid
-     , type  => scalar $http->content_type
+     ( bytes   => $content
+     , cid     => $cid
+     , type    => scalar $http->content_type
+     , charset => scalar $http->content_type_charset
      );
 }
 
@@ -118,6 +120,28 @@ sub content(;$)
     $byref ? $self->{bytes} : ${$self->{bytes}};
 }
 
+=method string
+Returns the content as string in Perl internal encoding.
+=cut
+
+sub string() {
+	my $self = shift;
+    my $cs = $self->contentCharset || 'UTF-8';
+    decode $cs, $self->content, FB_CROAK;
+}
+
+=method contentType
+Returns the media type included in the Content-Type header.
+
+=method contentCharset
+Returns the character set, as provided by the Content-Type header.
+
+=cut
+
+sub contentType()    { shift->{type} }
+sub contentCharset() { shift->{charset} }
+
+#---------
 =section Processing
 
 =method xmlNode $document, $path, $tag

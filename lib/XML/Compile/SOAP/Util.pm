@@ -22,7 +22,7 @@ our %EXPORT_TAGS =
 =chapter NAME
 XML::Compile::SOAP::Util - general purpose routines for XML::Compile::SOAP
 
-=chapter SYNOPSYS
+=chapter SYNOPSIS
  use XML::Compile::SOAP::Util qw/:soap11 WSDL11/;
 
 =chapter DESCRIPTION

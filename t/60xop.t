@@ -160,7 +160,8 @@ isa_ok($hash2, 'HASH', 'produced HASH');
 #warn Dumper $hash2;
 my $exp2 = { request =>
   { first => XML::Compile::XOP::Include->new(bytes => \"Hello, World!\n"
-     , type => 'application/octet-stream', cid => 'mycid2@home')
+     , type => 'application/octet-stream', cid => 'mycid2@home'
+     , charset => undef)
   , second => "Hello, World!\n"
   }};
 
