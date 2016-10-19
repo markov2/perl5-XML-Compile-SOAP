@@ -1,9 +1,15 @@
 
 === version history of XML::Compile::SOAP
 
+version 3.20: Wed 19 Oct 15:43:19 CEST 2016
+
+	Fixes:
+	- XOP writing, where object type not equal but extending base64Binary
+	  [Kit Peters]
+
 version 3.19: Mon Sep 19 23:02:10 CEST 2016
 
- 	Fixes:
+	Fixes:
 	- typo rt.cpan.org#113270 [Debian]
 	- include examples in the manual page.
 

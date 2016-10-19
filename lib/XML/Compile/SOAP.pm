@@ -609,7 +609,7 @@ sub _writer_xop_hook($)
         $node;
       };
 
-   +{ type => 'xsd:base64Binary', replace => $collect_objects };
+   +{ extends => 'xsd:base64Binary', replace => $collect_objects };
 }
 
 #------------------------------------------------
