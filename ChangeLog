@@ -1,6 +1,19 @@
 
 === version history of XML::Compile::SOAP
 
+version 3.21: Wed 11 Jan 10:02:19 CET 2017
+
+	Fixes:
+	- XOP hooks were instated, even though XML::Compile::XOP was not.
+	  Schema/WSDL compilation will be a little faster now.
+	  https://github.com/mjgardner/xml-compilex-schema-loader/issues/1
+	  [Slaven Rezić]
+	- constant name: XS_DAEMON_NS -> XC_DAEMON_NS
+	  rt.cpan.org#119800 [Pavel Trushkin]
+
+	Improvements:
+	- spell fix Debian rt.cpan.org#118577 [Gregor Herrmann, Debian]
+
 version 3.20: Wed 19 Oct 15:43:19 CEST 2016
 
 	Fixes:

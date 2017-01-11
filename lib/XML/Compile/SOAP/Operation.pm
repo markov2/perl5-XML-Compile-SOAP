@@ -58,7 +58,7 @@ Where to contact the server.
 
 =option   action STRING
 =default  action undef
-Some string which is refering to the action which is taken.  For SOAP
+Some string which is referring to the action which is taken.  For SOAP
 protocols, this defines the soapAction header.
 
 =requires schemas XML::Compile::Cache

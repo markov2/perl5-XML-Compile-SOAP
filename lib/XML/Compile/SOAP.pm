@@ -16,6 +16,8 @@ use MIME::Base64         qw/decode_base64/;
 # XML::Compile::WSA::Util often not installed
 use constant WSA10 => 'http://www.w3.org/2005/08/addressing';
 
+sub _xop_enabled() { exists $INC{'XML/Compile/XOP.pm'} }
+
 =chapter NAME
 XML::Compile::SOAP - base-class for SOAP implementations
 
@@ -345,7 +347,9 @@ sub _sender(@)
       = $args{hooks} ? [ @{$args{hooks}} ] : [];
 
     my @mtom;
-    push @$hooks, $self->_writer_xop_hook(\@mtom);
+    push @$hooks, $self->_writer_xop_hook(\@mtom)
+		if _xop_enabled;
+
     my ($body,  $blabels) = $args{create_body}
        ? $args{create_body}->($self, %args)
        : $self->_writer_body(\%args);
@@ -766,7 +770,9 @@ sub _reader_body($$)
     my $body  = $args->{body};
     my $parts = $body->{parts} || [];
     my @hooks = @{$args->{hooks} || []};
-    push @hooks, $self->_reader_xop_hook($refxops);
+    push @hooks, $self->_reader_xop_hook($refxops)
+		if _xop_enabled;
+
     local $args->{hooks} = \@hooks;
 
     my @rules;

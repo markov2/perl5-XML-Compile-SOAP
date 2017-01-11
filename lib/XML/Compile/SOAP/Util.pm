@@ -74,7 +74,7 @@ C<XC_DAEMON_NS> refers to the M<XML::Compile::SOAP::Daemon> server.
 
 use constant
   { MSEXT           => SOAP11ENV
-  , XS_DAEMON_NS    => 'http://perl.org/xml-schemas/xml-compile-daemon/1.0'
+  , XC_DAEMON_NS    => 'http://perl.org/xml-schemas/xml-compile-daemon/1.0'
   };
 
 

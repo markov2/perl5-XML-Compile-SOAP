@@ -319,7 +319,7 @@ You pass that CODE reference an input message of the correct
 type, as pure Perl HASH structure.  An 'request-response' operation
 will return then answer, or C<undef> in case of failure.  An 'one-way'
 operation with return C<undef> in case of failure, and a true value
-when successfull.
+when successful.
 
 You B<cannot> pass options for M<XML::Compile::Schema::compile()>, like
 C<<sloppy_integers => 0>>, hooks or typemaps this way. Provide these to
