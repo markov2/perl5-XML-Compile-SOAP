@@ -113,8 +113,8 @@ sub content(;$)
 {   my ($self, $byref) = @_;
     unless($self->{bytes})
     {   my $f     = $self->{file};
-        my $bytes = try { read_file $f };
-        fault "failed reading XOP file {fn}", fn => $f;
+        my $bytes = try { read_file $f, binmode => ':raw' };
+        fault "failed reading XOP file {fn}", fn => $f if $@;
         $self->{bytes} = \$bytes;
     }
     $byref ? $self->{bytes} : ${$self->{bytes}};
