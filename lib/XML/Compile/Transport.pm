@@ -54,7 +54,7 @@ Find this in a separate distribution.
 =c_method new %options
 
 =option  charset STRING
-=default charset 'utf-8'
+=default charset 'UTF-8'
 
 =option  address URI|ARRAY-of-URI
 =default address 'http://localhost'
@@ -65,7 +65,7 @@ One or more URI which represents the servers.
 sub init($)
 {   my ($self, $args) = @_;
     $self->SUPER::init($args);
-    $self->{charset} = $args->{charset} || 'utf-8';
+    $self->{charset} = $args->{charset} || 'UTF-8';
 
     my $addr  = $args->{address} || 'http://localhost';
     my @addrs = ref $addr eq 'ARRAY' ? @$addr : $addr;
@@ -251,10 +251,10 @@ content and headers using methods similar to the following:
      my $content = $request->content;
 
      # ... modify content if you need
-     my $new_content = encode "utf-8", $anything;
+     my $new_content = encode "UTF-8", $anything;
      $request->content($new_content);
      $request->header(Content_Length => length $new_content);
-     $request->header(Content_Type => 'text/plain; charset=utf-8');
+     $request->header(Content_Type => 'text/plain; charset=UTF-8');
 
      # ... update the headers
      $request->header(Name => "value");

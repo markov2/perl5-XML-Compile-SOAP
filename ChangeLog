@@ -1,6 +1,17 @@
 
 === version history of XML::Compile::SOAP
 
+version 3.23:
+
+	Fixes:
+	- add 'Host' to the header.
+
+	Improvements:
+	- rpc style header with type part [Lars Thegler]
+	- typo in doc rt.cpan.org#124462 [Andy Scheller]
+	- ::Server::compileFilter() could not handle RPCs with empty bodies,
+	  but was broken much more serious anyway [Abeltje]
+
 version 3.22: Fri 30 Jun 10:03:10 CEST 2017
 
 	Fixes:

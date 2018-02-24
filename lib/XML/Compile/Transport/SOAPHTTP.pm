@@ -209,8 +209,12 @@ sub _prepare_call($)
     my $header   = $args->{header}   || HTTP::Headers->new;
     $self->headerAddVersions($header);
 
-    my $content_type;
+	# There is probably never a real HTTP server on the other side, but
+    # HTTP/1.1 requires this.
+	$header->header(Host => $1)
+        if +($args->{endpoint} // '') =~ m!^\w+\://([^/:]+)!;
 
+    my $content_type;
     if($version eq 'SOAP11')
     {   $mime  ||= ref $soap ? $soap->mimeType : 'text/xml';
         $content_type = qq{$mime; charset=$charset};

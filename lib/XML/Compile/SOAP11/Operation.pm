@@ -291,7 +291,7 @@ Determines whether the handler belongs to a received message.
 sub compileHandler(@)
 {   my ($self, %args) = @_;
 
-    my $soap = $soap11_server{$self->{schemas}}
+    my $soap  = $soap11_server{$self->{schemas}}
       ||= XML::Compile::SOAP11::Server->new(schemas => $self->{schemas});
     my $style = $args{style} ||= $self->style;
 
@@ -300,9 +300,10 @@ sub compileHandler(@)
 
     $args{encode}   ||= $soap->_sender(@so, %args);
     $args{decode}   ||= $soap->_receiver(@ro, %args);
-    $args{selector} ||= $soap->compileFilter(%{$self->{input_def}});
     $args{kind}     ||= $self->kind;
     $args{name}       = $self->name;
+    $args{selector} ||= $soap->compileFilter(%{$self->{input_def}},
+		style => $style);
 
     $args{callback} = XML::Compile::SOAP::Extension
       ->soap11HandlerWrapper($self, $args{callback}, \%args);
@@ -442,7 +443,7 @@ sub explain($$$@)
 
         my $type = $schema->prefixed($value) || $value;
         push @main, ''
-          , "# Body part '$name' is $kind $type"
+          , "# Body part '$name' is content for $kind $type"
           , ($kind eq 'type' && $recurse ? "# See fake element '$name'" : ())
           , "my \$$name = {};";
         push @struct, "    $name => \$$name,";

@@ -5,6 +5,7 @@ package XML::Compile::SOAP::Server;
 
 use Log::Report 'xml-compile-soap', syntax => 'SHORT';
 
+use XML::Compile::Util       qw/unpack_type/;
 use XML::Compile::SOAP::Util qw/:soap11/;
 use HTTP::Status qw/RC_OK RC_BAD_REQUEST RC_NOT_ACCEPTABLE
    RC_INTERNAL_SERVER_ERROR/;
@@ -152,7 +153,7 @@ sub compileHandler(@)
 
         my $answer = $callback->($self, $data, $session);
         unless(defined $answer)
-        {   notice __x"procedure {name} did not produce an answer", name=> $name;
+        {   notice __x"procedure {name} did not produce an answer", name=>$name;
             return ( RC_INTERNAL_SERVER_ERROR, 'no answer produced'
                    , $self->faultNoAnswerProduced($name));
         }
@@ -191,20 +192,43 @@ On the moment, only the first C<body> element is used to determine that.
 
 =option  fault ARRAY-of-TYPES
 =default fault <undef>
+
+=option  style 'rpc'|'document'
+=default style 'document'
+
 =cut
 
 sub compileFilter(@)
 {   my ($self, %args) = @_;
-    my $nodetype;
-    if(my $first  = $args{body}{parts}[0])
-    {   $nodetype = $first->{element}
-          || $args{body}{procedure};  # rpc-literal "type"
+
+    my $need_node;
+    if($args{style} eq 'rpc')
+    {   # RPC-style wraps the body parameters in the procedure name.  That's
+        # a logical construction.
+        $need_node = $args{body}{procedure} or panic;
+    }
+    else
+    {   # Document-style does *not* contain the procedure name anywhere!  We
+        # can only base the selection on the type of the elements.  Therefore,
+        # procedure selection is often based on HTTP header (which was created
+        # for other purposes.
+		my $first = $args{body}{parts}[0] or panic;
+        $need_node = $first->{element} or panic;
     }
 
-    # called with (XML, INFO)
-      defined $nodetype
-    ? sub { my $f =  $_[1]->{body}[0]; defined $f && $f eq $nodetype }
-    : sub { !defined $_[1]->{body}[0] };  # empty body
+    my ($need_ns, $need_local) = $need_node ? unpack_type($need_node) : ();
+
+    # The returned code-ref is called with (XML, INFO)
+    sub {
+        my ($xml, $info) = @_;
+#use Data::Dumper;
+#warn Dumper \@_;
+#warn $_[0]->toString;
+        (my $body) = $xml->getChildrenByLocalName('Body');
+        (my $has)  = $body->getElementsByTagNameNS($need_ns, $need_local);
+#warn $has->toString;
+        defined $has;
+    };
 }
 
 =c_method faultWriter 
