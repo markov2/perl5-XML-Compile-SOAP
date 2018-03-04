@@ -1,9 +1,14 @@
-use warnings;
-use strict;
+# This code is part of distribution XML-Compile-SOAP.  Meta-POD processed
+# with OODoc into POD and HTML manual-pages.  See README.md
+# Copyright Mark Overmeer.  Licensed under the same terms as Perl itself.
 
 package XML::Compile::XOP;
 
-use Log::Report 'xml-compile-soap', syntax => 'SHORT';
+use warnings;
+use strict;
+
+use Log::Report   'xml-compile-soap';
+
 use XML::Compile::SOAP::Util   qw/:xop10/;
 use XML::Compile::XOP::Include ();
 

@@ -1,10 +1,15 @@
-use warnings;
-use strict;
+# This code is part of distribution XML-Compile-SOAP.  Meta-POD processed
+# with OODoc into POD and HTML manual-pages.  See README.md
+# Copyright Mark Overmeer.  Licensed under the same terms as Perl itself.
 
 package XML::Compile::SOAP11::Server;
 use base 'XML::Compile::SOAP11', 'XML::Compile::SOAP::Server';
 
-use Log::Report 'xml-compile-soap', syntax => 'SHORT';
+use warnings;
+use strict;
+
+use Log::Report    'xml-compile-soap';
+
 use XML::Compile::SOAP::Util qw/SOAP11ENV SOAP11NEXT/;
 use XML::Compile::Util  qw/pack_type unpack_type SCHEMA2001/;
 

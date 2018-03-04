@@ -1,9 +1,13 @@
-use warnings;
-use strict;
+# This code is part of distribution XML-Compile-SOAP.  Meta-POD processed
+# with OODoc into POD and HTML manual-pages.  See README.md
+# Copyright Mark Overmeer.  Licensed under the same terms as Perl itself.
 
 package XML::Compile::SOAP::Trace;
 
-use Log::Report 'xml-compile-soap', syntax => 'REPORT';
+use warnings;
+use strict;
+
+use Log::Report   'xml-compile-soap', syntax => 'REPORT';
   # no syntax SHORT, because we have own error()
 
 use IO::Handle;

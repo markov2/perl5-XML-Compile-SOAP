@@ -1,7 +1,7 @@
 
-=== version history of XML::Compile::SOAP
+=== version history of distribution XML-Compile-SOAP
 
-version 3.23:
+version 3.23: Sun Mar  4 23:45:09 CET 2018
 
 	Fixes:
 	- add 'Host' to the header.
@@ -11,6 +11,7 @@ version 3.23:
 	- typo in doc rt.cpan.org#124462 [Andy Scheller]
 	- ::Server::compileFilter() could not handle RPCs with empty bodies,
 	  but was broken much more serious anyway [Abeltje]
+	- convert to GIT, publish via GitHub
 
 version 3.22: Fri 30 Jun 10:03:10 CEST 2017
 
@@ -227,6 +228,8 @@ version 3.00: Mon Jan  6 00:55:08 CET 2014
 	- ::Extensions can now register soap12 routines.
 	- add examples/salesforce/, contribute by [Ciaran Deignan]
 	- ::Operation:addHeader() now also accepts ELEMENTs in prefixed form
+
+version 2.39: Not released
 
 version 2.38: Thu Aug 22 16:20:29 CEST 2013
 

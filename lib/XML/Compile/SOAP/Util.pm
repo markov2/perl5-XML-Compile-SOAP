@@ -1,8 +1,12 @@
-use warnings;
-use strict;
+# This code is part of distribution XML-Compile-SOAP.  Meta-POD processed
+# with OODoc into POD and HTML manual-pages.  See README.md
+# Copyright Mark Overmeer.  Licensed under the same terms as Perl itself.
 
 package XML::Compile::SOAP::Util;
 use base 'Exporter';
+
+use warnings;
+use strict;
 
 my @soap10 = qw/SOAP11HTTP WSDL11HTTP WSDL11MIME SOAP11ENV/;
 my @soap11 = qw/SOAP11ENV SOAP11ENC SOAP11NEXT SOAP11HTTP WSDL11SOAP/;

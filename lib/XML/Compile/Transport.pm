@@ -1,14 +1,19 @@
-use warnings;
-use strict;
+# This code is part of distribution XML-Compile-SOAP.  Meta-POD processed
+# with OODoc into POD and HTML manual-pages.  See README.md
+# Copyright Mark Overmeer.  Licensed under the same terms as Perl itself.
 
 package XML::Compile::Transport;
 use base 'XML::Compile::SOAP::Extension';
 
-use Log::Report 'xml-compile-soap', syntax => 'SHORT';
+use warnings;
+use strict;
+
+use Log::Report     'xml-compile-soap';
+
 use Log::Report::Exception ();
 
-use XML::LibXML            ();
-use Time::HiRes            qw/time/;
+use XML::LibXML     ();
+use Time::HiRes     qw/time/;
 
 =chapter NAME
 XML::Compile::Transport - base class for XML transporters
