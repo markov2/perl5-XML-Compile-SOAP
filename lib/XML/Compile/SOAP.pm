@@ -145,7 +145,7 @@ C<'ATTEMPT'>
 sub new($@)
 {   my $class = shift;
 
-    error __x"you can only instantiate sub-classes of {class}"
+    error __x"you can only instantiate sub-classes of {class}", class => $class
         if $class eq __PACKAGE__;
 
     (bless {}, $class)->init( {@_} );
