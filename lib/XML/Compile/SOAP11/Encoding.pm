@@ -10,6 +10,7 @@ use strict;
 use Log::Report    'xml-compile-soap';
 
 use List::Util     qw/first/;
+use Scalar::Util   qw/reftype/;
 use XML::Compile::Util
    qw/odd_elements SCHEMA2001 SCHEMA2001i pack_type unpack_type type_of_node/;
 use XML::Compile::SOAP::Util qw/:soap11 WSDL11/;
@@ -579,15 +580,15 @@ foreach my $d (@$data)
     my $root_type = @roots ? $roots[0]->{_TYPE} : undef;
 
     # address parameters by name
-    # On the top-level, we can strip on level.  Some elements may appear
+    # On the top-level, we can strip on level. Some elements may appear
     # more than once.
     my %h;
     foreach my $param (@roots ? @roots : @$data)
     {   delete $param->{_TYPE};
         my ($k, $v) = %$param;
-           if(!$h{$k})    { $h{$k} = $v }
-        elsif(ref $h{$k}) { push @{$h{$k}}, $v }
-        else              { $h{$k} = [ $h{$k}, $v ] }
+        if(! exists $h{$k}) { $h{$k} = $v }
+        elsif(reftype $h{$k} eq 'ARRAY') { push @{$h{$k}}, $v }
+        else                { $h{$k} = [ $h{$k}, $v ] }
     }
 
     $h{_TYPE} = $root_type
