@@ -788,13 +788,14 @@ sub _dec_array_hook($$$$$)
 {   my ($self, $node, $args, $where, $local, $r, $fulltype) = @_;
 
     my $at = $node->getAttributeNS(SOAP11ENC, 'arrayType')
+          || $node->getAttributeNS(WSDL11,    'arrayType')
         or return $node;
 
-    $at =~ m/^(.*) \s* \[ ([\d,]+) \] $/x
+    $at =~ m/^(.*) \s* \[ ([\d,]+)? \] $/x
         or return $node;
 
     my ($preftype, $dims) = ($1, $2);
-    my @dims = split /\,/, $dims;
+    my @dims = defined $dims ? split /\,/, $dims : ();
    
     my $basetype;
     if(index($preftype, ':') >= 0)
@@ -806,7 +807,7 @@ sub _dec_array_hook($$$$$)
     }
 
     my $table;
-    if(@dims==1)
+    if(@dims < 2)
     {   $table = $self->_dec_array_one($node, $basetype, $dims[0]);
     }
     else
@@ -819,7 +820,7 @@ sub _dec_array_hook($$$$$)
     (type_of_node($node) => $table);
 }
 
-sub _dec_array_one($$$)
+sub _dec_array_one($$;$)
 {   my ($self, $node, $basetype, $size) = @_;
 
     my $off    = $node->getAttributeNS(SOAP11ENC, 'offset') || '[0]';
@@ -828,7 +829,7 @@ sub _dec_array_one($$$)
     my $offset = $1;
     my @childs = grep $_->isa('XML::LibXML::Element'), $node->childNodes;
     my $array  = $self->_dec(\@childs, $basetype, $offset, 1);
-    $#$array   = $size -1;   # resize array to specified size
+    $#$array   = $size -1 if $size;   # resize array to specified size
     $array;
 }
 
