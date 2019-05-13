@@ -10,7 +10,7 @@ use strict;
 use Log::Report       'xml-compile-soap';
 use XML::Compile::SOAP::Util qw/:xop10/;
 use HTTP::Message     ();
-use File::Slurp::Tiny qw/read_file write_file/;
+use File::Slurper     qw/read_binary write_binary/;
 use Encode            qw/decode FB_CROAK/;
 
 =chapter NAME
@@ -117,7 +117,7 @@ sub content(;$)
 {   my ($self, $byref) = @_;
     unless($self->{bytes})
     {   my $f     = $self->{file};
-        my $bytes = try { read_file $f, binmode => ':raw' };
+        my $bytes = try { read_binary $f };
         fault "failed reading XOP file {fn}", fn => $f if $@;
         $self->{bytes} = \$bytes;
     }
@@ -194,7 +194,7 @@ Write the content to the specified FILE.
 
 sub write($)
 {   my ($self, $file) = @_;
-    write_file $file, {binmode => ':raw'}, $self->content(1);
+    write_binary $file, $self->content(1);
 }
 
 1;

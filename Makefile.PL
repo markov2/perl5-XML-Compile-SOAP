@@ -13,7 +13,7 @@ my $prereq =
    , LWP               => 6.08
    , Net::HTTP         => 6.16  # older versions contain nasty bugs
    , Time::HiRes       => 0
-   , File::Slurp::Tiny => 0
+   , File::Slurper     => 0
 
    , Test::More        => 0.54
    };
