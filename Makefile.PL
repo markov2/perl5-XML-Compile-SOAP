@@ -75,7 +75,7 @@ WriteMakefile
 ### used by oodist during production of distribution
 sub MY::postamble { <<'__POSTAMBLE' }
 
-EXTENDS		= ../XML-Compile:../../perl/XMLDaemon:../../perl/XMLTester:../XML-Compile-Cache:../../perl/XMLWSDL:../../perl/XMLSOAP12:../../perl/XMLSOAPEv:../../perl/XMLWSA
+EXTENDS		= ../XML-Compile:../XML-Compile-SOAP-Daemon:../XML-Compile-Tester:../XML-Compile-Cache:../XML-Compile-WSDL11:../XML-Compile-SOAP12:../../perl/XMLSOAPEv:../../perl/XMLWSA
 
 # for DIST
 RAWDIR          = ../public_html/xml-compile-soap/raw
