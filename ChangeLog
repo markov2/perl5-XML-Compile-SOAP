@@ -5,6 +5,8 @@ version 3.25:
 
 	Improvements:
 	- handle wsdl:arrayType
+	- File::Slurp::Tiny is discouraged in favor of File::Slurper [James Raspass]
+	- remove dependency to Test::Deep again. rt.cpan.org#130096 [Kent Fredric]
 
 version 3.24: Tue  6 Mar 08:12:19 CET 2018
 
