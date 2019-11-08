@@ -553,7 +553,7 @@ sub explain($$$@)
     if(my $how = $def->{body})
     {   my $use  = $how->{use} || 'literal';
         push @header
-          , "# Operation ". ($how->{procedure} || '(unnamed)'
+          , "# Operation ". ($how->{procedure} || '(unnamed)')
           , "#           $dir, $style $use";
     }
     else
