@@ -3,6 +3,10 @@
 
 version 3.26:
 
+	Improvements:
+	- warning on producing templates for operations without message
+	  [Patrick Powell]
+
 version 3.25: Wed 25 Sep 13:16:53 CEST 2019
 
 	Improvements:
