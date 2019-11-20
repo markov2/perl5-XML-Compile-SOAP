@@ -5,7 +5,10 @@ version 3.26:
 
 	Fixes:
 	- procedure detection cannot handle empty response messages
-	  anymore.  Got broken in 3.23. github#2 [Daniel Juarez]
+	  anymore.  Got broken in 3.23.
+	  github XML-Compile-SOAP-Daemon#2 [Daniel Juarez]
+	- soap implementations do not have a mimeType method anymore
+	  github XML-Compile-SOAP-Daemon#2 [Daniel Juarez]
 
 	Improvements:
 	- warning on producing templates for operations without message
