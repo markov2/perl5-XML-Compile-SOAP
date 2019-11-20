@@ -1,7 +1,9 @@
 
 === version history of distribution XML-Compile-SOAP
 
-version 3.26:
+version 3.27:
+
+version 3.26: Wed 20 Nov 08:43:52 CET 2019
 
 	Fixes:
 	- procedure detection cannot handle empty response messages
