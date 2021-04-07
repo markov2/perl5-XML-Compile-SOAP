@@ -1,7 +1,7 @@
 
 === version history of distribution XML-Compile-SOAP
 
-version 3.27:
+version 3.27: Wed  7 Apr 09:52:29 CEST 2021
 
 	Fixes:
 	- $@ is volatile, unknown change broke input validation error.
