@@ -159,14 +159,14 @@ sub compileClient(@)
         my $connected = time;
         $trace->{connect_elapse}   = $connected - $stringify;
         if($@)
-        {   $trace->{errors} = [$@->wasFatal];
+        {   $trace->{errors} = [ $@->wasFatal ];
             return;
         }
 
         my $xmlin;
         if($textin)
-        {   $xmlin = try {XML::LibXML->load_xml(string => $$textin)};
-            if($@) { $trace->{errors} = [$@->wasFatal] }
+        {   $xmlin = try { XML::LibXML->load_xml(string => $$textin) };
+            if($@) { $trace->{errors} = [ $@->wasFatal ] }
             else   { $trace->{response_dom} = $xmlin }
         }
 

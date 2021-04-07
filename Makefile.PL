@@ -67,7 +67,7 @@ WriteMakefile
               , web  => 'https://github.com/markov2/perl5-XML-Compile-SOAP'
               }
           , homepage => 'http://perl.overmeer.net/CPAN/'
-          , license  => [ 'http://dev.perl.org/licenses/' ]
+          , license  => [ 'http://dev.perl.org/xml-compile/' ]
           }
       }
  );
@@ -75,7 +75,7 @@ WriteMakefile
 ### used by oodist during production of distribution
 sub MY::postamble { <<'__POSTAMBLE' }
 
-EXTENDS		= ../XML-Compile:../XML-Compile-SOAP-Daemon:../XML-Compile-Tester:../XML-Compile-Cache:../XML-Compile-WSDL11:../XML-Compile-SOAP12:../../perl/XMLSOAPEv:../../perl/XMLWSA
+EXTENDS		= ../XML-Compile:../XML-Compile-SOAP-Daemon:../XML-Compile-Tester:../XML-Compile-Cache:../XML-Compile-WSDL11:../XML-Compile-SOAP12:/p/XMLSOAPEv:/p/XMLWSA
 
 # for DIST
 RAWDIR          = ../public_html/xml-compile-soap/raw

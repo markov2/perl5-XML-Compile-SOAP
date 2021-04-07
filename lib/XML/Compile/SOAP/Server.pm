@@ -145,10 +145,10 @@ sub compileHandler(@)
         my $data;
         if($decode)
         {   $data = try { $decode->($xmlin) };
-            if($@)
-            {   $@->wasFatal->throw(reason => 'INFO', is_fatal => 0);
+            if(my $err = $@->wasFatal)
+            {   $err->throw(reason => 'INFO', is_fatal => 0);
                 return ( RC_NOT_ACCEPTABLE, 'input validation failed'
-                   , $self->faultValidationFailed($name, $@->wasFatal))
+                   , $self->faultValidationFailed($name, $err))
             }
         }
         else
