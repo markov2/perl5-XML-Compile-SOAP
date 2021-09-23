@@ -177,7 +177,7 @@ In your program, you typically start with
   my $wsdl = XML::Compile::WSDL11->new($wsdl_filename);
   $wsdl->importDefinitions([glob "*.xsd"]);
 
-=head2 Using SSL
+=head2 Using SSL / https end-points
 
 Abeltje contributed an SSL usage example, which then got adapted to this:
 
