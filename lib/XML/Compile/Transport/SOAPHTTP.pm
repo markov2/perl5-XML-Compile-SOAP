@@ -59,12 +59,12 @@ If you need to change UserAgent settings (for instance at runtime),
 you can always directly access the internal C<LWP::UserAgent> object
 via M<userAgent()>.
 
-B<Warning:> The C<keep_alive> and C<timeout> options are only used when
-an default internal C<LWP::UserAgent> is created; this is only once in a
-program.  Later instantiations of this ::SOAPHTTP will share that default
-agent, even though these passed parameters have different parameters.
-If that is not what you want, then pass your own C<user_agent> object to
-the constructor to avoid the use of the default.
+B<Warning:> The C<ssl_opts>, C<keep_alive> and C<timeout> options are
+only used when an default internal C<LWP::UserAgent> is created; this
+is only once in a program.  Later instantiations of this ::SOAPHTTP
+will share that default agent, even though these passed parameters have
+different parameters.  If that is not what you want, then pass your own
+C<user_agent> object to the constructor to avoid the use of the default.
 
 =option  user_agent LWP::UserAgent object
 =default user_agent <created when needed>
@@ -79,6 +79,11 @@ When connection can be re-used.
 The maximum time for a single connection before the client will close it.
 The server may close it earlier.  Do not set the timeout too long, because
 you want objects to be cleaned-up.
+
+=option  ssl_opts HASH
+=default ssl_opts <undef>
+[3.28] In case you need to use https, but are not interested in checking (or even
+configuring) certificates, you may want to pass C<< verify_hostname => 0 >>.
 =cut
 
 sub init($)
@@ -89,7 +94,9 @@ sub init($)
       ( $args->{user_agent}
       , keep_alive => (exists $args->{keep_alive} ? $args->{keep_alive} : 1)
       , timeout    => ($args->{timeout} || 180)
+      , ssl_opts   => $args->{ssl_opts}
       );
+
     $self;
 }
 
