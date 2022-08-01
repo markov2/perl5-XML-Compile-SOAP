@@ -1,7 +1,7 @@
 
 === version history of distribution XML-Compile-SOAP
 
-version 3.28:
+version 3.28: Mon  1 Aug 10:49:17 CEST 2022
 
 	Improvements:
 	- require LWP::Potocol::https, because it is quite difficult to find-out
